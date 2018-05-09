@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>PAPP_TOURNAMENT_NAME : #PAPP_RONDE</title>
+<style type="text/css">
+/* table#crosstable : the table itself */
+table#crosstable {
+	border: 2px solid black;
+	border-collapse: collapse;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 0px;
+	background-color: #ffffff;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+/* crosstable_caption : the text for the caption */
+.crosstable_caption {
+	font-weight: bold;
+	font-size: 150%;
+	text-align: center;
+	margin-bottom: 15px;
+}
+/* td : each cell of the main table */
+td	{
+	padding: 0px;
+	border: 1px solid black;
+}
+/* td.crosstable_title : the title line */
+td.crosstable_title {
+	text-align: center;
+	font-weight: bold;
+	padding: 5px 5px 5px 5px;
+}
+/* td.crosstable_name : the name column */
+td.crosstable_name {
+	text-align: left;
+	padding: 0px 10px 0px 10px ;
+	font-weight: bold;
+}
+/* td.crosstable_country : the country column */
+td.crosstable_country {
+	text-align: center;
+	padding: 0px 3px 0px 3px ;
+	font-size: 90%;
+	font-weight: bold;
+}
+/* td.crosstable_points : the total number of points column */
+td.crosstable_points {
+	padding: 0px 3px 0px 3px ;
+	text-align: center;
+	font-weight: bold;
+	font-size: 115%;
+}
+/* td.crosstable_tiebreak : the tiebreak column */
+td.crosstable_tiebreak {
+	text-align: center;
+	padding: 0px 3px 0px 3px ;
+	font-size: 90%;
+	font-weight: normal;
+}
+/* table.crosstable_cell : each individual cell view as a table */
+table.crosstable_cell {
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+/* td.cell : each cell inside each individual cell */
+td.cell {
+	border: 0px solid black;
+}
+</style>
+</head>
+<body bgcolor="#FFFFFF" vlink="#CC6600">
+
+
+
+<!-- CELL-BEGIN -->
+<table class="crosstable_cell">
+<tr><td class="cell" align="left"><span STYLE="font-size: 90%; color: #990000;">PAPP_COLOR</span></td>
+    <td class="cell" align="right"><span STYLE="font-size: 90%; color: #006600;">PAPP_OPP</span></td></tr>
+<tr><td colspan="2" class="cell" align="center"><span STYLE="font-weight: bold; text-align: center; color: #000000;">PAPP_TOTAL</span></td></tr>
+<tr><td class="cell" align="left"><span STYLE="font-size: 90%; color: #000000;">PAPP_PTS</span></td>
+    <td class="cell" align="right"><span STYLE="font-size: 90%; color: #660000;">PAPP_SCORE</span></td></tr>
+</table>
+<!-- CELL-END -->
+
+<div class="crosstable_caption">
+PAPP_TOURNAMENT_NAME<br>
+Standings after round PAPP_RONDE<br>
+</div>
+$PAPP_CROSSTABLE
+
+</body>
+</html>
