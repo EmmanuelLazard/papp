@@ -2,7 +2,7 @@
  * xml.c:pour sauvegarder les appariements/resultats et le classement au format xml
  *
  * (EL) 22/09/2012 : v1.36, correction d'un bug dans la taille du tableau local
- * 						gardant le nom du fichier.
+ * 						gardant le fullname du fichier.
  * (EL) 12/09/2012 : v1.35, no change.
  * (EL) 16/07/2012 : v1.34, Creation du fichier
  */
@@ -60,14 +60,14 @@ void creer_classement_XML(void) {
 
 	strcpy(nom_fichier, nom_sous_dossier);
 	strcat(nom_fichier, "stand");
-	if (ronde < 10) {
-		sprintf(str, "__%ld.xml", ronde);
+	if (current_round < 10) {
+		sprintf(str, "__%ld.xml", current_round);
 		strcat(nom_fichier, str);
-	} else if (ronde < 100) {
-		sprintf(str, "_%ld.xml", ronde);
+	} else if (current_round < 100) {
+		sprintf(str, "_%ld.xml", current_round);
 		strcat(nom_fichier, str);
 	} else {
-		sprintf(str, "%ld.xml", ronde);
+		sprintf(str, "%ld.xml", current_round);
 		strcat(nom_fichier, str);
 	}
 
@@ -103,18 +103,18 @@ void creer_classement_XML(void) {
 	saveCreatorAndTime(fp);
 
 	fprintf(fp,"<Tournament>\n");
-    /* Pour afficher le nom du tournoi en tete */
+    /* Pour afficher le fullname du tournoi en tete */
 	fprintf(fp, "\t<Name>%s</Name>\n", nom_du_tournoi);
 	fprintf(fp, "\t<Standing>\n");
-	fprintf(fp, "\t\t<Number>%ld</Number>\n", ronde);
+	fprintf(fp, "\t\t<Number>%ld</Number>\n", current_round);
 	fprintf(fp, "\t\t<Players>\n");
 
-	nbi = joueurs_inscrits->n;
+	nbi = registered_players->n;
     calcul_departage();
 
     if (nbi > 0) {
-        long table[MAX_INSCRITS];
-        Joueur *j;
+        long table[MAX_REGISTERED];
+        Player *j;
 
         for (i=0; i<nbi; i++)
             table[i] = i;
@@ -123,7 +123,7 @@ void creer_classement_XML(void) {
         for (i=0; i<nbi; i++) {
             _i = table[i];
             assert(_i >= 0 && _i < nbi);
-            j  = joueurs_inscrits->liste[_i];
+            j  = registered_players->list[_i];
 
 			fprintf(fp, "\t\t\t<Player>\n");
 			if (!present[_i]) {
@@ -140,10 +140,10 @@ void creer_classement_XML(void) {
 			} else {
                 fprintf(fp, "\t\t\t\t<Points>%ld</Points>\n", score[_i] / 2);
 			}
-			fprintf(fp, "\t\t\t\t<TieBreak>%s</TieBreak>\n", departage_en_chaine(departage[_i]));
-			fprintf(fp, "\t\t\t\t<Name>%s</Name>\n", j->nom);
-			fprintf(fp, "\t\t\t\t<Id>%ld</Id>\n", j->numero);
-			fprintf(fp, "\t\t\t\t<Country>%s</Country>\n", j->pays);
+			fprintf(fp, "\t\t\t\t<TieBreak>%s</TieBreak>\n", departage_en_chaine(tieBreak[_i]));
+			fprintf(fp, "\t\t\t\t<Name>%s</Name>\n", j->fullname);
+			fprintf(fp, "\t\t\t\t<Id>%ld</Id>\n", j->ID);
+			fprintf(fp, "\t\t\t\t<Country>%s</Country>\n", j->country);
 			fprintf(fp, "\t\t\t</Player>\n");
 		}
 	}
@@ -160,12 +160,12 @@ void creer_ronde_XML(void) {
     char nom_fichier[1024];
 /*	char str[10] = "";*/
 	FILE *fp;
-    Paire *liste;
+    Pair *liste;
     long nb_paires, iterRonde;
     long i, n1, n2, atLeastOneNotPaired;
-    pions_t v;
-    Joueur *j;
-    if (joueurs_inscrits->n == 0) {
+    discs_t v;
+    Player *j;
+    if (registered_players->n == 0) {
         return;
     }
 
@@ -221,29 +221,29 @@ void creer_ronde_XML(void) {
 	saveCreatorAndTime(fp);
 
 	fprintf(fp,"<Tournament>\n");
-    /* Pour afficher le nom du tournoi en tete */
+    /* Pour afficher le fullname du tournoi en tete */
 	fprintf(fp, "\t<Name>%s</Name>\n", nom_du_tournoi);
 	fprintf(fp, "\t<Rounds>\n");
 
-    for (iterRonde = 0; iterRonde < ronde+1; iterRonde++) {
+    for (iterRonde = 0; iterRonde < current_round+1; iterRonde++) {
 		fprintf(fp, "\t\t<Round>\n");
 		fprintf(fp, "\t\t\t<Number>%ld</Number>\n", iterRonde+1);
 
-	    iterer_ronde(iterRonde); /* Aller a la bonne ronde */
+        round_iterate(iterRonde); /* Aller a la bonne ronde */
 
 	    /* D'abord afficher les joueurs apparies */
-	    CALLOC(liste, 1 + joueurs_inscrits->n / 2, Paire);
+		CALLOC(liste, 1 + registered_players->n / 2, Pair);
 	    nb_paires = 0;
 
-	    while (couple_suivant(&n1,&n2,&v)) {
+	    while (next_couple(&n1, &n2, &v)) {
 	        i = nb_paires++;
 	        liste[i].j1 = trouver_joueur(n1);
 	        liste[i].j2 = trouver_joueur(n2);
 	        liste[i].score = v;
-	        liste[i].valeur_tri = critere_tri_tables(n1, n2);
+	        liste[i].sort_value = tables_sort_criteria(n1, n2);
 	    }
 	    if (iterRonde >= 1)
-	        SORT(liste, nb_paires, sizeof(Paire), tri_paires);
+	        SORT(liste, nb_paires, sizeof(Pair), pairs_sort);
 
 		fprintf(fp,"\t\t\t<Pairs>\n");
 	    for (i = 0; i < nb_paires; i++) {
@@ -252,18 +252,18 @@ void creer_ronde_XML(void) {
 			fprintf(fp, "\t\t\t\t\t<Table>%ld</Table>\n", i+1);
 
 			fprintf(fp, "\t\t\t\t\t<BlackPlayer>\n");
-			fprintf(fp, "\t\t\t\t\t\t<Name>%s</Name>\n", liste[i].j1->nom);
-			fprintf(fp, "\t\t\t\t\t\t<Id>%ld</Id>\n", liste[i].j1->numero);
-			if (SCORE_EST_LEGAL(liste[i].score)) {
+			fprintf(fp, "\t\t\t\t\t\t<Name>%s</Name>\n", liste[i].j1->fullname);
+			fprintf(fp, "\t\t\t\t\t\t<Id>%ld</Id>\n", liste[i].j1->ID);
+			if (SCORE_IS_LEGAL(liste[i].score)) {
 				fprintf(fp, "\t\t\t\t\t\t<Score>%s</Score>\n", pions_en_chaine(liste[i].score));
 			}
 			fprintf(fp, "\t\t\t\t\t</BlackPlayer>\n");
 
 			fprintf(fp, "\t\t\t\t\t<WhitePlayer>\n");
-			fprintf(fp, "\t\t\t\t\t\t<Name>%s</Name>\n", liste[i].j2->nom);
-			fprintf(fp, "\t\t\t\t\t\t<Id>%ld</Id>\n", liste[i].j2->numero);
-			if (SCORE_EST_LEGAL(liste[i].score)) {
-				fprintf(fp, "\t\t\t\t\t\t<Score>%s</Score>\n", pions_en_chaine(SCORE_ADVERSE(liste[i].score)));
+			fprintf(fp, "\t\t\t\t\t\t<Name>%s</Name>\n", liste[i].j2->fullname);
+			fprintf(fp, "\t\t\t\t\t\t<Id>%ld</Id>\n", liste[i].j2->ID);
+			if (SCORE_IS_LEGAL(liste[i].score)) {
+				fprintf(fp, "\t\t\t\t\t\t<Score>%s</Score>\n", pions_en_chaine(OPPONENT_SCORE(liste[i].score)));
 			}
 			fprintf(fp,"\t\t\t\t\t</WhitePlayer>\n");
 
@@ -277,16 +277,16 @@ void creer_ronde_XML(void) {
 
 		atLeastOneNotPaired = 0;
 
-	    for (i = 0; i < joueurs_inscrits->n; i++) {
-	        j = (joueurs_inscrits->liste)[i];
-	        if ((polar2(j->numero, iterRonde) == 0) && (iterRonde == ronde ? present[j->numero] : joueur_etait_present(j->numero, iterRonde))) {
+	    for (i = 0; i < registered_players->n; i++) {
+	        j = (registered_players->list)[i];
+	        if ((polar2(j->ID, iterRonde) == 0) && (iterRonde == current_round ? present[j->ID] : player_was_present(j->ID, iterRonde))) {
 				if (atLeastOneNotPaired == 0) {
 					atLeastOneNotPaired = 1;
 					fprintf(fp,"\t\t\t<NotPairedPlayers>\n");
 				}
 				fprintf(fp, "\t\t\t\t<NotPairedPlayer>\n");
-				fprintf(fp, "\t\t\t\t\t<Name>%s</Name>\n", j->nom);
-				fprintf(fp, "\t\t\t\t\t<Id>%ld</Id>\n", j->numero);
+				fprintf(fp, "\t\t\t\t\t<Name>%s</Name>\n", j->fullname);
+				fprintf(fp, "\t\t\t\t\t<Id>%ld</Id>\n", j->ID);
 				fprintf(fp, "\t\t\t\t</NotPairedPlayer>\n");
 	        }
 		}

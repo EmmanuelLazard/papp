@@ -90,7 +90,7 @@ CC = gcc
 #   invisible, ce qui est incommode pour entrer du texte. Si ce symbole
 #   est defini, le curseur sera materialise par une tilde.
 #
-# VERROU (defaut : ON)
+# LOCK (defaut : ON)
 #   cree un fichier-verrou dans le repertoire courant pour eviter
 #   que deux invocations de papp ne modifient le meme fichier intermediaire.
 #
@@ -255,9 +255,9 @@ LIBS = -lm -ltermcap -arch i386
 # etre sauvegardes avec `make archive'
 #
 HEADERS = appari.h changes.h global.h joueur.h more.h couplage.h \
-          version.h pions.h departage.h crosstable.h
+          version.h pions.h tiebreak.h crosstable.h
 
-CFILES  = couplage.c crosstable.c departage.c edmonds.c elo.c \
+CFILES  = couplage.c crosstable.c tiebreak.c edmonds.c elo.c \
     entrejou.c global.c joueur.c main.c more.c penalite.c \
     pions.c resultat.c ttrondes.c XML.c
 
@@ -298,7 +298,7 @@ all:
 papp : LANGUE=
 papp : $(OBJETS)
 	$(CC) $(LDFLAGS) -o papp $(OBJETS) $(LIBS)
-	cp papp ..
+#	cp papp ..
 
 .PHONY : papp_GB_PHONY
 papp_GB_PHONY :

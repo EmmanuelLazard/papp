@@ -3,6 +3,7 @@
  *  - version du programme
  *  - program version
  *
+ * (EL) 15/06/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36
  * (EL) 12/09/2012 : v1.35
  * (EL) 16/07/2012 : v1.34
@@ -15,6 +16,6 @@
 #ifndef __Papp_version_h__
 #define __Papp_version_h__
 
-#define VERSION "PAPP 1.36"
+#define VERSION "PAPP 1.37"
 
 #endif   /* #ifndef __Papp_version_h__ */

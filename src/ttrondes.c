@@ -56,7 +56,7 @@ static long *ttr_table;
 
 /*
  * Sauvegarde de la table. Cette fonction est normalement appellee par
- * _sauve_ronde(), a la fin de la premiere ronde, immediatement
+ * _save_round(), a la fin de la premiere ronde, immediatement
  * apres init_ttrondes().
  */
 
@@ -68,7 +68,7 @@ long sauve_table_ttr (FILE *fp) {
         return 0;       /* rien a sauver */
     assert(ttr_table);
     /* Est-ce bien la premiere ronde? */
-    assert(ronde == 0);
+    assert(current_round == 0);
     fprintf(fp,"table-toutes-rondes [%ld] = {", ttr_card);
     for (i = 0; i < ttr_card; i++) {
         fprintf(fp, i % (ttr_card/2) ? " " : "\n\t");
@@ -90,8 +90,8 @@ long charge_table_ttr (long card, long *table) {
     if (card < ttr_minj && card > ttr_maxj)
         return 0;
     /* Est-ce bien la premiere ronde? */
-    assert(ronde == 0);
-    CALLOC(ttr_table, ttr_card=card, long);
+    assert(current_round == 0);
+    CALLOC(ttr_table, ttr_card = card, long);
     for (i = 0; i < card; i++)
         ttr_table[i] = table[i];
     return 1;
@@ -104,23 +104,23 @@ long charge_table_ttr (long card, long *table) {
 
 long init_ttrondes (void) {
     long i, j, nb_presents, nb_napp, p0, p1, n1, n2;
-    pions_t v;
+    discs_t v;
 
     assert(0 < ttr_minj && ttr_minj <= ttr_maxj);
     /* Table deja initialisee? */
     if (ttr_card > 0)
         return 0;
     /* Est-ce bien la premiere ronde? */
-    assert(ronde == 0);
+    assert(current_round == 0);
     /* Compter le nombre de joueurs presents */
     nb_presents = 0;
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
         if (present[i])
             ++nb_presents;
     if (nb_presents < ttr_minj || nb_presents > ttr_maxj)
         return 0;
     /* Verifier que (presque) tous les joueurs sont apparies */
-    nb_napp = nb_joueurs_napp();
+    nb_napp = nbr_unpaired_players();
     if (nb_napp > 1)
         return 0;       /* erreur */
     ttr_card = nb_napp + nb_presents;
@@ -131,10 +131,10 @@ long init_ttrondes (void) {
     if (nb_napp) {
         /* Il y a un Bip */
         /* Quel est le joueur qui passe ? */
-        for (i = 0; i < joueurs_inscrits->n; i++)
+        for (i = 0; i < registered_players->n; i++)
             if (present[i]) {
-                j = joueurs_inscrits->liste[i]->numero;
-                if (polarite(j) == 0) {
+                j = registered_players->list[i]->ID;
+                if (polarity(j) == 0) {
                     ttr_table[p0++] = -1;
                     ttr_table[p1++] = j;
                 }
@@ -147,8 +147,8 @@ long init_ttrondes (void) {
      *  N B N B N
      *  B N B N B   pour la premiere ronde.
      */
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
         if (p0%2 == 0) {
             ttr_table[p0++] = n1;   /* Noir  */
             ttr_table[p1++] = n2;   /* Blanc */
@@ -186,7 +186,7 @@ static void rotation(void) {
 }
 
 /*
- * Realise les appariements pour la ronde dont le numero est donne par
+ * Realise les appariements pour la ronde dont le ID est donne par
  * la variable globale `ronde' (plus un). Renvoie 0 en cas d'erreur et 1
  * si tout s'est bien passe.
  */
@@ -197,11 +197,11 @@ long appariement_ttrondes (void) {
     if (ttr_card == 0)
         return 0;       /* Infos non disponibles */
     nb_presents = 0;
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
         if (present[i])
             ++nb_presents;
     /* Verifier qu'aucun joueur n'est deja inscrit */
-    if (nb_joueurs_napp() != nb_presents)
+    if (nbr_unpaired_players() != nb_presents)
         return 0;
     /*
      * Verifier qu'il y a le bon nombre de joueurs. REMARQUE: le code
@@ -210,9 +210,9 @@ long appariement_ttrondes (void) {
     if (nb_presents != ttr_card - (ttr_table[0] < 0))
         return 0;
     /* Verifier que tous les joueurs sont dans la table */
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
         if (present[i]) {
-            j = joueurs_inscrits->liste[i]->numero;
+            j = registered_players->list[i]->ID;
             for (k = 0; k < ttr_card; k++)
                 if (ttr_table[k] == j)
                     break;
@@ -223,7 +223,7 @@ long appariement_ttrondes (void) {
      * On fait tourner la table de `ronde' crans dans le sens direct
      * donc de (ttr_card-1-ronde) crans dans le `mauvais' sens...
      */
-    for (i = ronde; i % (ttr_card-1); i++)
+    for (i = current_round; i % (ttr_card-1); i++)
         rotation();
     /* Et on apparie les joueurs. Le pivot a commence avec les noirs */
     k = ttr_card / 2;
@@ -232,10 +232,10 @@ long appariement_ttrondes (void) {
          * Le pivot n'est pas Bip; sa chaise change de couleur a
          * chaque ronde, tout comme celle qui est en face de lui.
          */
-        if (ronde%2 == 0)
-          accoupler(ttr_table[0], ttr_table[k], SCORE_INCONNU);
+        if (current_round%2 == 0)
+            make_couple(ttr_table[0], ttr_table[k], UNKNOWN_SCORE);
         else
-          accoupler(ttr_table[k], ttr_table[0], SCORE_INCONNU);
+            make_couple(ttr_table[k], ttr_table[0], UNKNOWN_SCORE);
     }
     for (i = 1; i < k; i++) {
         /*
@@ -243,13 +243,13 @@ long appariement_ttrondes (void) {
          * d'un plusieurs-fois-toutes-rondes, apres chaque rotation
          * complete de la table.
          */
-        if (i%2 == (ronde/(ttr_card-1))%2)
-          accoupler(ttr_table[i], ttr_table[i+k], SCORE_INCONNU);
+        if (i%2 == (current_round/(ttr_card-1))%2)
+            make_couple(ttr_table[i], ttr_table[i + k], UNKNOWN_SCORE);
         else
-          accoupler(ttr_table[i+k], ttr_table[i], SCORE_INCONNU);
+            make_couple(ttr_table[i + k], ttr_table[i], UNKNOWN_SCORE);
     }
     /* Et on remet la table en place */
-    for (i = 0; i < ronde; i++)
+    for (i = 0; i < current_round; i++)
         rotation();
     return 1;       /* Ok! */
 }

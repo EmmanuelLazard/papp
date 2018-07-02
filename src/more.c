@@ -422,7 +422,7 @@ void goodbye (void) {
  * qui suit.
  */
 
-#ifdef VERROU
+#ifdef LOCK
 
 # if 0 && (defined(UNIX_BSD) || defined(UNIX_SYSV))
 
@@ -549,9 +549,9 @@ void init_ecran() {
         term_name = "dialup";
     term_ok = tgetent (term_buffer, term_name);
     if (term_ok < 0)
-        erreur_fatale(TCAP_ERR1);
+        fatal_error(TCAP_ERR1);
     if (term_ok == 0)
-        erreur_fatale(TCAP_ERR2);
+        fatal_error(TCAP_ERR2);
     CALLOC(tbuf2, sizeof(term_buffer), char);
 
     /*
@@ -572,7 +572,7 @@ void init_ecran() {
     term_goto = tgetstr("cm", &tbuf2);
 
     if (!term_eff_ecran || !term_eff_ligne || !term_goto)
-        erreur_fatale(TCAP_ERR3);
+        fatal_error(TCAP_ERR3);
 
     /* Le terminal est-il auto-wrap? */
     auto_wrap = tgetflag("am");

@@ -19,14 +19,14 @@
  * (EL) 05/04/2007 : Ecriture de la fonction 'backup_inter()' qui effectue une sauvegarde
                      du fichier intermediaire dans un sous-dossier si on l'utilise.
  * (EL) 05/04/2007 : Ajout de la variable 'nom_fichier_inter_backup' permettant de stocker
-                     le nom du fichier intermediaire AVEC le nom du sous-dossier pour la
+                     le fullname du fichier intermediaire AVEC le fullname du sous-dossier pour la
                      sauvegarde dans ce sous-dossier.
  * (EL) 30/03/2007 : Tranformation de 'COPIER()' en fonction et changement de son code
                      ainsi que des parametres.
                      Ecriture de 'CONCAT()' permettant de concatener 2 chaines.
  * (EL) 30/03/2007 : Ajout des variables 'nom_sous_dossier' et 'utiliser_sous_dossier'
                      qui servent a regrouper tous les fichiers ronde/class/result...
-                     dans un sous-dossier portant le nom du tournoi.
+                     dans un sous-dossier portant le fullname du tournoi.
  * (EL) 29/03/2007 : Reecriture de la fonction 'grand_dump()' pour coller avec
                      le nouveau format du fichier de configuration.
  * (EL) 06/02/2007 : Ajout de la fonction 'copier_fichier()'
@@ -92,7 +92,7 @@ double
     coef_brightwell ; /* Le coeff de brightwell en flottant, 2 pts par victoire */
 
 long
-    ronde,
+    current_round,
     sauvegarde_immediate,
     sauvegarde_fichier_result,
     sauvegarde_fichier_classement,
@@ -109,7 +109,7 @@ long
     nmax_flottement,
     nmax_couleur;
 
-pions_t
+discs_t
     score_bip;
 
 pen_t
@@ -119,7 +119,7 @@ pen_t
     *penalite_chauvinisme,
     penalite_flcum,
     minoration_fac,
-#ifdef ELITISME
+#ifdef ELITISM
     *penalite_elitisme,
 #endif
     penalite_mcoul,
@@ -174,7 +174,7 @@ void init_penalites_defaut (void) {
     aff_diff_scores = 0;
 
     /* Bip fait 24 pions sur 64 */
-    score_bip   = ENTIER_EN_SCORE(24);
+    score_bip   = INTEGER_TO_SCORE(24);
     total_pions = 64;
     nb_chiffres_des_scores = nombre_chiffres(total_pions);
 
@@ -235,16 +235,16 @@ void init_penalites_defaut (void) {
     /*
      * Penalites de chauvinisme par defaut
      */
-    CALLOC(penalite_chauvinisme, NMAX_RONDES, pen_t);
-    for (i = 0; i < NMAX_RONDES; i++)
+    CALLOC(penalite_chauvinisme, NMAX_ROUNDS, pen_t);
+    for (i = 0; i < NMAX_ROUNDS; i++)
             penalite_chauvinisme[i] = 0;
     penalite_chauvinisme[0] = 2;
 
     /*
      * Penalite d'elitisme par defaut
      */
-#ifdef ELITISME
-    CALLOC(penalite_elitisme, NMAX_RONDES, pen_t);
+#ifdef ELITISM
+    CALLOC(penalite_elitisme, NMAX_ROUNDS, pen_t);
     penalite_elitisme[0] = 100;
     penalite_elitisme[1] = 100;
     penalite_elitisme[2] = 100;
@@ -256,7 +256,7 @@ void init_penalites_defaut (void) {
     penalite_elitisme[8] = 300;
         /* on veut favoriser les bons appariements pour
            le haut du classement vers la fin du tournoi */
-        for (i = 9; i < NMAX_RONDES; i++)
+        for (i = 9; i < NMAX_ROUNDS; i++)
                 penalite_elitisme[i] = 400;
 #endif
 
@@ -288,14 +288,14 @@ void verification_penalites (void) {
     /* Monotonie des penalites de couleur */
     for (i = 0; i < nmax_couleur-1; i++)
         if (penalite_couleur[i] > penalite_couleur[i+1])
-            erreur_fatale(VPEN_COLORS);
+            fatal_error(VPEN_COLORS);
 
     /* Penalites de flottement */
     if (2 * minoration_fac > penalite_flottement[1])
-        erreur_fatale(VPEN_MINFAC);
+        fatal_error(VPEN_MINFAC);
     for (i = 0; i < nmax_flottement-1; i++)
         if (penalite_flottement[i] > penalite_flottement[i+1])
-            erreur_fatale(VPEN_FLOAT);
+            fatal_error(VPEN_FLOAT);
 }
 
 /*
@@ -367,7 +367,7 @@ static void changement_taille(void) {
 void installer_signaux() {
     handle_signal(SIGHUP, _terminer);
     handle_signal(SIGINT, SIG_IGN);
-    handle_signal(SIGQUIT, terminer);
+    handle_signal(SIGQUIT, terminate);
     handle_signal(SIGTERM, _terminer);
     /*      handle_signal(SIGWINCH, changement_taille);    cf plus haut, SN */
 }
@@ -384,7 +384,7 @@ void installer_signaux()        { }
 /*
  * Terminaison, normale ou anormale, de PAPP.
  */
-void erreur_fatale(const char *erreur) {
+void fatal_error(const char *erreur) {
     fprintf(stdout, "\n" FATAL_MSG,
             nom_programme[0] ? nom_programme : "Papp", erreur);
 #if defined(__THINK_C__) || defined(PAPP_MAC_METROWERKS)
@@ -402,7 +402,7 @@ void erreur_fatale(const char *erreur) {
     exit(1);
 }
 
-void terminer() {
+void terminate() {
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
     /* peut-etre ne pouvons-nous plus ecrire sur ce terminal */
     handle_signal(SIGTTIN, _terminer);
@@ -437,25 +437,25 @@ static void _terminer() {
 
 void sauve_ronde() {
     bloquer_signaux();
-    _sauve_ronde();
+    _save_round();
     debloquer_signaux();
 }
 
 void sauve_inscrits() {
     bloquer_signaux();
-    _sauve_inscrits();
+    _save_registered();
     debloquer_signaux();
 }
 
 void sauve_appariements() {
     bloquer_signaux();
-    _sauve_appariements();
+    _save_pairings();
     debloquer_signaux();
 }
 
 void recreer_fichier_intermediaire() {
     bloquer_signaux();
-    _recreer_fichier_intermediaire();
+    _recreate_workfile();
     debloquer_signaux();
 }
 
@@ -464,22 +464,22 @@ void recreer_fichier_intermediaire() {
  * chpen(): convertit une penalite en une chaine de sept caracteres
  */
 
-char *fscore (pions_t score) {
+char *fscore (discs_t score) {
     char *chaine;
 
-    if (!SCORE_EST_LEGAL(score))
+    if (!SCORE_IS_LEGAL(score))
         return NULL;
 
     chaine = new_string();
     if (aff_diff_scores) {
 
-        if (EST_UNE_VICTOIRE(score)) chaine[0] = '+';
-        if (EST_UNE_DEFAITE(score))  chaine[0] = '-';
-        if (EST_PARTIE_NULLE(score)) chaine[0] = '=';
+        if (IS_VICTORY(score)) chaine[0] = '+';
+        if (IS_DEFEAT(score))  chaine[0] = '-';
+        if (IS_DRAW(score)) chaine[0] = '=';
 
-        sprintf(chaine+1, "%s", pions_en_chaine(VALEUR_ABSOLUE_SCORE(SCORE_EN_RELATIF(score))));
+        sprintf(chaine+1, "%s", pions_en_chaine(ABSOLUTE_VALUE_SCORE(RELATIVE_SCORE(score))));
     } else {
-        sprintf(chaine, "%s/%s", pions_en_chaine(score), pions_en_chaine(SCORE_ADVERSE(score)));
+        sprintf(chaine, "%s/%s", pions_en_chaine(score), pions_en_chaine(OPPONENT_SCORE(score)));
     }
     return chaine;
 }
@@ -724,7 +724,7 @@ void grand_dump (FILE *fp) {
      * Chauvinisme
      */
 
-    for (l = i = NMAX_RONDES-1; l >= 0; l--)
+    for (l = i = NMAX_ROUNDS-1; l >= 0; l--)
         if (penalite_chauvinisme[l] != penalite_chauvinisme[i])
         { ++l; break; }
 
@@ -739,11 +739,11 @@ void grand_dump (FILE *fp) {
     fprintf(fp, "\t\tronde  12+        =  0; # Mettre INFINI pour le championnat du monde.\n"
             "                                        # INFINI should be used for the WOC.\n");
 
-#ifdef ELITISME
+#ifdef ELITISM
     /*
      * Elitisme
      */
-    for (l = i = NMAX_RONDES-1; l >= 0; l--)
+    for (l = i = NMAX_ROUNDS-1; l >= 0; l--)
         if (penalite_elitisme[l] != penalite_elitisme[i])
         { ++l; break; }
 
@@ -808,7 +808,7 @@ char *trivialloc (long longueur) {
 
     assert(longueur > 0);
     if (libre < longueur)
-        CALLOC(bloc, libre=MINIMAL_BLOCK_SIZE, char);
+        CALLOC(bloc, libre = MINIMAL_BLOCK_SIZE, char);
     allo = bloc;
     bloc  += longueur;
     libre -= longueur;
@@ -866,10 +866,10 @@ long le_min_de(long n1, long n2) {
 
 /*
  * Une petite fonction pour generer des noms de fichiers qui se suivent.
- * Si pattern contient la chaine "###", alors ### est remplace par numero;
- * sinon, on ajoute seulement numero a la fin de pattern.
- * Ex : pattern == "class###.txt" et numero == 11   -> on renvoie class_11.txt
- *      pattern == "classement" et numero == 11   -> on renvoie classement_11
+ * Si pattern contient la chaine "###", alors ### est remplace par ID;
+ * sinon, on ajoute seulement ID a la fin de pattern.
+ * Ex : pattern == "class###.txt" et ID == 11   -> on renvoie class_11.txt
+ *      pattern == "classement" et ID == 11   -> on renvoie classement_11
  * Cette fonction alloue de la memoire pour la chaine resultat, qui ne sera jamais
  * liberee.
  */
@@ -1073,7 +1073,7 @@ void init_fichier_intermediaire(long type_fichier) {
 /* si le sous-dossier n'existe pas. Il faut d'abord le creer puis ouvrir le fichier         */
 /* Cette fonction verifie
  * 1. qu'on utilise le sous-dossiers (variable 'utilise' vaut 1) ;
- * 2. que le sous-dossier de nom indique existe ou peut etre creer
+ * 2. que le sous-dossier de fullname indique existe ou peut etre creer
  * puis ouvre le fichier indique avec son mode d'ouverture                                  */
 /* -> Affiche une erreur fatale si le fichier ne s'ouvre pas et que le param 'err' est a 1  */
 
@@ -1091,7 +1091,7 @@ FILE *myfopen_dans_sous_dossier(const char *filename, const char *mode, const ch
     fp = fopen(filename, mode) ;
 	if ((fp == NULL) && (err == 1)) {
         sprintf(ligne, "%s " FATAL_OPEN "%s", filename, strerror(errno)) ;
-        erreur_fatale(ligne);
+        fatal_error(ligne);
     }
     return fp ;
 }

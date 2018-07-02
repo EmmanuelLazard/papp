@@ -24,17 +24,17 @@ long total_pions = 64;
 /*
  * fonctions pour l'affichage
  */
-char *pions_en_chaine(pions_t v) {
+char *pions_en_chaine(discs_t v) {
     char *result;
 
     result = new_string();
     assert( result != NULL);
 
-#ifdef USE_DEMI_PIONS
-    if (v.demi_pions % 2)
-        sprintf(result, "%0*ld.5" , (int)nb_chiffres_des_scores , v.demi_pions / 2);
+#ifdef USE_HALF_DISCS
+    if (v.half_discs % 2)
+        sprintf(result, "%0*ld.5" , (int)nb_chiffres_des_scores , v.half_discs / 2);
     else
-        sprintf(result, "%0*ld" , (int)nb_chiffres_des_scores , v.demi_pions / 2);
+        sprintf(result, "%0*ld" , (int)nb_chiffres_des_scores , v.half_discs / 2);
 #else
     sprintf(result, "%0*ld" , (int)nb_chiffres_des_scores , v);
 #endif
@@ -49,11 +49,11 @@ char *departage_en_chaine(double Dep) {
     result = new_string();
     assert( result != NULL);
 
-/* #ifdef USE_DEMI_PIONS
-    if (v.demi_pions % 2)
-        sprintf(result, "%ld.5" , v.demi_pions / 2);
+/* #ifdef USE_HALF_DISCS
+    if (v.half_discs % 2)
+        sprintf(result, "%ld.5" , v.half_discs / 2);
     else
-        sprintf(result, "%ld" , v.demi_pions / 2);
+        sprintf(result, "%ld" , v.half_discs / 2);
 #else
     sprintf(result, "%ld" ,  v);
 #endif
@@ -80,8 +80,8 @@ char *departage_en_chaine(double Dep) {
  *     le score lu et <relatif> vaut 1 si le score etait rentre en relatif,
  *     0 sinon.
  */
-long comprend_score(const char *chaine, pions_t *valeur, long *relatif) {
-    pions_t score;
+long comprend_score(const char *chaine, discs_t *valeur, long *relatif) {
+    discs_t score;
     long n, lu_en_relatif;
     double f;
     char parasites[100];
@@ -91,12 +91,12 @@ long comprend_score(const char *chaine, pions_t *valeur, long *relatif) {
 
     switch (chaine[0]) {
     case '=':
-        score = SCORE_RELATIF_EN_ABSOLU(ENTIER_EN_SCORE(0));
+        score = RELATIVE_SCORE_TO_ABSOLUTE(INTEGER_TO_SCORE(0));
         lu_en_relatif = 1;
         break;
     case '+':
         if (sscanf(chaine+1, "%ld%s" , &n, parasites) == 1) {
-            score = SCORE_RELATIF_EN_ABSOLU(ENTIER_EN_SCORE(n));
+            score = RELATIVE_SCORE_TO_ABSOLUTE(INTEGER_TO_SCORE(n));
             lu_en_relatif = 1;
             break;
         } else
@@ -104,7 +104,7 @@ long comprend_score(const char *chaine, pions_t *valeur, long *relatif) {
         break ;
     case '-':
         if (sscanf(chaine+1, "%ld%s" , &n , parasites) == 1) {
-            score = SCORE_RELATIF_EN_ABSOLU(ENTIER_EN_SCORE(-n));
+            score = RELATIVE_SCORE_TO_ABSOLUTE(INTEGER_TO_SCORE(-n));
             lu_en_relatif = 1;
             break;
         } else
@@ -112,7 +112,7 @@ long comprend_score(const char *chaine, pions_t *valeur, long *relatif) {
         break ;
     default:
         if (sscanf(chaine, "%le%s" , &f, parasites) == 1)
-          { score = FLOTTANT_EN_SCORE(f); lu_en_relatif = 0; }
+          { score = FLOAT_TO_SCORE(f); lu_en_relatif = 0; }
         else
           return 0;  /* pas de score, ou des caracteres parasites */
     }

@@ -46,6 +46,7 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
+typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -357,7 +358,7 @@ static void yy_fatal_error (yyconst char msg[]  );
  */
 #define YY_DO_BEFORE_ACTION \
 	(yytext_ptr) = yy_bp; \
-	yyleng = (size_t) (yy_cp - yy_bp); \
+	yyleng = (yy_size_t) (yy_cp - yy_bp); \
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
@@ -742,7 +743,7 @@ static struct mot_cle {
 }, *mc;
 
 
-#line 746 "lex.yy.c"
+#line 747 "lex.yy.c"
 
 #define INITIAL 0
 #define UNQUOTED 1
@@ -931,7 +932,7 @@ YY_DECL
 #line 158 "pap.l"
 
 
-#line 935 "lex.yy.c"
+#line 936 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -1227,7 +1228,7 @@ YY_RULE_SETUP
 #line 243 "pap.l"
 ECHO;
 	YY_BREAK
-#line 1231 "lex.yy.c"
+#line 1232 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(UNQUOTED):
 	yyterminate();
@@ -2312,10 +2313,10 @@ long lire_fichier (char *filename, long type) {
 	char *tempfile;
 #endif
 
-	assert(type == F_CONFIG || type == F_JOUEURS || type == F_NOUVEAUX);
+	assert(type == CONFIG_F || type == PLAYERS_F || type == NEWPLAYERS_F);
 #ifdef DEBUG
 	fprintf(stderr,"Lecture de '%s' (%s)\n", filename,
-		type == F_CONFIG ? "config" : "joueurs ou nouveaux");
+		type == CONFIG_F ? "config" : "joueurs ou nouveaux");
 #endif
 
 #ifdef DUPLIQUE_FICHIER_PARSER
@@ -2340,13 +2341,13 @@ long lire_fichier (char *filename, long type) {
 	nom_fichier_lu = filename;
 	pays_courant = pays_defaut;
 	/* Type d'analyse lexicale? */
-	if (type == F_CONFIG) {
+	if (type == CONFIG_F) {
 		BEGIN(INITIAL);
 		type_fichier_config = CORRECT ;
 		type_fichier_intermediaire = OLD ;
 	} else {
 		BEGIN(UNQUOTED) ;
-		fichier_des_nouveaux = ((type == F_NOUVEAUX) ? 1 : 0) ;
+		fichier_des_nouveaux = ((type == NEWPLAYERS_F) ? 1 : 0) ;
 	}
 	ret = yyparse();
 	fclose(yyin);
@@ -2357,7 +2358,7 @@ long lire_fichier (char *filename, long type) {
 #endif
 
 
-    if (type == F_CONFIG)
+    if (type == CONFIG_F)
 		pays_defaut = pays_courant;
 	return (ret + erreur_constatee);
 }
@@ -2367,7 +2368,7 @@ long lire_fichier (char *filename, long type) {
 void erreur_syntaxe(const char *erreur) {
 	avert_syntaxe(erreur);
 	if (++erreur_constatee >= 15)
-		erreur_fatale(TOO_MANY_ERRS);
+		fatal_error(TOO_MANY_ERRS);
 }
 
 void avert_syntaxe(const char *erreur) {

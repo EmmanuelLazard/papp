@@ -134,7 +134,7 @@ bout_a_bout (char *s1, char *s2) {
     return s3;
 }
 
-static void Nouveau_joueur (long numero, const char *nom, const char *prenom,
+static void Nouveau_joueur (long numero, const char *nom, const char *firstname,
         const char *programmeur, const char *pays, long classement,
         const char *commentaire, const long nv) {
     if (!numero) {
@@ -142,7 +142,7 @@ static void Nouveau_joueur (long numero, const char *nom, const char *prenom,
         sprintf(s, NUM_ZERO, nom);  /* numero 0 interdit */
         erreur_syntaxe(s);
     }
-    if (nv_joueur(numero, nom, prenom, programmeur, pays, classement, commentaire, nv) == NULL) {
+    if (nv_joueur(numero, nom, firstname, programmeur, pays, classement, commentaire, nv) == NULL) {
         char *s = new_string();
         sprintf(s, FOUND_DUP, numero);  /* doublon */
         erreur_syntaxe(s);
@@ -179,12 +179,12 @@ static void raz_toutes_penalites (void) {
     penalite_desuite = penalite_bipbip = 0;
 
     /* Penalites de chauvinisme */
-    for (i = 0; i < NMAX_RONDES; i++)
+    for (i = 0; i < NMAX_ROUNDS; i++)
         penalite_chauvinisme[i] = 0;
 
     /* Penalites d'elitisme */
-#ifdef ELITISME
-    for (i = 0; i < NMAX_RONDES; i++)
+#ifdef ELITISM
+    for (i = 0; i < NMAX_ROUNDS; i++)
         penalite_elitisme[i] = 0;
 #endif
 }
@@ -363,24 +363,24 @@ commande: /* rien */
             }
         | KW_SCORE_BIP  '=' INTEGER
             {
-                score_bip = ENTIER_EN_SCORE($3);
-                if (SCORE_TROP_GRAND(score_bip))
+                score_bip = INTEGER_TO_SCORE($3);
+                if (SCORE_TOO_LARGE(score_bip))
                     erreur_syntaxe(BIP_ERROR);
-                if (EST_UNE_VICTOIRE(score_bip))
+                if (IS_VICTORY(score_bip))
                     avert_syntaxe(BIP_WINS);
             }
         | KW_SCORE_BIP  '=' INTEGER '/' INTEGER
             {
-                score_bip = ENTIER_EN_SCORE($3);
+                score_bip = INTEGER_TO_SCORE($3);
                 total_pions = $5;
                 if (total_pions < 1)
                     erreur_syntaxe(BIP_TOTAL);
                 else
                     nb_chiffres_des_scores = nombre_chiffres(total_pions);
 
-                if (SCORE_TROP_GRAND(score_bip))
+                if (SCORE_TOO_LARGE(score_bip))
                     erreur_syntaxe(BIP_ERROR);
-                else if (EST_UNE_VICTOIRE(score_bip))
+                else if (IS_VICTORY(score_bip))
                     avert_syntaxe(BIP_WINS);
             }
         | KW_COULEUR '=' '{' STRING ',' STRING '}'
@@ -550,9 +550,9 @@ pen_chauvinisme: /* rien */
                 i = $2;
                 if (i < 1)
                         avert_syntaxe(PENCH_NULL);
-                else if (i > NMAX_RONDES)
+                else if (i > NMAX_ROUNDS)
                         avert_syntaxe(PENCH_TOOFAR);
-                else while (i <= NMAX_RONDES) {
+                else while (i <= NMAX_ROUNDS) {
                         penalite_chauvinisme[i-1] = $5;
                         i++;
                         if ($3 == 0) break;
@@ -563,14 +563,14 @@ pen_chauvinisme: /* rien */
 pen_elitisme: /* rien */
     | KW_RONDE INTEGER opt_plus '=' v_pen
        {
-#ifdef ELITISME
+#ifdef ELITISM
 
                 i = $2;
                 if (i < 1)
                         avert_syntaxe(PENEL_NULL);
-                else if (i > NMAX_RONDES)
+                else if (i > NMAX_ROUNDS)
                         avert_syntaxe(PENEL_TOOFAR);
-                else while (i <= NMAX_RONDES) {
+                else while (i <= NMAX_ROUNDS) {
                         penalite_elitisme[i-1] = $5;
                         i++;
                         if ($3 == 0) break;
@@ -599,7 +599,7 @@ commande_interne:
             }
         | DIESE_RONDES '=' INTEGER
             {
-                if( ($3<1) || ($3>NMAX_RONDES) )
+                if( ($3<1) || ($3>NMAX_ROUNDS) )
                     erreur_syntaxe(ICMD_BAD_RND) ;
                 else {
                     nombre_de_rondes = $3 ;
@@ -612,13 +612,13 @@ commande_interne:
             { coef_brightwell = ($3)/2; }
         | KW_RONDESUIV
             {
-                numeroter_les_tables();
+                tables_numbering();
                 mettre_aj_scores();
-                ronde_suivante();
+                next_round();
             }
         | '&' liste_inscrits
             {
-                decouplage_absents();
+                absents_uncoupling();
             }
         | '(' INTEGER INTEGER ')'
             {
@@ -628,11 +628,11 @@ commande_interne:
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         /* mauvais appariement */
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         /* deja apparies */
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, SCORE_INCONNU);
+                        make_couple(Jn, Jb, UNKNOWN_SCORE);
             }
         | '(' INTEGER INTEGER INTEGER ')'
             {
@@ -641,14 +641,14 @@ commande_interne:
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, ENTIER_EN_SCORE($4));
+                        make_couple(Jn, Jb, INTEGER_TO_SCORE($4));
             }
         | '(' INTEGER INTEGER INT_ET_DEMI ')'
             {
-#ifndef USE_DEMI_PIONS
+#ifndef USE_HALF_DISCS
             beep();
             erreur_syntaxe(ICMD_DEMI);
 #else
@@ -658,48 +658,48 @@ commande_interne:
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, FLOTTANT_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
             }
         | '(' INTEGER INTEGER INTEGER INTEGER ')'
             {
                 long Jn=$2, Scn=$3, Jb=$4, Scb=$5, n1, n2;
-                if (MAUVAIS_TOTAL(ENTIER_EN_SCORE(Scn),ENTIER_EN_SCORE(Scb)))
+                if (BAD_TOTAL(INTEGER_TO_SCORE(Scn),INTEGER_TO_SCORE(Scb)))
                         erreur_syntaxe(ICMD_TOTS);
                 n1 = numero_inscription(Jn);
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BRES);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, ENTIER_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, INTEGER_TO_SCORE(Scn));
             }
         | '(' INTEGER INT_ET_DEMI INTEGER INT_ET_DEMI ')'
             {
-#ifndef USE_DEMI_PIONS
+#ifndef USE_HALF_DISCS
             beep();
             erreur_syntaxe(ICMD_DEMI);
 #else
         long Jn=$2, Jb=$4, n1, n2;
                 double Scn=$3, Scb=$5;
-                if (MAUVAIS_TOTAL(FLOTTANT_EN_SCORE(Scn),FLOTTANT_EN_SCORE(Scb)))
+                if (BAD_TOTAL(FLOAT_TO_SCORE(Scn),FLOAT_TO_SCORE(Scb)))
                         erreur_syntaxe(ICMD_TOTS);
                 n1 = numero_inscription(Jn);
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BRES);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, FLOTTANT_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
             }
         | KW_RAZ_COUPL
-            { raz_couplage(); }
+            { zero_coupling(); }
         | KW_TABTTR '[' INTEGER ']'
             {
                 i = 0; taille_ttr = $3;

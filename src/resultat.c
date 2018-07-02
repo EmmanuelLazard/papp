@@ -10,7 +10,7 @@
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
  * (EL) 02/02/2007 : 'calcul_departage()' utilise maintenant un tableau
- *                   'departage[]' compose de doubles.
+ *                   'tieBreak[]' compose de doubles.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
  */
@@ -25,7 +25,7 @@
 #include "couplage.h"
 #include "global.h"
 #include "more.h"
-#include "departage.h"
+#include "tiebreak.h"
 #include "crosstable.h"
 
 #ifdef ENGLISH
@@ -96,11 +96,11 @@
 
 static long resultats_complets(void) {
     long n1, n2;
-    pions_t v;
+    discs_t v;
 
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v))
-        if (COUPON_EST_VIDE(v)) return 0;
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v))
+        if (COUPON_IS_EMPTY(v)) return 0;
     return 1;
 }
 
@@ -112,7 +112,7 @@ void sauver_fichier_classement() {
 
     if (sauvegarde_fichier_classement) {
 
-        filename = nom_fichier_numerote(nom_fichier_classement, ronde);
+        filename = nom_fichier_numerote(nom_fichier_classement, current_round);
 
         assert(nom_fichier_classement != NULL );
         assert(nom_fichier_result != NULL);
@@ -156,7 +156,7 @@ void sauver_fichier_equipes() {
 
     if (sauvegarde_fichier_class_equipes) {
 
-        filename = nom_fichier_numerote(nom_fichier_class_equipes, ronde);
+        filename = nom_fichier_numerote(nom_fichier_class_equipes, current_round);
 
         assert(nom_fichier_classement != NULL );
         assert(nom_fichier_result != NULL);
@@ -192,18 +192,18 @@ void sauver_fichier_equipes() {
 /*  sauvegardes dans les fichiers "crosstable###.htm"  */
 void sauver_fichier_tableau_croise_html() {
 
-    if (sauvegarde_fichier_crosstable_HTML && (ronde >= 1)) {
+    if (sauvegarde_fichier_crosstable_HTML && (current_round >= 1)) {
 
         if (!peut_allouer_memoire_cross_table()) {
             eff_ecran();
             printf(MSG_CROSS_MEMORY);
             lire_touche();
         } else {
-            preparer_calculs_tableau_croise(ronde-1);
+            preparer_calculs_tableau_croise(current_round-1);
 
             assert(nom_fichier_crosstable_HTML != NULL );
             if (strstr(nom_fichier_crosstable_HTML, "###"))
-                sauvegarder_tableau_croise_HTML(nom_fichier_numerote(nom_fichier_crosstable_HTML, ronde));
+                sauvegarder_tableau_croise_HTML(nom_fichier_numerote(nom_fichier_crosstable_HTML, current_round));
             else
                 sauvegarder_tableau_croise_HTML(nom_fichier_crosstable_HTML);
 
@@ -217,45 +217,45 @@ void sauver_fichier_tableau_croise_html() {
  */
 void afficher_remplissage_coupons(void) {
     long i, n1, n2;
-    Paire *liste;
+    Pair *liste;
     long nb_paires;
-    pions_t v;
+    discs_t v;
 
 	/* Une ligne "vide" pour faire plaisir à Marc */
 	puts("");
 
     /* D'abord ceux qui sont remplis... */
-    CALLOC(liste, 1 + joueurs_inscrits->n / 2, Paire);
+    CALLOC(liste, 1 + registered_players->n / 2, Pair);
     nb_paires = 0;
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v))
-        if (COUPON_EST_REMPLI(v)) {
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v))
+        if (COUPON_IS_FILLED(v)) {
         i = nb_paires++;
         liste[i].j1 = trouver_joueur(n1);
         liste[i].j2 = trouver_joueur(n2);
         liste[i].score = v;
-        liste[i].valeur_tri = critere_tri_tables(n1, n2);
+        liste[i].sort_value = tables_sort_criteria(n1, n2);
     }
-    if (ronde >= 1)
-        SORT(liste, nb_paires, sizeof(Paire), tri_paires);
+    if (current_round >= 1)
+        SORT(liste, nb_paires, sizeof(Pair), pairs_sort);
     for (i = 0; i < nb_paires; i++)
         puts(coupon(liste[i].j1, liste[i].j2, liste[i].score));
     free(liste);
 
     /* ... puis les vides. */
-	CALLOC(liste, 1 + joueurs_inscrits->n / 2, Paire);
+    CALLOC(liste, 1 + registered_players->n / 2, Pair);
     nb_paires = 0;
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v))
-        if (COUPON_EST_VIDE(v)) {
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v))
+        if (COUPON_IS_EMPTY(v)) {
         i = nb_paires++;
         liste[i].j1 = trouver_joueur(n1);
         liste[i].j2 = trouver_joueur(n2);
         liste[i].score = v;
-        liste[i].valeur_tri = critere_tri_tables(n1, n2);
+        liste[i].sort_value = tables_sort_criteria(n1, n2);
     }
-    if (ronde >= 1)
-        SORT(liste, nb_paires, sizeof(Paire), tri_paires);
+    if (current_round >= 1)
+        SORT(liste, nb_paires, sizeof(Pair), pairs_sort);
     for (i = 0; i < nb_paires; i++)
         puts(coupon(liste[i].j1, liste[i].j2, liste[i].score));
     free(liste);
@@ -264,19 +264,19 @@ void afficher_remplissage_coupons(void) {
 /* fonction interactive d'entree des resultats */
 void entree_resultats() {
     long affiche_message=1, ret, n1, n2, len;
-    pions_t v;
+    discs_t v;
     long joueur, relatif ;
-    pions_t score;
+    discs_t score;
     char chaine[TAILLE_TAMPON+1], tmp[TAILLE_TAMPON+1];
-    Joueur *j1, *j2;
+    Player *j1, *j2;
 
     /* Y a-t-il des resultats a rentrer, vraiment ? */
-    iterer_ronde(ronde);
-    if (couple_suivant(&n1,&n2,&v) == 0)
+    round_iterate(current_round);
+    if (next_couple(&n1, &n2, &v) == 0)
         return;
     eff_ecran();
     while (1) {
-        if (affiche_message && resultats_complets() && nb_joueurs_napp()<2) {
+        if (affiche_message && resultats_complets() && nbr_unpaired_players()<2) {
             /* oui, ils sont complets, et les appariements aussi */
             afficher_remplissage_coupons();
             puts(ERES_COMPLETE);
@@ -318,7 +318,7 @@ prompt:
             continue;
         }
         if (strcmp(chaine, "!") == 0) {
-            if (nb_joueurs_napp() > 1) {
+            if (nbr_unpaired_players() > 1) {
                 /* appariements incomplets */
                 puts(ERES_I_PAIR);
                 beep();
@@ -355,7 +355,7 @@ prompt:
          * 145 x               effacer son coupon
          * 145 e               idem
          * -145                idem
-         * POIRIER Serge 35    le nom du joueur en toutes lettres
+         * POIRIER Serge 35    le fullname du joueur en toutes lettres
          * poirier +6          maj/min indifferentes
          * poi -8              la machine complemente automatiquement
          * poi35               et le score peut etre colle
@@ -368,7 +368,7 @@ prompt:
         if (chaine[0] == '-') {
             if (nb_completions_dans_coupons(chaine+1,&joueur,tmp) != 1)
                 joueur = atoi(chaine+1);
-            score = SCORE_INCONNU;
+            score = UNKNOWN_SCORE;
             relatif = 0;
         } else {
             if ((nb_completions_dans_coupons(chaine,&joueur,tmp) == 1) ||
@@ -378,7 +378,7 @@ prompt:
                     beep(); continue;
                   case 'x':
                   case 'e':
-                    score = SCORE_INCONNU; relatif = 0; break;
+                    score = UNKNOWN_SCORE; relatif = 0; break;
                   case '=':
                   case '+':
                   case '-':
@@ -394,8 +394,8 @@ prompt:
         }
 
         /* Verifier le score */
-        if (SCORE_TROP_GRAND(score) ||
-           (relatif && !SCORE_EST_POSITIF(score))) {
+        if (SCORE_TOO_LARGE(score) ||
+           (relatif && !SCORE_IS_POSITIVE(score))) {
             printf(ERES_I_SCORE "\n", total_pions);
             beep();
             continue;
@@ -405,7 +405,7 @@ prompt:
         /*  on n'autorise pas les scores relatifs impairs.
          *  Ceci empeche de rentrer des demi-pions en relatif...
          */
-#if (!defined(USE_DEMI_PIONS))
+#if (!defined(USE_HALF_DISCS))
 
         if (relatif && ((score+total_pions)%2 != 0)) {
             if (total_pions%2) printf(ERES_I_ODD);
@@ -416,13 +416,13 @@ prompt:
 #endif
 
         /* Chercher le coupon contenant le joueur */
-        iterer_ronde(ronde);
-        while ((ret = couple_suivant(&n1, &n2, &v)) != 0) {
+        round_iterate(current_round);
+        while ((ret = next_couple(&n1, &n2, &v)) != 0) {
             if (n1 == joueur)
                 break;
             if (n2 == joueur) {
-                if (COUPON_EST_REMPLI(score))
-                    score = SCORE_ADVERSE(score);
+                if (COUPON_IS_FILLED(score))
+                    score = OPPONENT_SCORE(score);
                 break;
             }
         }
@@ -432,10 +432,10 @@ prompt:
             continue;
         }
         /* Le coupon contenait-il deja un score? */
-        if (COUPON_EST_REMPLI(v) && SCORE_EST_POSITIF(score))
-            printf(EGALITE_SCORES(score,v) ? ERES_I_AGAIN : ERES_I_CLOBBER, fscore(v));
+        if (COUPON_IS_FILLED(v) && SCORE_IS_POSITIVE(score))
+            printf(SCORES_EQUALITY(score,v) ? ERES_I_AGAIN : ERES_I_CLOBBER, fscore(v));
 
-        *valeur_couple(n1, n2) = score;
+        *couple_value(n1, n2) = score;
 
         /* Puis afficher le scoupon apres modification */
         j1 = trouver_joueur(n1);
@@ -446,20 +446,20 @@ prompt:
 
 void imagine_resultats() {
     long n1, n2, note1, note2, demi0, demi1;
-    pions_t *valc, scn, v;
+    discs_t *valc, scn, v;
     double prob_n;
 
     /* Petite et grande moitie du nombre de pions */
     demi0 = total_pions / 2;
     demi1 = (total_pions + 1) / 2;
-    assert(!MAUVAIS_TOTAL(ENTIER_EN_SCORE(demi0), ENTIER_EN_SCORE(demi1)));
+    assert(!BAD_TOTAL(INTEGER_TO_SCORE(demi0), INTEGER_TO_SCORE(demi1)));
 
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
-        if (COUPON_EST_REMPLI(v))
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
+        if (COUPON_IS_FILLED(v))
             continue;
-        note1 = trouver_joueur(n1)->cl_jech;
-        note2 = trouver_joueur(n2)->cl_jech;
+        note1 = trouver_joueur(n1)->rating;
+        note2 = trouver_joueur(n2)->rating;
         if (note1 < 1100)  note1 = 1100;
         if (note2 < 1100)  note2 = 1100;
         /*
@@ -474,11 +474,11 @@ void imagine_resultats() {
         prob_n = 1.0 / (1.0 + pow(3.0, (note2-note1)/200.0));
 
         if (hasard(1000)/1000.0 < prob_n)
-            scn = ENTIER_EN_SCORE(demi1 + hasard(demi0+1));  /* Noir  gagne */
+            scn = INTEGER_TO_SCORE(demi1 + hasard(demi0 + 1));  /* Noir  gagne */
         else
-            scn = ENTIER_EN_SCORE(demi0 - hasard(demi0+1));  /* Blanc gagne */
-        valc = valeur_couple(n1,n2);
-        assert(valc && SCORE_EST_LEGAL(scn));
+            scn = INTEGER_TO_SCORE(demi0 - hasard(demi0 + 1));  /* Blanc gagne */
+        valc = couple_value(n1, n2);
+        assert(valc && SCORE_IS_LEGAL(scn));
         *valc = scn;
     }
 }
@@ -486,54 +486,54 @@ void imagine_resultats() {
 void raz_scores() {
     long i;
 
-    for (i=0; i<MAX_INSCRITS ; i++) {
+    for (i=0; i<MAX_REGISTERED ; i++) {
         present[i] = 0;
         score[i] = 0;
-        nb_pions[i]  = ZERO_PION;
-        departage[i] = 0.0;
-        dern_flot[i] = 0;
-        score_equipe[i] = 0;
+        nbr_discs[i]  = ZERO_DISC;
+        tieBreak[i] = 0.0;
+        last_float[i] = 0;
+        team_score[i] = 0;
     }
 }
 
 void mettre_aj_scores() {
     long i, n1, n2, f, pcb, num_elo;
-    pions_t v;
+    discs_t v;
 
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
-        assert(SCORE_EST_LEGAL(v));
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
+        assert(SCORE_IS_LEGAL(v));
         n1 = numero_inscription(n1);
         n2 = numero_inscription(n2);
         assert(n1 >= 0 && n2 >= 0);
         assert(present[n1] && present[n2]);
-        AJOUTE_SCORE(nb_pions[n1], v);
-        AJOUTE_SCORE(nb_pions[n2], SCORE_ADVERSE(v));
+        ADD_SCORE(nbr_discs[n1], v);
+        ADD_SCORE(nbr_discs[n2], OPPONENT_SCORE(v));
         /* Calcul du flottement de la ronde precedente */
         f = score[n1] - score[n2];
-        dern_flot[n1] = f;
-        dern_flot[n2] = -f;
+        last_float[n1] = f;
+        last_float[n2] = -f;
         /* Calcul des nouveaux scores */
-        if (EST_UNE_DEFAITE(v))         /* Blanc gagne */
+        if (IS_DEFEAT(v))         /* Blanc gagne */
             score[n2] += 2;
-        else if (EST_UNE_VICTOIRE(v))   /* Noir gagne  */
+        else if (IS_VICTORY(v))   /* Noir gagne  */
             score[n1] += 2;
         else                            /* Match  nul  */
             score[n1]++,score[n2]++;
     }
     /* Mettre a jour ceux qui ont joue contre bip */
-    if (EST_UNE_DEFAITE(score_bip))
+    if (IS_DEFEAT(score_bip))
         pcb = 2;
-    else if (EST_UNE_VICTOIRE(score_bip))
+    else if (IS_VICTORY(score_bip))
         pcb = 0;
     else
         pcb = 1;
-    for (i=0; i<joueurs_inscrits->n; i++) {
-        num_elo = joueurs_inscrits->liste[i]->numero;
-        if (present[i] && polarite(num_elo)==0) {
-            AJOUTE_SCORE(nb_pions[i], SCORE_ADVERSE(score_bip));
+    for (i=0; i<registered_players->n; i++) {
+        num_elo = registered_players->list[i]->ID;
+        if (present[i] && polarity(num_elo)==0) {
+            ADD_SCORE(nbr_discs[i], OPPONENT_SCORE(score_bip));
             score[i] += pcb;
-            dern_flot[i] = pcb - 1;     /* La valeur exacte importe peu */
+            last_float[i] = pcb - 1;     /* La valeur exacte importe peu */
         }
     }
 }
@@ -545,7 +545,7 @@ void sauver_fichier_resultats() {
     long     i;
 
     if (sauvegarde_fichier_result)  {
-        filename = nom_fichier_numerote(nom_fichier_result,ronde+1);
+        filename = nom_fichier_numerote(nom_fichier_result,current_round+1);
 
         /* si les noms de fichiers sont les memes, utiliser le mode d'ecriture "append" */
         if (sauvegarde_fichier_appariements &&
@@ -556,10 +556,10 @@ void sauver_fichier_resultats() {
 
             strcpy(old_more_mode,more_get_mode());
             more_set_mode("a");
-            affiche_appariements(filename, 1);
+            display_pairings(filename, 1);
             more_set_mode(old_more_mode);
         } else
-            affiche_appariements(filename, 1);
+            display_pairings(filename, 1);
 
         if (impression_automatique)
           if (!sauvegarde_fichier_classement ||
@@ -578,7 +578,7 @@ void validation_resultats(long sauve_results_en_clair) {
 
     /* Creer, si ce n'est deja fait, les numeros de table en memoire
        (mieux vaut tard que jamais !) */
-    numeroter_les_tables();
+    tables_numbering();
     /* Sauvegarder les resultats de la ronde courante dans le fichier intermediaire */
     sauve_inscrits();
     sauve_ronde();
@@ -587,7 +587,7 @@ void validation_resultats(long sauve_results_en_clair) {
         sauver_fichier_resultats();
 
     mettre_aj_scores();
-    ronde_suivante();
+    next_round();
 }
 
 /*
@@ -599,20 +599,20 @@ void validation_resultats(long sauve_results_en_clair) {
     char    chaine[256], *ligne;
     long     ronde_corr, ret, relatif;
     long     noir_corr, blanc_corr;
-    pions_t sc_noir_corr, sc_blanc_corr;
+    discs_t sc_noir_corr, sc_blanc_corr;
     long     min_ronde, max_ronde;
 
 
-    assert( ronde >= 0 && ronde < NMAX_RONDES);
+    assert( current_round >= 0 && current_round < NMAX_ROUNDS);
     min_ronde = 0;
-    max_ronde = nb_couples(ronde) ? ronde : ronde - 1;
+    max_ronde = couples_nbr(current_round) ? current_round : current_round - 1;
     if (min_ronde > max_ronde) return;
 
 correction :
 
     eff_ecran();
 
-    /* entree du numero de la ronde a modifier */
+    /* entree du ID de la ronde a modifier */
     assert(min_ronde <= max_ronde);
     printf(CORR_PROMPT, min_ronde + 1, max_ronde + 1);
     if (sscanf(lire_ligne(), "%ld", &ronde_corr) != 1)
@@ -627,20 +627,20 @@ correction :
     /* entree du bon joueur noir */
     printf("\n");
     sprintf(chaine, CORR_BLACK, couleur_1);
-    noir_corr = choix_d_un_joueur_au_clavier(chaine, joueurs_inscrits, &ligne);
+    noir_corr = choix_d_un_joueur_au_clavier(chaine, registered_players, &ligne);
     if (noir_corr <= 0)
         goto abandon;
-    printf(" %s\n",coupon(trouver_joueur(noir_corr), NULL, SCORE_INCONNU));
+    printf(" %s\n",coupon(trouver_joueur(noir_corr), NULL, UNKNOWN_SCORE));
 
     /* entree du bon score noir */
     printf("" CORR_SCORE_BLACK, couleur_1);
     if ( !comprend_score(lire_ligne(), &sc_noir_corr, &relatif) )
         goto abandon;
-    if (!SCORE_EST_POSITIF(sc_noir_corr)) {
+    if (!SCORE_IS_POSITIVE(sc_noir_corr)) {
         printf("\n\n" CORR_POSITIVE "\n");
         goto abandon;
     }
-    if (SCORE_TROP_GRAND(sc_noir_corr)) {
+    if (SCORE_TOO_LARGE(sc_noir_corr)) {
         printf("\n\n" ERES_I_SCORE "\n", total_pions);
         goto abandon;
     }
@@ -649,33 +649,33 @@ correction :
     /* entree du bon joueur blanc */
     printf("\n");
     sprintf(chaine, CORR_WHITE, couleur_2);
-    blanc_corr = choix_d_un_joueur_au_clavier(chaine, joueurs_inscrits, &ligne);
+    blanc_corr = choix_d_un_joueur_au_clavier(chaine, registered_players, &ligne);
     if (blanc_corr <= 0) goto abandon;
-    printf(" %s\n",coupon(trouver_joueur(blanc_corr), NULL, SCORE_INCONNU));
+    printf(" %s\n",coupon(trouver_joueur(blanc_corr), NULL, UNKNOWN_SCORE));
 
     /* entree du bon score blanc */
     printf("" CORR_SCORE_WHITE, couleur_2);
     if ( !comprend_score(lire_ligne(), &sc_blanc_corr, &relatif) )
         goto abandon;
-    if (!SCORE_EST_POSITIF(sc_blanc_corr)) {
+    if (!SCORE_IS_POSITIVE(sc_blanc_corr)) {
         printf("\n\n" CORR_POSITIVE "\n");
         goto abandon;
     }
-    if (SCORE_TROP_GRAND(sc_blanc_corr)) {
+    if (SCORE_TOO_LARGE(sc_blanc_corr)) {
         printf("\n\n" ERES_I_SCORE "\n", total_pions);
         goto abandon;
     }
     printf("\n  " CORR_DISCS, pions_en_chaine(sc_blanc_corr));
 
     /* verification de la somme des pions */
-    if (MAUVAIS_TOTAL(sc_noir_corr,sc_blanc_corr)) {
+    if (BAD_TOTAL(sc_noir_corr,sc_blanc_corr)) {
         printf("\n\n" CORR_SOMME "\n", total_pions);
         goto abandon;
     }
 
-    assert( !MAUVAIS_TOTAL(sc_noir_corr,sc_blanc_corr) );
+    assert( !BAD_TOTAL(sc_noir_corr,sc_blanc_corr) );
 
-    switch (changer_resultat(ronde_corr, noir_corr, blanc_corr, sc_noir_corr)) {
+    switch (change_result(ronde_corr, noir_corr, blanc_corr, sc_noir_corr)) {
     case 1 :
         /* OK, on affiche le coupon corrige */
         printf("\n\n" CORR_OK "\n",ronde_corr + 1);
@@ -683,18 +683,18 @@ correction :
         /* on regenere le fichier intermediaire */
         recreer_fichier_intermediaire();
         /* on le relit immediatement pour recalculer les scores */
-        premiere_ronde();
-        ret = lire_fichier(nom_fichier_inter, F_CONFIG);
+            first_round();
+        ret = lire_fichier(nom_fichier_inter, CONFIG_F);
         if (ret > 0)
-            erreur_fatale("ERREUR DE FICHIER dans la fonction correction_resultat");
+            fatal_error("ERREUR DE FICHIER dans la fonction correction_resultat");
 
         /* demander si on veut sauver le nouveau classement */
-        if ((ronde_corr < ronde) &&
+        if ((ronde_corr < current_round) &&
             (sauvegarde_fichier_classement ||
              sauvegarde_fichier_class_equipes ||
              sauvegarde_fichier_crosstable_HTML))   {
             sprintf(chaine, CORR_REGENERATE,
-                   nom_fichier_numerote(nom_fichier_classement, ronde));
+                   nom_fichier_numerote(nom_fichier_classement, current_round));
             if (oui_non(chaine))    {
                 sauver_fichier_classement();
                 sauver_fichier_equipes();
@@ -736,8 +736,8 @@ pressez_touche :
  */
  void fiche_individuelle(long no_joueur, const char *filename) {
     long     i, ronde0, couleur, adversaire, carcoul;
-    pions_t Score;
-    Joueur  *j;
+    discs_t Score;
+    Player  *j;
     char    *nom, ligne[256], *comm, csc[256];
 
     carcoul = strlen(couleur_1);
@@ -750,28 +750,28 @@ pressez_touche :
     beep();
     return;
     }
-    nom = trouver_joueur(no_joueur) -> nom;
+    nom = trouver_joueur(no_joueur) -> fullname;
 
     more_init(filename);
-    sprintf(ligne, FICH_HEADER, nom, no_joueur, ronde);
+    sprintf(ligne, FICH_HEADER, nom, no_joueur, current_round);
     more_line(ligne); more_line("");
-    if (ronde < 1)
+    if (current_round < 1)
         goto fin_fiche;
 
     /*
      * Toute cette partie (jusqu'a fin_fiche) est sautee si nous sommes
      * avant la premiere ronde.
      */
-    for (ronde0 = 0; ronde0 < ronde; ronde0++)
+    for (ronde0 = 0; ronde0 < current_round; ronde0++)
         if ((couleur = polar2(no_joueur,ronde0)) != 0) {
             /* Chercher l'adversaire */
             long n1, n2;
-            pions_t v;
+            discs_t v;
 
             adversaire = -1;
-            Score = SCORE_INCONNU;
-            iterer_ronde(ronde0);
-            while (couple_suivant(&n1,&n2,&v)) {
+            Score = UNKNOWN_SCORE;
+            round_iterate(ronde0);
+            while (next_couple(&n1, &n2, &v)) {
                 if (n1 == no_joueur) {
                     assert(couleur == 1);
                     adversaire = n2;
@@ -780,27 +780,27 @@ pressez_touche :
                 } else if (n2 == no_joueur) {
                     assert(couleur == 2);
                     adversaire = n1;
-                    Score = SCORE_ADVERSE(v);
+                    Score = OPPONENT_SCORE(v);
                     break;
                 }
             }
             /* L'avons-nous trouve ? */
-            assert(adversaire >= 0 && SCORE_EST_LEGAL(Score));
+            assert(adversaire >= 0 && SCORE_IS_LEGAL(Score));
             j = trouver_joueur(adversaire);
             assert(j);
             if (aff_diff_scores) {
                 strcpy(csc, fscore(Score));
             } else {
-                if (EST_UNE_VICTOIRE(Score))
+                if (IS_VICTORY(Score))
                     sprintf(csc, "%c %s", '+', pions_en_chaine(Score));
-                if (EST_UNE_DEFAITE(Score))
+                if (IS_DEFEAT(Score))
                     sprintf(csc, "%c %s", ' ', pions_en_chaine(Score));
-                if (EST_PARTIE_NULLE(Score))
+                if (IS_DRAW(Score))
                     sprintf(csc, "%c %s", '=', pions_en_chaine(Score));
             }
             sprintf(ligne,"%3ld. %-*s  %-*s  %s (%ld)", ronde0+1,
             (int)carcoul, (couleur == 1 ? couleur_1 : couleur_2), (int)nb_chiffres_des_scores + 4 ,csc,
-            j->nom, j->numero);
+            j->fullname, j->ID);
             more_line(ligne);
         } else {
             /* Le joueur a passe, indiquons-le clairement: */
@@ -809,24 +809,24 @@ pressez_touche :
         }
         /* Afficher le total des points, des pions et des scores */
         more_line("");
-        /* La variable i contient toujours le numero d'inscription */
+        /* La variable i contient toujours le ID d'inscription */
         if (aff_diff_scores) {
             /*
              * On implemente la ligne suivante :
-             * Score = 2*nb_pions[i] - ronde*total_pions;
+             * Score = 2*nbr_discs[i] - ronde*total_pions;
              */
-            Score = nb_pions[i];
-            AJOUTE_SCORE(Score, Score);
-            AJOUTE_SCORE(Score, ENTIER_EN_SCORE(-ronde*total_pions));
-            sprintf(csc, "%s%s", SCORE_EST_POSITIF(Score) ? "+":"", pions_en_chaine(Score));
+            Score = nbr_discs[i];
+            ADD_SCORE(Score, Score);
+            ADD_SCORE(Score, INTEGER_TO_SCORE(-current_round * total_pions));
+            sprintf(csc, "%s%s", SCORE_IS_POSITIVE(Score) ? "+":"", pions_en_chaine(Score));
         } else {
-            sprintf(csc, "%s", pions_en_chaine(nb_pions[i]));
+            sprintf(csc, "%s", pions_en_chaine(nbr_discs[i]));
         }
 
         if ((score[i] % 2) == 0)
-            sprintf(ligne, FICH_TRAILER_PAIR, score[i] / 2, ronde, csc);
+            sprintf(ligne, FICH_TRAILER_PAIR, score[i] / 2, current_round, csc);
         else
-            sprintf(ligne, FICH_TRAILER_IMPAIR, score[i] / 2, ronde, csc);
+            sprintf(ligne, FICH_TRAILER_IMPAIR, score[i] / 2, current_round, csc);
 
         more_line(ligne);
 
@@ -850,49 +850,49 @@ fin_fiche:
  * Calcul du departage.
  *
  * On recupere tous les resultats et on appelle
- * la fonction DepartageJoueur() du fichier departage.c
+ * la fonction DepartageJoueur() du fichier tiebreak.c
  */
 void calcul_departage (void) {
     long i, ronde0, n1, n2, n, num_elo;
-    BQ_resultats TabJ ;
-    pions_t v, pions;
+    BQ_results TabJ ;
+    discs_t v, pions;
     long SO ;
-    long nb_joueurs = joueurs_inscrits->n;
+    long nb_joueurs = registered_players->n;
 
     /* Initialisation */
     for (i = 0; i < nb_joueurs; i++)
-        departage[i]  = 0.0;
+        tieBreak[i]  = 0.0;
 
-    if (ronde <= 0)
+    if (current_round <= 0)
         return;
 
     /* Calcul du departage de chaque joueur */
     for (i = 0; i < nb_joueurs; i++) {
-        for (ronde0 = 0; ronde0 < ronde; ronde0++) {
-            TabJ.adv[ronde0] = 0 ;
-            TabJ.points_adv[ronde0] = 0 ;
-            TabJ.score[ronde0] = SCORE_INCONNU ;
-            iterer_ronde(ronde0);
-            while (couple_suivant(&n1,&n2,&v)) {
+        for (ronde0 = 0; ronde0 < current_round; ronde0++) {
+            TabJ.opp[ronde0] = 0 ;
+            TabJ.opp_points[ronde0] = 0 ;
+            TabJ.score[ronde0] = UNKNOWN_SCORE ;
+            round_iterate(ronde0);
+            while (next_couple(&n1, &n2, &v)) {
                 if (i==numero_inscription(n1)) {
                     n = numero_inscription(n2);
-                    TabJ.adv[ronde0] = n2 ;
-                    TabJ.points_adv[ronde0] = score[n] ;
+                    TabJ.opp[ronde0] = n2 ;
+                    TabJ.opp_points[ronde0] = score[n] ;
                     TabJ.score[ronde0] = v ;
                 }
                 if (i==numero_inscription(n2)) {
                     n = numero_inscription(n1);
-                    TabJ.adv[ronde0] = n1 ;
-                    TabJ.points_adv[ronde0] = score[n] ;
-                    TabJ.score[ronde0] = SCORE_ADVERSE(v) ;
+                    TabJ.opp[ronde0] = n1 ;
+                    TabJ.opp_points[ronde0] = score[n] ;
+                    TabJ.score[ronde0] = OPPONENT_SCORE(v) ;
                 }
             }
-            num_elo = joueurs_inscrits->liste[i]->numero;
-            if (joueur_etait_present(num_elo, ronde0) && polar2(num_elo, ronde0)==0) { /* joue Bip */
-                TabJ.score[ronde0] = SCORE_ADVERSE(score_bip) ;
+            num_elo = registered_players->list[i]->ID;
+            if (player_was_present(num_elo, ronde0) && polar2(num_elo, ronde0)==0) { /* joue Bip */
+                TabJ.score[ronde0] = OPPONENT_SCORE(score_bip) ;
             }
         }
-        TabJ.points_joueur = score[i] ;
-        DepartageJoueur(&TabJ, ronde-1, &departage[i], &pions, &SO) ;
+        TabJ.player_points = score[i] ;
+        DepartageJoueur(&TabJ, current_round-1, &tieBreak[i], &pions, &SO) ;
     }
 }

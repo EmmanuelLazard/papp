@@ -322,10 +322,10 @@ long lire_fichier (char *filename, long type) {
 	char *tempfile;
 #endif
 
-	assert(type == F_CONFIG || type == F_JOUEURS || type == F_NOUVEAUX);
+	assert(type == CONFIG_F || type == PLAYERS_F || type == NEWPLAYERS_F);
 #ifdef DEBUG
 	fprintf(stderr,"Lecture de '%s' (%s)\n", filename,
-		type == F_CONFIG ? "config" : "joueurs ou nouveaux");
+		type == CONFIG_F ? "config" : "joueurs ou nouveaux");
 #endif
 
 #ifdef DUPLIQUE_FICHIER_PARSER
@@ -350,13 +350,13 @@ long lire_fichier (char *filename, long type) {
 	nom_fichier_lu = filename;
 	pays_courant = pays_defaut;
 	/* Type d'analyse lexicale? */
-	if (type == F_CONFIG) {
+	if (type == CONFIG_F) {
 		BEGIN(INITIAL);
 		type_fichier_config = CORRECT ;
 		type_fichier_intermediaire = OLD ;
 	} else {
 		BEGIN(UNQUOTED) ;
-		fichier_des_nouveaux = ((type == F_NOUVEAUX) ? 1 : 0) ;
+		fichier_des_nouveaux = ((type == NEWPLAYERS_F) ? 1 : 0) ;
 	}
 	ret = yyparse();
 	fclose(yyin);
@@ -367,7 +367,7 @@ long lire_fichier (char *filename, long type) {
 #endif
 
 
-    if (type == F_CONFIG)
+    if (type == CONFIG_F)
 		pays_defaut = pays_courant;
 	return (ret + erreur_constatee);
 }
@@ -377,7 +377,7 @@ long lire_fichier (char *filename, long type) {
 void erreur_syntaxe(const char *erreur) {
 	avert_syntaxe(erreur);
 	if (++erreur_constatee >= 15)
-		erreur_fatale(TOO_MANY_ERRS);
+		fatal_error(TOO_MANY_ERRS);
 }
 
 void avert_syntaxe(const char *erreur) {

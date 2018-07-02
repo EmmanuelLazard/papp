@@ -3,16 +3,22 @@
  *  - Gestion des joueurs
  *  - Players management
  *
+ * (EL) 15/06/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change.
  * (EL) 16/07/2012 : v1.34, no change
- * (EL) 05/05/2008 : v1.33 Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
-					 Ajout du champ 'nouveau' dans la structure _Joueur. Cela permet de savoir
+ * (EL) 05/05/2008 : v1.33 All 'int' become 'long' to force 4 bytes storage.
+ 					 Addition of field 'newPlayer' in _Player structure.
+ 					 Enable to know if the player is in the "nouveaux" file. Important for ELO.
+					 Ajout du champ 'newPlayer' dans la structure _Player. Cela permet de savoir
                      si le joueur est dans le fichier "nouveaux". Important pour le fichier ELO.
- * (EL) 21/04/2008 : v1.32 Ajout du nom de famille et prenom dans la structure _Joueur
+ * (EL) 21/04/2008 : v1.32 Ajout du fullname de famille et prenom dans la structure _Player
+ 					 Addition of name and firstname in _Player structure.
+ 					 Necessary to separate these information in the "nouveaux" file
                      Cela est necessaire pour separer ces informations dans le fichier nouveaux.
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 02/02/2007 : changement du type 'departage[]' en double
+ * (EL) 02/02/2007 : changement du type 'tieBreak[]' en double
+                      tieBreak[] is changed to 'double' type
  * (EL) 13/01/2007 : v1.30 E. Lazard, no change
  */
 
@@ -24,60 +30,60 @@
 #include "pions.h"
 
 
-typedef struct _Joueur {
-	char *nom_famille;
-	char *prenom;           /* on distingue ces infos pour le fichier nouveaux */
-    char *nom;              /* Nom complet du joueur   */
-    char *pays;             /* Sa nationalite          */
-	long  numero;           /* Son numero Elo          */
-    long  cl_jech;          /* Son classement de Jech  */
-    char *comment;          /* Commentaires divers     */
-	long nouveau;			/* nouveau joueur ?        */
-    struct _Joueur *next;   /* suivant dans la liste   */
-    struct _Joueur *nxt2;   /* suivant pour le hachage */
-} Joueur;
+typedef struct _Player {
+	char *family_name;
+	char *firstname;        /* Used in 'nouveaux' file */
+    char *fullname;         /* Player's full name      */
+    char *country;          /* Nationality             */
+	long  ID;               /* ID in WOF database      */
+    long  rating;           /* World rating            */
+    char *comment;          /* Comments                */
+	long newPlayer;			/* is a new player ?       */
+    struct _Player *next;   /* next in list            */
+    struct _Player *nxt2;   /* next for hashing        */
+} Player;
 
 typedef struct {
-    long nb_slots;          /* nombre de slots alloues */
-    long n;                 /* longueur de la liste    */
-    Joueur **liste;         /* tableau de pointeurs    */
-} Liste_joueurs;
+    long slots_number;     /* number of allocated slots */
+    long n;                /* list length               */
+    Player **list;         /* pointers array            */
+} Players_list;
 
-typedef struct _zone_i {
-    char *pays;             /* nom du pays                */
-    long  min_ins;          /* plus petit numero autorise */
-	long  max_ins;          /* plus grand numero autorise */
-    struct _zone_i *next;   /* suivant dans la liste      */
-} Zone_Insertion;
+typedef struct _i_zone {
+    char *country;          /* country fullname                                */
+    long  min_ins;          /* smallest authorized ID - plus petit ID autorise */
+	long  max_ins;          /* largest authorized ID - plus grand ID autorise  */
+    struct _i_zone *next;   /* next in list - suivant dans la liste            */
+} Insertion_Zone;
 
-#define MAX_INSCRITS    256
+#define MAX_REGISTERED    256
 
-extern Liste_joueurs
-            *joueurs_inscrits,
-            *joueurs_nouveaux,
-            *joueurs_emigres,
-            *capitaines_equipes;
+extern Players_list
+            *registered_players,
+            *new_players,
+            *emigrant_players,
+            *team_captain;
 
-extern long         present[MAX_INSCRITS];
-extern long         score[MAX_INSCRITS];
-extern pions_t      nb_pions[MAX_INSCRITS];
-extern double       departage[MAX_INSCRITS];
-extern long         dern_flot[MAX_INSCRITS];
-extern long         score_equipe[MAX_INSCRITS];
+extern long         present[MAX_REGISTERED];
+extern long         score[MAX_REGISTERED];
+extern discs_t      nbr_discs[MAX_REGISTERED];
+extern double       tieBreak[MAX_REGISTERED];
+extern long         last_float[MAX_REGISTERED];
+extern long         team_score[MAX_REGISTERED];
 
 /* Operations, definies dans joueurs.c et entrejou.c */
 
-Joueur *nv_joueur (long numero, const char *nom, const char *prenom,
+Player *nv_joueur (long numero, const char *nom, const char *prenom,
     const char *programmeur, const char *pays, long classement,
     const char *commentaire, const long nv);
-Joueur *trouver_joueur (long numero);
-Joueur *premier_joueur(void);   /* premier joueur de la base */
+Player *trouver_joueur (long numero);
+Player *premier_joueur(void);   /* premier joueur de la base */
 long nombre_joueurs_base(void);  /* nb de joueurs dans la base*/
 long inserer_joueur (const char *pays);
 void nv_zone(const char *pays, long min_ins, long max_ins);
-Zone_Insertion *premiere_zone(void);
-char *coupon(const Joueur *j1, const Joueur *j2, pions_t score);
-char *entree_clav_nom_joueur(const char *prompt, char *tampon_initial, Liste_joueurs *parmi_ces_joueurs);
+Insertion_Zone *premiere_zone(void);
+char *coupon(const Player *j1, const Player *j2, discs_t score);
+char *entree_clav_nom_joueur(const char *prompt, char *tampon_initial, Players_list *parmi_ces_joueurs);
 void entree_joueurs(void);
 void affiche_inscrits(const char *filename);
 void affiche_equipes(const char *filename);
@@ -89,14 +95,14 @@ long change_nationalite (long numero, const char *pays);
 
 /* Gestion des listes */
 
-Liste_joueurs *creer_liste(void);
-Liste_joueurs *ajouter_joueur(Liste_joueurs *l, Joueur *j);
-Liste_joueurs *recherche_nom(Liste_joueurs *l, const char *chaine);
-Liste_joueurs *recherche_nom_dans_liste(Liste_joueurs *lj, const char *chaine, Liste_joueurs *liste_completion);
-void vider_liste(Liste_joueurs *l);
+Players_list *creer_liste(void);
+Players_list *ajouter_joueur(Players_list *l, Player *j);
+Players_list *recherche_nom(Players_list *l, const char *chaine);
+Players_list *recherche_nom_dans_liste(Players_list *lj, const char *chaine, Players_list *liste_completion);
+void vider_liste(Players_list *l);
 
 #define TOUS_LES_JOUEURS (-1)
-long choix_d_un_joueur_au_clavier(const char *prompt, Liste_joueurs *parmi_ces_joueurs, char **chaine);
+long choix_d_un_joueur_au_clavier(const char *prompt, Players_list *parmi_ces_joueurs, char **chaine);
 long nb_completions_dans_coupons(char *chaine, long *nroJoueur, char *chaineScore);
 
 

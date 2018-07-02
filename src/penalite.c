@@ -37,7 +37,7 @@ void calcul_appariements (void) {
     long i, n, x, y;
 
     eff_ecran();
-    if ((nbj = nb_joueurs_napp()) < 2)
+    if ((nbj = nbr_unpaired_players()) < 2)
         goto affiche;
 
     /* Peut-on faire un toutes-rondes ? */
@@ -46,8 +46,8 @@ void calcul_appariements (void) {
      * On note 'nbje' le nombre de joueurs effectifs (i.e. incluant Bip)
      * et 'bip' contient l'index de Bip, ou bien 0 si Bip n'existe pas.
      *
-     * Chaque joueur est alors repere par trois nombres: son numero
-     * Elo 'n', son numero d'inscription 'i' et son index 'x'. L'index
+     * Chaque joueur est alors repere par trois nombres: son ID
+     * Elo 'n', son ID d'inscription 'i' et son index 'x'. L'index
      * sert a indicer la matrice des penalites, et varie entre 0 et
      * nbje-1. On construit deux tables tbl et tbli donnant les
      * correspondances:
@@ -73,9 +73,9 @@ void calcul_appariements (void) {
         /* Table des numeros Elo en fonction de l'index */
         min_score = LONG_MAX;
         CALLOC(tbl, nbje, long);
-        for (x = i = 0; i < joueurs_inscrits->n; i++) {
-            n = joueurs_inscrits->liste[i]->numero;
-            if (present[i] && polarite(n) == 0)
+        for (x = i = 0; i < registered_players->n; i++) {
+            n = registered_players->list[i]->ID;
+            if (present[i] && polarity(n) == 0)
                 tbl[x++] = n;
             if (present[i] && score[i] < min_score)
                 min_score = score[i];
@@ -93,7 +93,7 @@ void calcul_appariements (void) {
          * difficilement reproductibles...
          */
 #ifndef MELANGE
-        if (ronde == 0)
+        if (current_round == 0)
 #endif
         for (x = 0; x < nbj; x++) {
             y = hasard(nbj-x) + x;
@@ -103,8 +103,8 @@ void calcul_appariements (void) {
             tbl[y] = n;
         }
         /* Table des index en fonction du no d'inscription */
-        CALLOC(tbli, joueurs_inscrits->n, long);
-        for (i = 0; i < joueurs_inscrits->n; i++)
+        CALLOC(tbli, registered_players->n, long);
+        for (i = 0; i < registered_players->n; i++)
             tbli[i] = -1;
         for (x = 0; x < nbj; x++) {
             i = numero_inscription(tbl[x]);
@@ -123,8 +123,8 @@ void calcul_appariements (void) {
         free(m);
     }
 affiche:
-    affiche_appariements(NULL, 0);
-    sauver_fichier_appariements();
+    display_pairings(NULL, 0);
+    save_pairings_file();
 }
 
 /*
@@ -160,7 +160,7 @@ affiche:
 static void appariement_optimal (void) {
     long i, j, n, n1, n2, ronde0, n1_est_noir;
     long *v, *ecart_couleur, *dern_couleur ;
-    pions_t nb_pions_n1;
+    discs_t nb_pions_n1;
     pen_t resultat;
 #ifdef COMPENSATION_FLOATS
     long **gain_partie;
@@ -171,9 +171,9 @@ static void appariement_optimal (void) {
     /*
      * Allocation des tableaux et initialisation
      */
-    CALLOC(ecart_couleur, joueurs_inscrits->n, long);
-    CALLOC(dern_couleur,  joueurs_inscrits->n, long);
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    CALLOC(ecart_couleur, registered_players->n, long);
+    CALLOC(dern_couleur, registered_players->n, long);
+    for (i = 0; i < registered_players->n; i++)
     ecart_couleur[i] = dern_couleur[i] = 0;
     CALLOC(v, nbje, long);
 
@@ -186,17 +186,17 @@ static void appariement_optimal (void) {
      * a la ronde r.
      */
 
-    gp_rows = 1 + joueurs_inscrits->n;
-    gp_columns = 1 + ronde;
+    gp_rows = 1 + registered_players->n;
+    gp_columns = 1 + current_round;
 
     gain_partie = (long**)malloc((unsigned) gp_rows * sizeof(long*));
     gain_partie_buff = (long*)malloc((unsigned) gp_rows * gp_columns * sizeof(long));
 
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
          gain_partie[i] = &gain_partie_buff[i*gp_columns];
 
-    for (i = 0; i < joueurs_inscrits->n; i++)
-        for (j = 0; j < ronde; j++)
+    for (i = 0; i < registered_players->n; i++)
+        for (j = 0; j < current_round; j++)
             gain_partie[i][j] = 0;
 #endif
 
@@ -218,10 +218,10 @@ static void appariement_optimal (void) {
      */
     printf(PENA_REPLAY);
     fflush(stdout);
-    for (ronde0 = 0; ronde0 < ronde; ronde0++) {
+    for (ronde0 = 0; ronde0 < current_round; ronde0++) {
         long k1, k2;
-        iterer_ronde(ronde0);
-        while (couple_suivant(&n1,&n2,&nb_pions_n1)) {
+        round_iterate(ronde0);
+        while (next_couple(&n1, &n2, &nb_pions_n1)) {
             n1 = numero_inscription(n1); assert(n1 >= 0);
             n2 = numero_inscription(n2); assert(n2 >= 0);
 
@@ -229,7 +229,7 @@ static void appariement_optimal (void) {
             /* Petit squat des "couleurs" */
             ++ecart_couleur[n1];        /* Noir = +1 */
             --ecart_couleur[n2];        /* Blanc= -1 */
-            if (ronde0 == ronde-1)
+            if (ronde0 == current_round-1)
                 dern_couleur[n1] = 1, dern_couleur[n2] = 2;
             /* fin du squat! */
             }
@@ -237,10 +237,10 @@ static void appariement_optimal (void) {
 #ifdef COMPENSATION_FLOATS
             {
             /* remplissage de l'historique des gains */
-            if (EST_UNE_VICTOIRE(nb_pions_n1))
+            if (IS_VICTORY(nb_pions_n1))
                 gain_partie[n1][ronde0] = 2;
             else /*gain noir*/
-            if (EST_UNE_DEFAITE(nb_pions_n1))
+            if (IS_DEFEAT(nb_pions_n1))
                 gain_partie[n2][ronde0] = 2;
             else { /*gain blanc*/
                 gain_partie[n1][ronde0] = 1;
@@ -256,7 +256,7 @@ static void appariement_optimal (void) {
                 assert(k1 != k2);
                 AJOUTE_PENALITE(m[k1][k2], penalite_mcoul);
                 AJOUTE_PENALITE(m[k2][k1], penalite_copp);
-                if (ronde0 == ronde-1) {
+                if (ronde0 == current_round-1) {
                     AJOUTE_PENALITE(m[k1][k2], penalite_desuite);
                     AJOUTE_PENALITE(m[k2][k1], penalite_desuite);
                 }
@@ -268,7 +268,7 @@ static void appariement_optimal (void) {
                 if (polar2(tbl[i],ronde0) == 0) {
                     AJOUTE_PENALITE(m[i][bip], penalite_bipbip);
                     AJOUTE_PENALITE(m[bip][i], penalite_bipbip);
-                    if (ronde0 == ronde-1) {
+                    if (ronde0 == current_round-1) {
                         AJOUTE_PENALITE(m[i][bip], penalite_desuite);
                         AJOUTE_PENALITE(m[bip][i], penalite_desuite);
                     }
@@ -328,7 +328,7 @@ static void appariement_optimal (void) {
      */
     printf(PENA_FLOAT);
     fflush(stdout);
-#ifdef ELITISME
+#ifdef ELITISM
     printf(PENA_ELITISM);
     fflush(stdout);
 #endif
@@ -350,9 +350,9 @@ static void appariement_optimal (void) {
                     af = nmax_flottement - 1;
                 pflot = penalite_flottement[af];
                 /* Ajouter les penalites de flottement cumule */
-                if (n1 >= 0 && f * dern_flot[n1] > 0)
+                if (n1 >= 0 && f * last_float[n1] > 0)
                     AJOUTE_PENALITE(pflot, penalite_flcum);
-                if (n2 >= 0 && f * dern_flot[n2] < 0)
+                if (n2 >= 0 && f * last_float[n2] < 0)
                     AJOUTE_PENALITE(pflot, penalite_flcum);
 
 
@@ -363,14 +363,14 @@ static void appariement_optimal (void) {
                  * precedente et perdu (auquel cas il doit flotter bas) ou si
                  * il a flotte bas et gagne (auquel cas il doit flotter haut)
                  */
-                if (ronde > 1) {
-                    if (( n1 >= 0   &&   f * dern_flot[n1] < 0) &&
-                      ((dern_flot[n1] < 0  &&  gain_partie[n1][ronde-1] == 0 ) ||
-                      (dern_flot[n1] > 0  &&  gain_partie[n1][ronde-1] == 2 ) ))
+                if (current_round > 1) {
+                    if (( n1 >= 0   &&   f * last_float[n1] < 0) &&
+                      ((last_float[n1] < 0  &&  gain_partie[n1][current_round-1] == 0 ) ||
+                      (last_float[n1] > 0  &&  gain_partie[n1][current_round-1] == 2 ) ))
                         RETRANCHE_PENALITE(pflot, minoration_fac);
-                    if (( n2 >= 0   &&   f * dern_flot[n2] > 0) &&
-                      ((dern_flot[n2] < 0  &&  gain_partie[n2][ronde-1] == 0 ) ||
-                      (dern_flot[n2] > 0  &&  gain_partie[n2][ronde-1] == 2 ) ))
+                    if (( n2 >= 0   &&   f * last_float[n2] > 0) &&
+                      ((last_float[n2] < 0  &&  gain_partie[n2][current_round-1] == 0 ) ||
+                      (last_float[n2] > 0  &&  gain_partie[n2][current_round-1] == 2 ) ))
                         RETRANCHE_PENALITE(pflot, minoration_fac);
                 }
 #else
@@ -380,9 +380,9 @@ static void appariement_optimal (void) {
                  * Retrancher les minorations (flottement anti-cumule)
                  */
 
-                if (n1 >= 0 && f * dern_flot[n1] < 0)
+                if (n1 >= 0 && f * last_float[n1] < 0)
                     RETRANCHE_PENALITE(pflot, minoration_fac);
-                if (n2 >= 0 && f * dern_flot[n2] > 0)
+                if (n2 >= 0 && f * last_float[n2] > 0)
                     RETRANCHE_PENALITE(pflot, minoration_fac);
 
 #endif
@@ -391,12 +391,12 @@ static void appariement_optimal (void) {
                 /*
                  * Ajouter la penalite d'elitisme
                  */
-#ifdef ELITISME
-                if ((penalite_elitisme[ronde] != 0) && (f != 0) &&
+#ifdef ELITISM
+                if ((penalite_elitisme[current_round] != 0) && (f != 0) &&
                   (sci >= 0) && (scj >= 0)) {
                     pen_t  valeur_elitisme;
 
-                    valeur_elitisme = (penalite_elitisme[ronde] * (sci+scj) * abs(f)) / 2;
+                    valeur_elitisme = (penalite_elitisme[current_round] * (sci+scj) * abs(f)) / 2;
                     assert( valeur_elitisme >= 0); /* pas de gag d'overflow ! */
                     AJOUTE_PENALITE(pflot, valeur_elitisme);
                 }
@@ -415,13 +415,13 @@ static void appariement_optimal (void) {
     for (i = 0; i < nbj; i++)
         for (j = 0; j < nbj; j++)
             if (i < j) {
-                Joueur *j1, *j2;
+                Player *j1, *j2;
 
                 j1 = trouver_joueur(tbl[i]);
                 j2 = trouver_joueur(tbl[j]);
-                if (!compare_chaines_non_sentitif(j1->pays, j2->pays)) {
-                    AJOUTE_PENALITE(m[i][j], penalite_chauvinisme[ronde]);
-                    AJOUTE_PENALITE(m[j][i], penalite_chauvinisme[ronde]);
+                if (!compare_chaines_non_sentitif(j1->country, j2->country)) {
+                    AJOUTE_PENALITE(m[i][j], penalite_chauvinisme[current_round]);
+                    AJOUTE_PENALITE(m[j][i], penalite_chauvinisme[current_round]);
                 }
             }
     /*
@@ -446,23 +446,23 @@ static void appariement_optimal (void) {
             assert(numero_inscription(n2) >= 0);
             /* Derniere phase: optimisation chromatique */
             if (m[v[i]][v[i+1]] != m[v[i+1]][v[i]]) {
-                accoupler(n1, n2, SCORE_INCONNU);
+                make_couple(n1, n2, UNKNOWN_SCORE);
                 n1_est_noir = 1;
             } else {
                 long f = optimisation_chromatique(n1,n2);
                 if (f == 1) {
-                    accoupler(n1, n2, SCORE_INCONNU);
+                    make_couple(n1, n2, UNKNOWN_SCORE);
                     n1_est_noir = 1;
                 } else if (f == 2) {
-                    accoupler(n2, n1, SCORE_INCONNU);
+                    make_couple(n2, n1, UNKNOWN_SCORE);
                     n1_est_noir = 0;
                 } else {
                 /* Les couleurs sont indifferentes */
                     if (hasard(2)) {
-                        accoupler(n1, n2, SCORE_INCONNU);
+                        make_couple(n1, n2, UNKNOWN_SCORE);
                         n1_est_noir = 1;
                     } else {
-                        accoupler(n2, n1, SCORE_INCONNU);
+                        make_couple(n2, n1, UNKNOWN_SCORE);
                         n1_est_noir = 0;
                     }
                 }
@@ -476,9 +476,9 @@ static void appariement_optimal (void) {
             n2 = n;
         }
         printf("%-8.8s(%6ld)   %-8.8s(%6ld)%10ld\n",
-           ((n1>=0) ? trouver_joueur(n1)->nom : BYE_NAME),
+           ((n1>=0) ? trouver_joueur(n1)->fullname : BYE_NAME),
            n1,
-           ((n2>=0) ? trouver_joueur(n2)->nom : BYE_NAME),
+           ((n2>=0) ? trouver_joueur(n2)->fullname : BYE_NAME),
            n2,
            (long) m[v[i]][v[i+1]]);
 /*  printf("%ld\t%ld\t%8ld\n", n1, n2, (long) m[v[i]][v[i+1]] ); */
@@ -511,7 +511,7 @@ static void appariement_optimal (void) {
  */
 
 static long optimisation_chromatique (long n1, long n2) {
-    long ronde0 = ronde, p1, p2;
+    long ronde0 = current_round, p1, p2;
 
     while (--ronde0 >= 0) {
         p1 = polar2(n1, ronde0);

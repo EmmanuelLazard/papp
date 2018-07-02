@@ -6,6 +6,7 @@
  *  the "makefile" file for operating systems/compilers
  *  supporting makefiles.
  *
+ * (EL) 15/06/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change.
  * (EL) 16/07/2012 : v1.34, no change
@@ -25,26 +26,26 @@
 #ifndef OPTIONS_GLOBALES_PAPP
 #define OPTIONS_GLOBALES_PAPP
 
-    /* on pose un verrou */
-    #define VERROU
+    /* A lock is put */
+    #define LOCK
 
-    #define NUMEROS_TABLES
-    #define AFFICH_COUPLAGES_ALPHA
+    #define TABLES_NUMBER
+    #define DISPLAY_ALPHA_COUPLING
     #define COMPENSATION_FLOATS
-    #define ELITISME
-    #define USE_DEMI_PIONS
+    #define ELITISM
+    #define USE_HALF_DISCS
 
 #endif  /*   #ifndef OPTIONS_GLOBALES_PAPP ...   */
 
 /*
  * The following blocks allow to make
- * specific compilators changes
+ * specific compilers changes
  */
 
-#ifndef OPTIONS_COMPILATEUR
-#define OPTIONS_COMPILATEUR
+#ifndef COMPILER_OPTIONS
+#define COMPILER_OPTIONS
 
-/* -- compilateur Codewarrior 9 pour Macintosh -- */
+/* -- Codewarrior 9 compiler for Macintosh -- */
     #if defined(__MWERKS__) && defined(macintosh)
 
        #include "SIOUX.H"
@@ -82,7 +83,7 @@
           #define assert  papp_assert
 
           #define papp_assert(test) \
-                  ((test) ? (void)0 : ( erreur_fatale("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
+                  ((test) ? (void)0 : ( fatal_error("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
        #endif
 
        /* CodeWarrior ne connait pas alloca */
@@ -94,7 +95,7 @@
     #endif
 
 
-/* -- compilateur THINK C pour Macintosh OS 9-- */
+/* -- THINK C compiler for Macintosh OS 9-- */
     #ifdef __THINK_C__
 
        #define DEBUG_PEN           1
@@ -112,7 +113,7 @@
           #define assert  papp_assert
 
           #define papp_assert(test) \
-                  ((test) ? (void)0 : ( erreur_fatale("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
+                  ((test) ? (void)0 : ( fatal_error("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
        #endif
 
        /* no need do duplicate the files before parsing them on Macintosh */
@@ -120,7 +121,7 @@
 
     #endif
 
-/* -- compilateur Codewarrior 9 pour Windows -- */
+/* -- Codewarrior 9 compiler for Windows -- */
     #if defined(__MWERKS__) && defined(__INTEL__)
 
        #define PAPP_WINDOWS_METROWERKS    1
@@ -150,7 +151,7 @@
           #define assert  papp_assert
 
           #define papp_assert(test) \
-                  ((test) ? (void)0 : ( erreur_fatale("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
+                  ((test) ? (void)0 : ( fatal_error("\nassert failed: " __FILE__ ":" _STR(__LINE__) " " #test) , (void)0))
        #endif
 
        /* CodeWarrior ne connait pas alloca */
@@ -161,8 +162,8 @@
 
     #endif
 
-/* -- Borland C++ pour Windows. Jakub Tesinsky               */
-/* -- Attention : compiler avec le modele "Far" de memoire ! */
+/* -- Borland C++ compiler for Windows. Jakub Tesinsky               */
+/* -- Beware: compile with 'far' memory model. */
     #ifdef   __BORLANDC__
 
         /* we have to duplicate the files before parsing them, */
@@ -171,7 +172,7 @@
 
     #endif
 
-/* -- Ms-Dos compilation -- */
+/* -- Ms-Dos compiling -- */
     #if defined(__MSDOS__)
 
         /* maybe we need do duplicate the files before parsing    */
@@ -181,13 +182,13 @@
 
     #endif
 
-/* -- Unix compilation -- */
-/* -- Voir aussi le fichier "makefile" -- */
+/* -- Unix compiling -- */
+/* -- See also "makefile" -- */
     #if defined(UNIX_SYSV) || defined(UNIX_BSD)
 
-        /* no need do duplicate the files before parsing them on unix */
+        /* no need to duplicate the files before parsing them on unix */
         #undef DUPLIQUE_FICHIER_PARSER
 
     #endif
 
-#endif  /*   #ifndef OPTIONS_COMPILATEUR ...   */
+#endif  /*   #ifndef COMPILER_OPTIONS ...   */

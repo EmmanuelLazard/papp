@@ -327,7 +327,7 @@ bout_a_bout (char *s1, char *s2) {
     return s3;
 }
 
-static void Nouveau_joueur (long numero, const char *nom, const char *prenom,
+static void Nouveau_joueur (long numero, const char *nom, const char *firstname,
         const char *programmeur, const char *pays, long classement,
         const char *commentaire, const long nv) {
     if (!numero) {
@@ -335,7 +335,7 @@ static void Nouveau_joueur (long numero, const char *nom, const char *prenom,
         sprintf(s, NUM_ZERO, nom);  /* numero 0 interdit */
         erreur_syntaxe(s);
     }
-    if (nv_joueur(numero, nom, prenom, programmeur, pays, classement, commentaire, nv) == NULL) {
+    if (nv_joueur(numero, nom, firstname, programmeur, pays, classement, commentaire, nv) == NULL) {
         char *s = new_string();
         sprintf(s, FOUND_DUP, numero);  /* doublon */
         erreur_syntaxe(s);
@@ -372,12 +372,12 @@ static void raz_toutes_penalites (void) {
     penalite_desuite = penalite_bipbip = 0;
 
     /* Penalites de chauvinisme */
-    for (i = 0; i < NMAX_RONDES; i++)
+    for (i = 0; i < NMAX_ROUNDS; i++)
         penalite_chauvinisme[i] = 0;
 
     /* Penalites d'elitisme */
-#ifdef ELITISME
-    for (i = 0; i < NMAX_RONDES; i++)
+#ifdef ELITISM
+    for (i = 0; i < NMAX_ROUNDS; i++)
         penalite_elitisme[i] = 0;
 #endif
 }
@@ -2114,10 +2114,10 @@ yyreduce:
   case 60:
 #line 365 "pap.y"
     {
-                score_bip = ENTIER_EN_SCORE((yyvsp[(3) - (3)].integer));
-                if (SCORE_TROP_GRAND(score_bip))
+                score_bip = INTEGER_TO_SCORE((yyvsp[(3) - (3)].integer));
+                if (SCORE_TOO_LARGE(score_bip))
                     erreur_syntaxe(BIP_ERROR);
-                if (EST_UNE_VICTOIRE(score_bip))
+                if (IS_VICTORY(score_bip))
                     avert_syntaxe(BIP_WINS);
             ;}
     break;
@@ -2125,16 +2125,16 @@ yyreduce:
   case 61:
 #line 373 "pap.y"
     {
-                score_bip = ENTIER_EN_SCORE((yyvsp[(3) - (5)].integer));
+                score_bip = INTEGER_TO_SCORE((yyvsp[(3) - (5)].integer));
                 total_pions = (yyvsp[(5) - (5)].integer);
                 if (total_pions < 1)
                     erreur_syntaxe(BIP_TOTAL);
                 else
                     nb_chiffres_des_scores = nombre_chiffres(total_pions);
 
-                if (SCORE_TROP_GRAND(score_bip))
+                if (SCORE_TOO_LARGE(score_bip))
                     erreur_syntaxe(BIP_ERROR);
-                else if (EST_UNE_VICTOIRE(score_bip))
+                else if (IS_VICTORY(score_bip))
                     avert_syntaxe(BIP_WINS);
             ;}
     break;
@@ -2319,9 +2319,9 @@ yyreduce:
                 i = (yyvsp[(2) - (5)].integer);
                 if (i < 1)
                         avert_syntaxe(PENCH_NULL);
-                else if (i > NMAX_RONDES)
+                else if (i > NMAX_ROUNDS)
                         avert_syntaxe(PENCH_TOOFAR);
-                else while (i <= NMAX_RONDES) {
+                else while (i <= NMAX_ROUNDS) {
                         penalite_chauvinisme[i-1] = (yyvsp[(5) - (5)].integer);
                         i++;
                         if ((yyvsp[(3) - (5)].integer) == 0) break;
@@ -2332,14 +2332,14 @@ yyreduce:
   case 115:
 #line 565 "pap.y"
     {
-#ifdef ELITISME
+#ifdef ELITISM
 
                 i = (yyvsp[(2) - (5)].integer);
                 if (i < 1)
                         avert_syntaxe(PENEL_NULL);
-                else if (i > NMAX_RONDES)
+                else if (i > NMAX_ROUNDS)
                         avert_syntaxe(PENEL_TOOFAR);
-                else while (i <= NMAX_RONDES) {
+                else while (i <= NMAX_ROUNDS) {
                         penalite_elitisme[i-1] = (yyvsp[(5) - (5)].integer);
                         i++;
                         if ((yyvsp[(3) - (5)].integer) == 0) break;
@@ -2372,7 +2372,7 @@ yyreduce:
   case 118:
 #line 601 "pap.y"
     {
-                if( ((yyvsp[(3) - (3)].integer)<1) || ((yyvsp[(3) - (3)].integer)>NMAX_RONDES) )
+                if( ((yyvsp[(3) - (3)].integer)<1) || ((yyvsp[(3) - (3)].integer)>NMAX_ROUNDS) )
                     erreur_syntaxe(ICMD_BAD_RND) ;
                 else {
                     nombre_de_rondes = (yyvsp[(3) - (3)].integer) ;
@@ -2391,16 +2391,16 @@ yyreduce:
   case 120:
 #line 614 "pap.y"
     {
-                numeroter_les_tables();
+                tables_numbering();
                 mettre_aj_scores();
-                ronde_suivante();
+                next_round();
             ;}
     break;
 
   case 121:
 #line 620 "pap.y"
     {
-                decouplage_absents();
+                absents_uncoupling();
             ;}
     break;
 
@@ -2413,11 +2413,11 @@ yyreduce:
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         /* mauvais appariement */
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         /* deja apparies */
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, SCORE_INCONNU);
+                        make_couple(Jn, Jb, UNKNOWN_SCORE);
             ;}
     break;
 
@@ -2429,17 +2429,17 @@ yyreduce:
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, ENTIER_EN_SCORE((yyvsp[(4) - (5)].integer)));
+                        make_couple(Jn, Jb, INTEGER_TO_SCORE((yyvsp[(4) - (5)].integer)));
             ;}
     break;
 
   case 124:
 #line 650 "pap.y"
     {
-#ifndef USE_DEMI_PIONS
+#ifndef USE_HALF_DISCS
             beep();
             erreur_syntaxe(ICMD_DEMI);
 #else
@@ -2449,10 +2449,10 @@ yyreduce:
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BPAIR);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, FLOTTANT_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
             ;}
     break;
@@ -2461,45 +2461,45 @@ yyreduce:
 #line 668 "pap.y"
     {
                 long Jn=(yyvsp[(2) - (6)].integer), Scn=(yyvsp[(3) - (6)].integer), Jb=(yyvsp[(4) - (6)].integer), Scb=(yyvsp[(5) - (6)].integer), n1, n2;
-                if (MAUVAIS_TOTAL(ENTIER_EN_SCORE(Scn),ENTIER_EN_SCORE(Scb)))
+                if (BAD_TOTAL(INTEGER_TO_SCORE(Scn),INTEGER_TO_SCORE(Scb)))
                         erreur_syntaxe(ICMD_TOTS);
                 n1 = numero_inscription(Jn);
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BRES);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, ENTIER_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, INTEGER_TO_SCORE(Scn));
             ;}
     break;
 
   case 126:
 #line 682 "pap.y"
     {
-#ifndef USE_DEMI_PIONS
+#ifndef USE_HALF_DISCS
             beep();
             erreur_syntaxe(ICMD_DEMI);
 #else
         long Jn=(yyvsp[(2) - (6)].integer), Jb=(yyvsp[(4) - (6)].integer), n1, n2;
                 double Scn=(yyvsp[(3) - (6)].reel), Scb=(yyvsp[(5) - (6)].reel);
-                if (MAUVAIS_TOTAL(FLOTTANT_EN_SCORE(Scn),FLOTTANT_EN_SCORE(Scb)))
+                if (BAD_TOTAL(FLOAT_TO_SCORE(Scn),FLOAT_TO_SCORE(Scb)))
                         erreur_syntaxe(ICMD_TOTS);
                 n1 = numero_inscription(Jn);
                 n2 = numero_inscription(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
                         erreur_syntaxe(ICMD_BRES);
-                else if (polarite(Jn) || polarite(Jb))
+                else if (polarity(Jn) || polarity(Jb))
                         erreur_syntaxe(ICMD_APAIR);
                 else
-                        accoupler(Jn, Jb, FLOTTANT_EN_SCORE(Scn));
+                        make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
             ;}
     break;
 
   case 127:
 #line 702 "pap.y"
-    { raz_couplage(); ;}
+    { zero_coupling(); ;}
     break;
 
   case 128:

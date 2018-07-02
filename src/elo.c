@@ -12,7 +12,7 @@
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
  * (EL) 12/02/2007 : Changement de 'cree_fichier_elo()'. On ne demande plus
- *                   le nom du tournoi puiqu'on l'a deja.
+ *                   le fullname du tournoi puiqu'on l'a deja.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, lecture du fichier 'nouveaux' en faisant
  *                   attention aux fins de lignes
  *
@@ -51,7 +51,7 @@
 #else
 	#define ELO_PROMPT_1       "Creation d'un fichier ELO"
 	#define ELO_PROMPT_2       "Entrez le nom du fichier [%s] : "
-/*# define ELO_PROMPT_3     "et le nom complet du tournoi : "*/
+/*# define ELO_PROMPT_3     "et le fullname complet du tournoi : "*/
 	#define ELO_PROMPT_4		"Pays : "
 	#define ELO_PROMPT_5		"Date (DD/MM/YYYY) [%s] : "
 	#define ELO_PROMPT_6		"Qui envoie le fichier (votre nom) : "
@@ -103,14 +103,14 @@ void copier_fichier_nouveaux(FILE *fp_dest) {
 void copier_liste_inscrits(FILE *fp_dest) {
 	long i, _i, nbi ;
 
-    assert(joueurs_inscrits != NULL);
-    assert(joueurs_nouveaux != NULL);
+    assert(registered_players != NULL);
+    assert(new_players != NULL);
 
-    nbi = joueurs_inscrits->n;
+    nbi = registered_players->n;
 
     if (nbi > 0) {
-        long    table[MAX_INSCRITS];
-        Joueur *j;
+        long    table[MAX_REGISTERED];
+        Player *j;
 
         for (i=0; i<nbi; i++)
             table[i] = i;
@@ -120,17 +120,17 @@ void copier_liste_inscrits(FILE *fp_dest) {
 		for (i=0; i<nbi; i++) {
 			_i = table[i];
             assert(_i >= 0 && _i < nbi);
-            j  = joueurs_inscrits->liste[_i];
+            j  = registered_players->list[_i];
 			fprintf(fp_dest, "%%_%% ") ;
-			fprintf(fp_dest, "%c", (j->nouveau ? '+' : ' ')) ;
-			fprintf(fp_dest, "%6ld, %s, %s, %s", j->numero, j->nom_famille, j->prenom, j->pays) ;
+			fprintf(fp_dest, "%c", (j->newPlayer ? '+' : ' ')) ;
+			fprintf(fp_dest, "%6ld, %s, %s, %s", j->ID, j->family_name, j->firstname, j->country) ;
 			/* Sauvegarde scores */
 			if ((score[_i] % 2) == 1)
 				fprintf(fp_dest,", %2ld.5", (score[_i] / 2 ));
 			else
 				fprintf(fp_dest,", %2ld", (score[_i] / 2 ));
 			/* Sauvegarde pions */
-			fprintf(fp_dest, ", %s, %ld\n", pions_en_chaine(nb_pions[_i]), j->cl_jech) ;
+			fprintf(fp_dest, ", %s, %ld\n", pions_en_chaine(nbr_discs[_i]), j->rating) ;
 		}
 		fprintf(fp_dest, "\n\n") ;
 	}
@@ -181,12 +181,12 @@ void entrer_parties_supplementaires(FILE *fp_dest) {
 	printf(ELO_PARTIES_SUPP) ;
 	fprintf(fp_dest, "\n\n%%%%Added results\n") ;
 	while (1) {
-		jNoir = choix_d_un_joueur_au_clavier(SUPP_NOIR, joueurs_inscrits, &tampon) ;
+		jNoir = choix_d_un_joueur_au_clavier(SUPP_NOIR, registered_players, &tampon) ;
 		if ((jNoir == TOUS_LES_JOUEURS) || (jNoir<0))
 			break ;
 		scNoir = lire_score(SUPP_SCORE_NOIR) ;
 		do {
-			jBlanc = choix_d_un_joueur_au_clavier(SUPP_BLANC, joueurs_inscrits, &tampon) ;
+			jBlanc = choix_d_un_joueur_au_clavier(SUPP_BLANC, registered_players, &tampon) ;
 		} while (jBlanc <0) ;
 		scBlanc = lire_score(SUPP_SCORE_BLANC) ;
 		/* Sauvegarder le resultat */
@@ -211,13 +211,13 @@ void cree_fichier_elo(void) {
     struct tm *t;
     time_t now;
     long ronde0, n1, n2;
-    pions_t v;
+    discs_t v;
 	char c =' ';
 
-    if (ronde < 1)
+    if (current_round < 1)
         return;
     eff_ecran();
-    /* Creation d'un nom de fichier par defaut */
+    /* Creation d'un fullname de fichier par defaut */
 	if (strlen(date_tournoi) > 9) {
 		strcpy(nom_fichier, &date_tournoi[6]) ;/* annee */
 		nom_fichier[4]=date_tournoi[3] ; /* mois */
@@ -265,7 +265,7 @@ void cree_fichier_elo(void) {
         printf(CANT_OPEN " `%s'\n",nom_fichier);
         goto attendre_touche;
     }
-    /* Inscrire le nom du tournoi */
+    /* Inscrire le fullname du tournoi */
     if (nom_du_tournoi[0])
         fprintf(fp, "%%%%Tournament: %s\n", nom_du_tournoi);
 	else
@@ -290,17 +290,17 @@ void cree_fichier_elo(void) {
 	copier_liste_inscrits(fp) ;
 
 	/* Boucle sur les rondes */
-    for (ronde0 = 0; ronde0 < ronde; ronde0++) {
+    for (ronde0 = 0; ronde0 < current_round; ronde0++) {
         fprintf(fp,"\n%%Round: %ld\n\n", ronde0+1);
-        iterer_ronde(ronde0);
-        while (couple_suivant(&n1,&n2,&v)) {
-            if (EST_UNE_VICTOIRE(v))
+        round_iterate(ronde0);
+        while (next_couple(&n1, &n2, &v)) {
+            if (IS_VICTORY(v))
 				c = '>' ;
-			if (EST_PARTIE_NULLE(v))
+			if (IS_DRAW(v))
 				c = '=' ;
-            if (EST_UNE_DEFAITE(v))
+            if (IS_DEFEAT(v))
 				c = '<';
-			fprintf(fp, "%6ld (%s)%c(%s) %6ld %c\n", n1, pions_en_chaine(v),c, pions_en_chaine(SCORE_ADVERSE(v)), n2, 'B');
+			fprintf(fp, "%6ld (%s)%c(%s) %6ld %c\n", n1, pions_en_chaine(v),c, pions_en_chaine(OPPONENT_SCORE(v)), n2, 'B');
         }
     }
 	entrer_parties_supplementaires(fp) ;

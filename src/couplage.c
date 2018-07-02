@@ -1,11 +1,10 @@
 /*
- * couplage.c: cree une instance de la classe "couplage", qui est
- * simplement un ensemble de couples {(x1,x2),(x3,x4)..(x2n-1,x2n)}
- * disjoints, avec des valeurs.
- * Les operations fournies sont: accoupler deux entiers,
- * decoupler un entier, obtenir la polarite d'un entier, et un iterateur
- * pour obtenir la liste de toutes les paires.
+ * couplage.c: cree une instance de la classe "couplage", qui est simplement un ensemble de couples
+ *  {(x1,x2),(x3,x4)..(x2n-1,x2n)} disjoints, avec des valeurs. Les operations fournies sont:
+ *  accoupler deux entiers, decoupler un entier, obtenir la polarite d'un entier,
+ *  et un iterateur pour obtenir la liste de toutes les paires.
  *
+ * (EL) 02/07/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, retour a la version anterieure de la fonction 'joueur_etait_present()'
  *                   qui ne teste plus le cas de la ronde courante. Evite le bug de la
@@ -20,9 +19,31 @@
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
  * (EL) 12/02/2007 : Modification de 'affiche_appariements()' pour qu'il affiche
  *                   le nom du tournoi au debut.
- * (EL) 02/02/2007 : Changement du type de 'departage[]' en double
+ * (EL) 02/02/2007 : Changement du type de 'tieBreak[]' en double
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ ****
+ *
+ * couplage.c: create an instance of class "couplage" which is simply a set of disjoint couples
+ *  {(x1,x2),(x3,x4)..(x2n-1,x2n)}, with values. Operations are: couple two integers, separate a integer,
+ *  get an integer polarity and an iterator to obtain list of all pairs.
+ *
+ * (EL) 02/07/2018 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, rewind to previous version of function 'joueur_etait_present()'
+ *                   which doesn't test current round anymore. Prevents the bug of
+ *                   correcting a result from a previous round.
+ * (EL) 16/07/2012 : v1.34, Modification of function 'player_was_present()' to include current round
+ *                   Add a test in function 'save_pairings_file()'
+ *                   to decide if xml save is needed.
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, change 'nouveaux" file structure
+ * (EL) 29/04/2007 : v1.31, no change
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_dans_sous_dossier()'
+ * (EL) 12/02/2007 : Modify 'display_pairings()' so that it displays
+ *                   tournament fullname at the start.
+ * (EL) 02/02/2007 : tieBreak[] is changed to 'double' type
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
 #include <stdio.h>
@@ -38,9 +59,9 @@
 
 
 typedef struct _Couple {
-    long     premier;
+    long     first;
     long     second;
-    pions_t valeur;
+    discs_t  value;
     long     table;
     struct  _Couple *next;
 } Couple;
@@ -107,100 +128,134 @@ typedef struct _Couple {
 
 
 /*
- * Gestion des rondes
+ * Gestion des rondes - rounds management
  */
 
-static Couple *historique[NMAX_RONDES];
-static long couplage_modifie = 0,
-ancien_nb_inscrits = 0,
-presents_modifies = 0;
+static Couple *history[NMAX_ROUNDS];
+static long modified_coupling = 0,
+previous_nb_registered = 0,
+modified_presents = 0;
 
 /*
-* Historique des presences de chaque joueur
+ * Historique des presences de chaque joueur
+ ****
+ * Players's presence history
  */
 
-#define TAILLE_ENTIERS 32    /* 16 bits : taille des entiers "unsigned long" sur le compilateur */
-#define NB_SLOTS_BITS  ( 1 + ((NMAX_RONDES - 1) / TAILLE_ENTIERS))
+/* 32 bits : taille des entiers "unsigned long" sur le compilateur */
+/* 32 bits: 'unsigned long' size on the compiler */
+#define INTEGER_SIZE 32
+#define NB_SLOTS_BITS  ( 1 + ((NMAX_ROUNDS - 1) / INTEGER_SIZE))
 
-static unsigned long historique_presences[MAX_INSCRITS][NB_SLOTS_BITS];
+static unsigned long presences_history[MAX_REGISTERED][NB_SLOTS_BITS];
 
 
-/* Initialisations avant la premiere ronde */
+/*
+ * Initialisations avant la premiere ronde
+ ****
+ * First round initialisations
+ */
 
-void premiere_ronde() {
-    static long historique_initialise = 0;
+void first_round(void) {
+    static long history_inititalized = 0;
     long i,j;
 
 
-    /* Initialisation de l'historique des couplages */
-    if (historique_initialise)
-        for (ronde = 0; ronde < NMAX_RONDES; ronde ++)
-            raz_couplage();
-    for (i=0; i<NMAX_RONDES; i++) historique[i] = NULL;
-    historique_initialise = 1;
+    /*
+     * Initialisation de l'historique des couplages
+     ****
+     * Coupling history initialization
+     */
+    if (history_inititalized)
+        for (current_round = 0; current_round < NMAX_ROUNDS; current_round++)
+            zero_coupling();
+    for (i=0; i<NMAX_ROUNDS; i++)
+        history[i] = NULL;
+    history_inititalized = 1;
 
-    /* Initialisation de l'historique des presences */
-    for (i=0; i<MAX_INSCRITS; i++)
+    /*
+     * Initialisation de l'historique des presences
+     ****
+     * Presences history initialization
+     */
+    for (i=0; i<MAX_REGISTERED; i++)
         for (j=0; j<NB_SLOTS_BITS; j++)
-            historique_presences[i][j] = 0;
+            presences_history[i][j] = 0;
 
-    /* remettons a zero les scores, pions, departages, etc */
+    /*
+     * remettons a zero les scores, pions, departages, etc
+     ****
+     * scores, discs, tiebreak are zeroed.
+     */
     raz_scores();
 
-    ronde = 0;
-    couplage_modifie = 0;
-}
-
-/* Passage a la ronde suivante */
-
-void ronde_suivante() {
-    long i;
-
-    assert(0 <= ronde && ronde < NMAX_RONDES-1);
-
-    /* on enregistre les presents de la ronde dans l'historique */
-    for (i = 0; i < joueurs_inscrits->n; i++)
-        set_historique_presence(joueurs_inscrits->liste[i]->numero, ronde, present[i]);
-
-    ++ronde;
-    couplage_modifie = 1;
+    current_round = 0;
+    modified_coupling = 0;
 }
 
 /*
- * Sauve les resultats de la ronde courante; les signaux sont supposes
- * etre masques. Aucun controle d'erreur pour l'instant!
- *
- * S'il s'agit de la premiere ronde et que le nombre de joueurs permet un
- * toutes-rondes, alors on sauvegarde la `table' de numerotation
- * des joueurs.
+ * Passage a la ronde suivante
+ ****
+ * Move to next round
  */
 
-void _sauve_ronde() {
+void next_round(void) {
+    long i;
+
+    assert(0 <= current_round && current_round < NMAX_ROUNDS-1);
+
+    /*
+     * on enregistre les presents de la ronde dans l'historique
+     ****
+     * present players at the round are registered in history
+     */
+
+    for (i = 0; i < registered_players->n; i++)
+        set_history_presence(registered_players->list[i]->ID, current_round, present[i]);
+
+    ++current_round;
+    modified_coupling = 1;
+}
+
+/*
+ * Sauve les resultats de la ronde courante ; les signaux sont supposes etre masques.
+ * Aucun controle d'erreur pour l'instant!
+ * S'il s'agit de la premiere ronde et que le nombre de joueurs permet un toutes-rondes,
+ * alors on sauvegarde la `table' de numerotation des joueurs.
+ ****
+ * Save current round results; signals should be blocked. No error control for now.
+ * If it is the first round and if number of players enables a round-robin,
+ * the players numbering 'table' is also saved.
+ */
+
+void _save_round(void) {
     long n1, n2;
-    pions_t v;
+    discs_t v;
     FILE *fp;
 
     fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
 #ifdef DEBUG
-    fprintf(stderr, RND_SAVE "\n", ronde+1);
+    fprintf(stderr, RND_SAVE "\n", current_round+1);
 #endif
     /* Nous en profitons pour sauvegarder la table du toutes-rondes */
-    if (ronde == 0) {
+    /* Take the chance to save round-robin table */
+    if (current_round == 0) {
         init_ttrondes();
         sauve_table_ttr(fp);
     }
     /* Puis les resultats proprement dits */
-    fprintf(fp,"%% " RND_RESULTS "\n\n" "raz-couplage;\n", ronde+1);
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
-        assert(SCORE_EST_LEGAL(v));
+    /* Then save results */
+    fprintf(fp,"%% " RND_RESULTS "\n\n" "raz-couplage;\n", current_round+1);
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
+        assert(SCORE_IS_LEGAL(v));
         fprintf(fp,"(%06ld %-5s %06ld %s);\n", n1, pions_en_chaine(v),
-                n2, pions_en_chaine(SCORE_ADVERSE(v)));
+                n2, pions_en_chaine(OPPONENT_SCORE(v)));
     }
     fprintf(fp,"ronde-suivante;\n\n");
     fclose(fp);
     backup_inter() ;
-    couplage_modifie = 0;
+    modified_coupling = 0;
 }
 
 /*
@@ -209,122 +264,139 @@ void _sauve_ronde() {
  * alors cette fonction effectue les sauvegardes necessaires dans le
  * fichier intermediaire et/ou le fichier des nouveaux. Les signaux sont
  * supposes bloques.
+ ****
+ * If new players registered or if players have left or came back,
+ * or if a player changed nationality, then this function does the
+ * necessary saves in the work file and/or the new players file.
+ * Signals should be blocked.
  */
 
-void _sauve_inscrits() {
+void _save_registered(void) {
     long i;
     FILE *fp;
-    Joueur *j;
+    Player *j;
 
-    if (ancien_nb_inscrits == joueurs_inscrits->n /* pas de nouveaux inscrits */
-        && presents_modifies == 0           /* personne n'est entre ou sorti */
-        && joueurs_emigres->n == 0)        /* ou n'a change de pays */
+    if (previous_nb_registered == registered_players->n /* pas de nouveaux inscrits  - no new player */
+        && modified_presents == 0           /* personne n'est entre ou sorti - no one entered or left */
+        && emigrant_players->n == 0)        /* ou n'a change de pays - no one changed country */
         return;
 
     /* ecriture dans le fichier intermediaire 'papp-internal-workfile.txt' */
+    /* write in the Papp workfile */
     fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
 #ifdef DEBUG
-    fprintf(stderr, RND_SINSC "\n", ronde+1);
+    fprintf(stderr, RND_SINSC "\n", current_round+1);
 #endif
-    fprintf(fp,"%% " RND_INSC "\n\n&", ronde+1);
-    for (i=0; i<joueurs_inscrits->n; i++)
-        if (joueurs_inscrits->liste[i]->numero > 0)
+    fprintf(fp,"%% " RND_INSC "\n\n&", current_round+1);
+    for (i=0; i<registered_players->n; i++)
+        if (registered_players->list[i]->ID > 0)
             fprintf(fp,"%s%c%06ld", i!=0 && i%10==0 ? "\n  " : " ",
                     present[i]?'+':'-',
-                    joueurs_inscrits->liste[i]->numero);
+                    registered_players->list[i]->ID);
     fprintf(fp,";\n\n");
     fclose(fp);
     backup_inter() ;
 
     /* Mais il faut egalement sauvegarder les nouveaux joueurs */
+    /* But new players must also be saved */
     fp = myfopen_dans_sous_dossier(nom_fichier_nouveaux,"a","",0, 1) ;
-    for (i=0; i<joueurs_nouveaux->n; i++) {
-        j = joueurs_nouveaux->liste[i];
-        if (j->numero > 0)
-            fprintf(fp,"%6ld %s, %s\t{%s}\n", j->numero, j->nom_famille, j->prenom, j->pays);
+    for (i=0; i<new_players->n; i++) {
+        j = new_players->list[i];
+        if (j->ID > 0)
+            fprintf(fp,"%6ld %s, %s\t{%s}\n", j->ID, j->family_name, j->firstname, j->country);
     }
     fclose(fp);
 
     /* On met les nouveaux en commentaires dans le fichier intermediaire */
+    /* New players are added as comment in the workfile */
     fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
-    if (joueurs_nouveaux->n > 0) {
+    if (new_players->n > 0) {
         fprintf(fp,"%%%%  ");
-        fprintf(fp, NEW_BEGIN_BLOCK , (long)(ronde+1));
+        fprintf(fp, NEW_BEGIN_BLOCK , (long)(current_round+1));
         fprintf(fp,"\n%%\n");
-        for (i=0; i<joueurs_nouveaux->n; i++) {
-            j = joueurs_nouveaux->liste[i];
-            if (j->numero > 0)
-                fprintf(fp,"%%_%% %6ld %s, %s\t{%s}\n", j->numero, j->nom_famille, j->prenom, j->pays);
+        for (i=0; i<new_players->n; i++) {
+            j = new_players->list[i];
+            if (j->ID > 0)
+                fprintf(fp,"%%_%% %6ld %s, %s\t{%s}\n", j->ID, j->family_name, j->firstname, j->country);
         }
         fprintf(fp,"%%\n%%");
-        fprintf(fp, NEW_END_BLOCK, (ronde+1));
+        fprintf(fp, NEW_END_BLOCK, (current_round+1));
         fprintf(fp,"\n\n\n");
     }
     fclose(fp);
     backup_inter() ;
 
     /* Les nouveaux sont connus maintenant */
-    vider_liste(joueurs_nouveaux);
+    /* New players are now known */
+    vider_liste(new_players);
 
     /* Ainsi que les joueurs emigres */
+    /* And also emigrate players */
     fp = myfopen_dans_sous_dossier(nom_fichier_nouveaux,"a","",0, 1) ;
-    for (i=0; i<joueurs_emigres->n; i++) {
-        j = joueurs_emigres->liste[i];
-        if (j->numero > 0)
-            fprintf(fp,"%%_ %6ld {%s}\n", j->numero, j->pays);
+    for (i=0; i<emigrant_players->n; i++) {
+        j = emigrant_players->list[i];
+        if (j->ID > 0)
+            fprintf(fp,"%%_ %6ld {%s}\n", j->ID, j->country);
     }
     fclose(fp);
+
     /* On met aussi les emmigres en commentaires dans le fichier intermediaire */
+    /* emigrate players are also added as comment in the workfile */
     fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
-    if (joueurs_emigres->n > 0) {
+    if (emigrant_players->n > 0) {
         fprintf(fp,"%%%%  ");
-        fprintf(fp, MIGR_BEGIN_BLOCK, (ronde+1));
+        fprintf(fp, MIGR_BEGIN_BLOCK, (current_round+1));
         fprintf(fp,"\n%%\n");
-        for (i=0; i<joueurs_emigres->n; i++) {
-            j = joueurs_emigres->liste[i];
-            if (j->numero > 0)
-                fprintf(fp,"%% %6ld %s {%s}\n", j->numero, j->nom, j->pays);
+        for (i=0; i<emigrant_players->n; i++) {
+            j = emigrant_players->list[i];
+            if (j->ID > 0)
+                fprintf(fp,"%% %6ld %s {%s}\n", j->ID, j->fullname, j->country);
         }
         fprintf(fp,"%%\n%%");
-        fprintf(fp, MIGR_END_BLOCK, (ronde+1));
+        fprintf(fp, MIGR_END_BLOCK, (current_round+1));
         fprintf(fp,"\n\n\n");
     }
     fclose(fp);
     backup_inter() ;
     /* Les emmigres sont connus maintenant */
-    vider_liste(joueurs_emigres);
+    /* emigrate players are now known */
+    vider_liste(emigrant_players);
 
-    ancien_nb_inscrits = joueurs_inscrits->n;
-    presents_modifies = 0;
+    previous_nb_registered = registered_players->n;
+    modified_presents = 0;
 }
 
 /*
  * Sauver les appariements s'ils ont change depuis la derniere fois, i.e.
- * si drapeau_modifie != 0. Cette fonction n'est utilisee qu'en mode
+ * si modified_coupling != 0. Cette fonction n'est utilisee qu'en mode
  * de sauvegarde immediate. Les signaux sont supposes bloques.
+ ****
+ * Save the pairings if they have changed since last time, i.e.
+ * if modified_coupling != 0. This function is only used in the
+ * immediate save mode. Signals should be blocked.
  */
 
-void _sauve_appariements() {
+void _save_pairings(void) {
     long n1, n2;
-    pions_t v;
+    discs_t v;
     FILE *fp;
 
-    if (couplage_modifie == 0)
+    if (modified_coupling == 0)
         return;
     fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
 #ifdef DEBUG
-    fprintf(stderr, RND_SPAIR "\n", ronde+1);
+    fprintf(stderr, RND_SPAIR "\n", current_round+1);
 #endif
     assert(fp);
-    fprintf(fp,"%% " RND_PAIR "\n\n" "raz-couplage;\n", ronde+1);
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v))
-        fprintf(fp, COUPON_EST_VIDE(v) ? "(%06ld %06ld);\n" : "(%06ld %06ld %s);\n",
+    fprintf(fp,"%% " RND_PAIR "\n\n" "raz-couplage;\n", current_round+1);
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v))
+        fprintf(fp, COUPON_IS_EMPTY(v) ? "(%06ld %06ld);\n" : "(%06ld %06ld %s);\n",
                 n1, n2, pions_en_chaine(v));
     fprintf(fp,"\n");
     fclose(fp);
     backup_inter() ;
-    couplage_modifie = 0;
+    modified_coupling = 0;
 }
 
 
@@ -332,41 +404,49 @@ void _sauve_appariements() {
  * Recreer totalement un fichier 'papp-internal-workfile.txt' a partir de l'historique.
  * Utilisee par exemple apres la correction d'un resultat, ou
  * lorque l'on desinscrit un joueur qui n'a joue aucune partie.
+ ****
+ * Completely recreate the papp workfile from history. Used for example when
+ * a result is corrected or when a player who hasn't played any game withdraws.
  */
 
-void _recreer_fichier_intermediaire() {
-    long cur_ronde;
-    long cur_inscrits;
-    long cur_couplage_modifie;
-    long cur_presents_modifies;
-    long cur_present[MAX_INSCRITS];
-    char *cur_nom_fichier_inter = NULL;
-    char fic_temporaire[50] = "__papp.tmp";
-    char fic_sauvegarde[50] = "__papp.bak";
+void _recreate_workfile(void) {
+    long cur_round;
+    long cur_registered;
+    long cur_modified_coupling;
+    long cur_modified_presents;
+    long cur_presents[MAX_REGISTERED];
+    char *cur_workfile_name = NULL;
+    char temp_file[50] = "__papp.tmp";
+    char save_file[50] = "__papp.bak";
     long error;
     FILE *papp_file ;
 
-    long i, joueur_est_present;
-    long present_avant[MAX_INSCRITS];
+    long i, player_is_present;
+    long present_before[MAX_REGISTERED];
 
     /* Sauvegarder les variables globales de Papp */
-    cur_ronde             = ronde;
-    cur_inscrits          = ancien_nb_inscrits;
-    cur_couplage_modifie  = couplage_modifie;
-    cur_presents_modifies = presents_modifies;
-    for (i = 0; i < joueurs_inscrits->n; i++)
-        cur_present[i]    = present[i];
-    COPIER(nom_fichier_inter, &cur_nom_fichier_inter);
+    /* Save Papp's global variables */
+    cur_round              = current_round;
+    cur_registered         = previous_nb_registered;
+    cur_modified_coupling  = modified_coupling;
+    cur_modified_presents  = modified_presents;
+    for (i = 0; i < registered_players->n; i++)
+        cur_presents[i]    = present[i];
+    COPIER(nom_fichier_inter, &cur_workfile_name);
 
 
     /* On ecrase le fichier "__papp.tmp" (s'il y en a un) */
-    error = remove(fic_temporaire);
+    /* "__papp.tmp" file is rewritten (if it exists)      */
+    error = remove(temp_file);
     /* On fait les sauvegardes intermediaires dans "__papp.tmp" */
-    COPIER(fic_temporaire, &nom_fichier_inter);
+    /* intermediate saves are done in file "__papp.tmp"         */
+    COPIER(temp_file, &nom_fichier_inter);
 
-    /* d'abord les infos du tournoi*/
-    init_fichier_intermediaire(INEXISTANT) ;
+    /* d'abord les infos du tournoi */
+    /* First tournament info        */
+    init_fichier_intermediaire(NONEXISTING) ;
     /* Puis le fichier des nouveaux */
+    /* Then new players file        */
     if ((papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "ab", "", 0, 0)) != NULL) {
         copier_fichier_nouveaux(papp_file) ;
         fclose(papp_file) ;
@@ -377,161 +457,180 @@ void _recreer_fichier_intermediaire() {
 #endif
 
     /* on initialise le tableau des presents */
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    /* present players array is initialized  */
+    for (i = 0; i < registered_players->n; i++)
         present[i] = 0;
 
     /* reconstitution du tournoi d'apres l'historique */
-    for (ronde = 0; ronde <= cur_ronde - 1 ; ronde++) {
+    /* rebuild tournament from history                */
+    for (current_round = 0; current_round <= cur_round - 1 ; current_round++) {
 
-        for (i = 0; i < joueurs_inscrits->n; i++)  {
-            present_avant[i] = present[i];
-            present[i] = joueur_etait_present(joueurs_inscrits->liste[i]->numero, ronde);
+        for (i = 0; i < registered_players->n; i++)  {
+            present_before[i] = present[i];
+            present[i] = player_was_present(registered_players->list[i]->ID, current_round);
         }
 
-        presents_modifies = 0;
-        for (i = 0; i < joueurs_inscrits->n; i++)
-            presents_modifies |= (present[i] != present_avant[i]);
+        modified_presents = 0;
+        for (i = 0; i < registered_players->n; i++)
+            modified_presents |= (present[i] != present_before[i]);
         /* toujours sauver les inscrits de la ronde 1 */
-        if (ronde == 0) presents_modifies = 1;
+        /* Always save round 1 registered players     */
+        if (current_round == 0) modified_presents = 1;
 
         /* on sauve les presents/absents de cette ronde passee... */
-        if (presents_modifies)
-            _sauve_inscrits();
-        /* ... et les resultats */
-        _sauve_ronde();
+        /* Saving presents/absents from this past round           */
+        if (modified_presents)
+            _save_registered();
+        /* ... et les resultats --- ... and results */
+        _save_round();
     }
 
-    ronde = cur_ronde;
+    current_round = cur_round;
 
     /* presents de la ronde en cours */
-    presents_modifies = 0;
-    for (i = 0; i < joueurs_inscrits->n; i++)  {
-        joueur_est_present = cur_present[i];
-        if (joueur_est_present != present[i]) {
-            present[i] = joueur_est_present;
-            presents_modifies = 1;
+    /* Current round presents        */
+    modified_presents = 0;
+    for (i = 0; i < registered_players->n; i++)  {
+        player_is_present = cur_presents[i];
+        if (player_is_present != present[i]) {
+            present[i] = player_is_present;
+            modified_presents = 1;
         }
     }
     /* toujours sauver les inscrits de la ronde 1 */
-    if (ronde == 0) presents_modifies = 1;
+    /* Always save round 1 registered players     */
+    if (current_round == 0) modified_presents = 1;
 
     /* on sauve les presents/absents de la ronde en cours... */
-    if (presents_modifies)
-        _sauve_inscrits();
-    /* ... et les appariements eventuels */
-    assert((ronde >= 0) && (ronde < NMAX_RONDES));
-    if (historique[ronde] != NULL)  {
-        couplage_modifie = 1;
-        _sauve_appariements();
+    /* Saving presents/absents from this current round       */
+    if (modified_presents)
+        _save_registered();
+    /* ... et les appariements eventuels --- and existing pairings */
+    assert((current_round >= 0) && (current_round < NMAX_ROUNDS));
+    if (history[current_round] != NULL)  {
+        modified_coupling = 1;
+        _save_pairings();
     }
 
 
     /* on renomme l'ancien fichier "papp-internal-workfile.txt" en "__papp.bak" */
-    error = remove(fic_sauvegarde);
-    error = rename(cur_nom_fichier_inter,fic_sauvegarde);
+    /* Former workfile is renamed to "__papp.bak" */
+    error = remove(save_file);
+    error = rename(cur_workfile_name,save_file);
     /* puis le fichier "__papp.tmp" en "papp-internal-workfile.txt" */
-    error = rename(nom_fichier_inter,cur_nom_fichier_inter);
+    /* And temporary file "__papp.tmp" to workfile                  */
+    error = rename(nom_fichier_inter,cur_workfile_name);
 
     /* Termine, retablir les variables globales de papp */
-    ronde              = cur_ronde;
-    ancien_nb_inscrits = cur_inscrits;
-    couplage_modifie   = cur_couplage_modifie;
-    presents_modifies  = cur_presents_modifies;
-    for (i = 0; i < joueurs_inscrits->n; i++)
-        present[i]     = cur_present[i];
-    COPIER(cur_nom_fichier_inter, &nom_fichier_inter);
+    /* Finished, retrieve Papp's global variables       */
+    current_round              = cur_round;
+    previous_nb_registered = cur_registered;
+    modified_coupling   = cur_modified_coupling;
+    modified_presents  = cur_modified_presents;
+    for (i = 0; i < registered_players->n; i++)
+        present[i]     = cur_presents[i];
+    COPIER(cur_workfile_name, &nom_fichier_inter);
     backup_inter() ;
 }
 
 
 /*
- * Les deux fonctions suivantes signalent a PAPP que la liste des
- * inscrits/presents (resp. des appariements) est a jour et ne necessite
- * pas de sauvegarde -- voir main.c.
+ * Les deux fonctions suivantes signalent a PAPP que la liste des inscrits/presents
+ * (resp. des appariements) est a jour et ne necessite pas de sauvegarde -- voir main.c.
+ ****
+ * The following two functions tell PAPP that the list of registered/present players
+ * (or pairings) is up-to-date and do not need saving -- see main.c
  */
 
-void ne_pas_sauver_inscrits() {
-    ancien_nb_inscrits = joueurs_inscrits->n;
-    presents_modifies = 0;
+void do_not_save_registered(void) {
+    previous_nb_registered = registered_players->n;
+    modified_presents = 0;
 }
 
-void ne_pas_sauver_appariements() {
-    couplage_modifie = 0;
+void do_not_save_pairings(void) {
+    modified_coupling = 0;
 }
 
 /*
  * Operations sur les couplages
+ ****
+ * Coupling operations
  */
 
-void raz_couplage() {
+void zero_coupling(void) {
     Couple *p, *q;
 
-    for (p = historique[ronde]; p; p = q) {
+    for (p = history[current_round]; p; p = q) {
         q = p->next;
         free(p);
-        couplage_modifie = 1;
+        modified_coupling = 1;
     }
-    historique[ronde] = NULL;
+    history[current_round] = NULL;
 }
 
-long decoupler(long n) {
+long uncouple(long n) {
     Couple **p, *q;
 
-    for (p = &historique[ronde]; (q = *p) != NULL; p = &(q->next))
-        if (q->premier == n || q->second == n) {
-            /* enlever cette paire */
+    for (p = &history[current_round]; (q = *p) != NULL; p = &(q->next))
+        if (q->first == n || q->second == n) {
+            /* enlever cette paire --- remove this pair */
             *p = q->next;
             free(q);
-            couplage_modifie = 1;
+            modified_coupling = 1;
             return 1;
         }
         return 0;
 }
 
-void accoupler(long n1, long n2, pions_t valeur) {
+void make_couple(long n1, long n2, discs_t value) {
     Couple *q, *p;
 
-    decoupler(n1);
-    decoupler(n2);
+    uncouple(n1);
+    uncouple(n2);
     if (n1 == n2)
         return;
     CALLOC(q, 1, Couple);
-    q->premier = n1;
+    q->first = n1;
     q->second  = n2;
-    q->valeur  = valeur;
+    q->value  = value;
     q->table   = 0;
     q->next    = NULL;
 
-    /* ajouter q a la fin de la liste */
-    if (historique[ronde] == NULL)
-        historique[ronde] = q;
+    /* ajouter q a la fin de la liste --- add q to end of list */
+    if (history[current_round] == NULL)
+        history[current_round] = q;
     else {
-        p = historique[ronde];
+        p = history[current_round];
         while (p->next)
             p = p->next;
         p->next = q;
     }
 
-    couplage_modifie = 1;
+    modified_coupling = 1;
 }
 
 /*
- * polarite(n): renvoie 0 si le joueur n'est pas apparie, 1 s'il a les noirs
+ * polarity(n): renvoie 0 si le joueur n'est pas apparie, 1 s'il a les noirs
  * et 2 s'il a les blancs. La fonction polar2() prend un argument
- * supplementaire qui est le numero de la ronde.
+ * supplementaire qui est le ID de la ronde.
+ ****
+ * polarity(n): returns 0 if the player isn't paired, 1 if she/he's Black,
+ * and 2 if she/he's White. polar2() function takes another argument
+ * which is round ID.
+
  */
 
-long polarite (long n) {
-    return polar2 (n, ronde);
+long polarity(long n) {
+    return polar2 (n, current_round);
 }
 
-long polar2 (long n, long ronde) {
+long polar2 (long n, long round) {
     Couple *q;
 
-    if (ronde < 0 || ronde >= NMAX_RONDES)
+    if (round < 0 || round >= NMAX_ROUNDS)
         return 0;
-    for (q = historique[ronde]; q; q = q->next) {
-        if (q->premier == n)
+    for (q = history[round]; q; q = q->next) {
+        if (q->first == n)
             return 1;
         if (q->second == n)
             return 2;
@@ -543,265 +642,303 @@ long polar2 (long n, long ronde) {
  * renvoie un pointeur sur la variable contenant le "score" de n1 contre
  * n2, ou NULL si n1 n'a pas joue contre n2 avec les noirs. Comme ce
  * pointeur peut etre utilise pour modifier cette variable, nous levons
- * le drapeau couplage_modifie. Usage typique:
+ * le drapeau modified_coupling. Usage typique:
  *
  *    long n1, n2, v;
- *    *valeur_couple(n1,n2) = v;
+ *    *couple_value(n1,n2) = v;
+ ****
+ * returns a pointer to the variable containing the "score" of n1 against n2,
+ * or NULL if n1 didn't play Black against n2. As this pointer can be used to
+ * modify the variable, the modified_coupling flag is raised. Typical usage:
+ *
+ *    long n1, n2, v;
+ *    *couple_value(n1,n2) = v;
  */
 
-pions_t *valeur_couple(long n1, long n2) {
-    Couple *q = historique[ronde];
+discs_t *couple_value(long n1, long n2) {
+    Couple *q = history[current_round];
 
     while (q)
-        if (q->premier == n1 && q->second == n2) {
+        if (q->first == n1 && q->second == n2) {
             /*
              * Quelqu'un peut se servir de cette adresse pour
              * modifier les resultats des appariements.
+             ****
+             * Someone can use this address to change results
              */
-            couplage_modifie = 1;
-            return &(q->valeur);
+            modified_coupling = 1;
+            return &(q->value);
         }
             else q = q->next;
     return NULL;
 }
 
 /*
-*  nb_couples(nro_ronde) :
- *  renvoie le nombre d'appariements de la ronde <nro_ronde>
+ * Renvoie le nombre d'appariements de la ronde <round_nbr>
+ ****
+ * Returns number of pairings in round <round_nbr>
  */
 
-long nb_couples(long nro_ronde) {
-    long compteur;
+long couples_nbr(long round_nbr) {
+    long counter;
     Couple *q;
 
-    if (nro_ronde < 0 || nro_ronde >= NMAX_RONDES || nro_ronde > ronde)
+    if (round_nbr < 0 || round_nbr >= NMAX_ROUNDS || round_nbr > current_round)
         return 0;
 
-    compteur = 0;
-    for (q = historique[nro_ronde]; q; q = q->next)
-        compteur++;
-    return compteur;
+    counter = 0;
+    for (q = history[round_nbr]; q; q = q->next)
+        counter++;
+    return counter;
 }
 
 /*
- * Pour iterer sur l'ensemble des couples, on ecrira:
+ * Pour iterer sur l'ensemble des couples, on ecrira :
+ * (On pourra tester v == UNKNOWN_SCORE pour indiquer que le score n'est pas encore connu.)
+ ****
+ * To iterate on the set of couples, we can write:
+ * (v == UNKNOWN_SCORE can be tested to show that score isn't yet known.)
  *
  *    long n1, n2;
- *    pions_t v;
- *    iterer_ronde(numero_de_ronde);
- *    while (couple_suivant(&n1,&n2,&v)) {
-     *        ... Utiliser n1,n2,v ...
-     *        }
- *
- * On pourra tester la valeur v == SCORE_INCONNU pour indiquer
- * que le score n'est pas encore connu.
+ *    discs_t v;
+ *    round_iterate(round_number);
+ *    while (next_couple(&n1,&n2,&v)) {
+ *        ... Utiliser/Use n1,n2,v ...
+ *    }
  */
 
-static Couple *pointeur;
+static Couple *pointer;
 
-void iterer_ronde (long nro_ronde) {
-    pointeur = (nro_ronde >= 0 && nro_ronde < NMAX_RONDES) ?
-    historique[nro_ronde] : NULL;
+void round_iterate(long round_nbr) {
+    pointer = (round_nbr >= 0 && round_nbr < NMAX_ROUNDS) ?
+    history[round_nbr] : NULL;
 }
 
-long couple_suivant (long *n1, long *n2, pions_t *valeur) {
-    if (pointeur == NULL)
+long next_couple(long *n1, long *n2, discs_t *value) {
+    if (pointer == NULL)
         return 0;
-    *n1 = pointeur->premier;
-    *n2 = pointeur->second;
-    *valeur = pointeur->valeur;
-    pointeur = pointeur->next;
+    *n1 = pointer->first;
+    *n2 = pointer->second;
+    *value = pointer->value;
+    pointer = pointer->next;
     return 1;
 }
 
 /*
- * Fonctions diverses pour savoir si un joueur est present,
- * ainsi que son score
+ * Fonctions diverses pour savoir si un joueur est present, ainsi que son score
+ ****
+ * Functions to know if a player is present, and his score.
  */
 
-long         present[MAX_INSCRITS];
-long         score[MAX_INSCRITS];
-pions_t      nb_pions[MAX_INSCRITS];
-double       departage[MAX_INSCRITS];
-long         dern_flot[MAX_INSCRITS];
-long         score_equipe[MAX_INSCRITS];
+long         present[MAX_REGISTERED];
+long         score[MAX_REGISTERED];
+discs_t      nbr_discs[MAX_REGISTERED];
+double       tieBreak[MAX_REGISTERED];
+long         last_float[MAX_REGISTERED];
+long         team_score[MAX_REGISTERED];
 
 /*
- * Fait entrer (direction == 1) ou sortir (direction == 0) le joueur de
- * numero Elo no_joueur. Si c'est impossible, les erreurs sont affichees
- * a l'ecran.
+ * Fait entrer (direction == 1) ou sortir (direction == 0) le joueur de ID Elo ID_player.
+ * Si c'est impossible, les erreurs sont affichees a l'ecran.
+ ****
+ * Get in (direction == 1) or out (direction == 0) player whose ELO ID is ID_player.
+ * If it's impossible, errors are displayed on screen.
  */
 
-void es_joueur(long no_joueur, long direction) {    /* 0=sortir, 1=entrer */
-    long i,ronde0,n1,n2,jamais_joue, ret;
-    pions_t v;
-    char *nom;
-    char chaine[500];
+void player_InOut(long ID_player, long direction) {
+    /* direction: 0=sortir/get out, 1=entrer/ get in */
+    long i,round0,n1,n2,never_played, ret;
+    discs_t v;
+    char *name;
+    char string[500];
 
-    for (i=0; i<joueurs_inscrits->n; i++)
-        if (joueurs_inscrits->liste[i]->numero == no_joueur) {
-            nom = joueurs_inscrits->liste[i]->nom;
-            /* Tester l'etat actuel du joueur */
+    for (i=0; i<registered_players->n; i++)
+        if (registered_players->list[i]->ID == ID_player) {
+            name = registered_players->list[i]->fullname;
+            /* Tester l'etat actuel du joueur - test player actual status */
 
             if (present[i] == direction)
 #ifdef ENGLISH
-                printf("Player %s (%ld) was already %s\n", nom, no_joueur,
+                printf("Player %s (%ld) was already %s\n", fullname, ID_player,
                        direction ? "in" : "out");
             else
-                printf("Player %s (%ld) %s the tournament\n", nom, no_joueur,
+                printf("Player %s (%ld) %s the tournament\n", fullname, ID_player,
                        direction ? "enters" : "leaves");
 #else
-                printf("Le joueur %s (%ld) etait deja %s\n", nom, no_joueur,
+                printf("Le joueur %s (%ld) etait deja %s\n", name, ID_player,
                        direction ? "present" : "absent");
             else
-                printf("Le joueur %s (%ld) %s\n", nom, no_joueur,
+                printf("Le joueur %s (%ld) %s\n", name, ID_player,
                        direction ? "entre" : "sort");
 #endif
 
             present[i] = direction;
-            decouplage_absents();
-            presents_modifies = 1;
+            absents_uncoupling();
+            modified_presents = 1;
 
             /* En cas de sortie, et si le joueur n'a joue aucune partie,
-             * on propose de le supprimer completement du tournoi
+             * on propose de le supprimer completement du tournoi.
+             ****
+             * If going out, and if the player hasn't played any game,
+             * papp proposes to take him away from the tournament.
              */
-            jamais_joue = 1;
-        if (direction == 0) {
-            for (ronde0 = 0; ronde0 < ronde; ronde0++) {
-                iterer_ronde(ronde0);
-                while (couple_suivant(&n1,&n2,&v))
-                    if ((n1 == no_joueur) || (n2 == no_joueur)) jamais_joue = 0;
-            }
-            if (jamais_joue) {
-                printf(SUPP_REASON, nom, no_joueur);
-                sprintf(chaine, SUPP_ASK);
-                if (oui_non(chaine)) {
-
-                    /* on met temporairement le numero du joueur a zero,
-                    de maniere a ce qu'il ne soit pas mis dans le fichier
-                    intermediaire "papp-internal-workfile.txt" que l'on regenere. */
-                    joueurs_inscrits->liste[i]->numero = 0;
-                    recreer_fichier_intermediaire();
-                    joueurs_inscrits->liste[i]->numero = no_joueur;
-
-                    /* on relit immediatement le nouveau fichier "papp-internal-workfile.txt" */
-                    vider_liste(joueurs_inscrits);
-                    premiere_ronde();
-                    ret = lire_fichier(nom_fichier_inter, F_CONFIG);
-                    if (ret > 0)
-                        erreur_fatale("ERREUR DE FICHIER dans la fonction es_joueur");
+            never_played = 1;
+            if (direction == 0) {
+                for (round0 = 0; round0 < current_round; round0++) {
+                    round_iterate(round0);
+                    while (next_couple(&n1, &n2, &v))
+                        if ((n1 == ID_player) || (n2 == ID_player)) never_played = 0;
                 }
-                printf("\n"HIT_ANY_KEY);
+                if (never_played) {
+                    printf(SUPP_REASON, name, ID_player);
+                    sprintf(string, SUPP_ASK);
+                    if (oui_non(string)) {
+
+                        /*
+                         * on met temporairement le ID du joueur a zero,
+                         * de maniere a ce qu'il ne soit pas mis dans le fichier
+                         * intermediaire "papp-internal-workfile.txt" que l'on regenere.
+                         ****
+                         * Player's ID is temporarely set to 0 so that she/he isn't put
+                         * in the intermediate "papp-internal-workfile.txt" file we are
+                         * regenerating.
+                         */
+                        registered_players->list[i]->ID = 0;
+                        recreer_fichier_intermediaire();
+                        registered_players->list[i]->ID = ID_player;
+
+                        /* on relit immediatement le nouveau fichier "papp-internal-workfile.txt"
+                         * The new "papp-internal-workfile.txt" file is immediately reread */
+                        vider_liste(registered_players);
+                        first_round();
+                        ret = lire_fichier(nom_fichier_inter, CONFIG_F);
+                        if (ret > 0)
+                            fatal_error("ERREUR DE FICHIER dans la fonction player_InOut");
+                    }
+                    printf("\n"HIT_ANY_KEY);
+                }
             }
+            return;
         }
-        return;
-    }
-/* Pas trouve ? */
-    printf(NOT_INSC " !?\n", no_joueur);
+/* Pas trouve ? - Not found? */
+    printf(NOT_INSC " !?\n", ID_player);
     beep();
 }
 
 /*
- * Faire sortir le joueur du tournoi avec present[i]=0 ne suffit pas a
- * detruire son appariement; il faut invoquer la fonction suivante,
- * qui decouple tous les joueurs absents:
+ * Faire sortir le joueur du tournoi avec present[i]=0 ne suffit pas a detruire son appariement;
+ * il faut invoquer la fonction suivante, qui decouple tous les joueurs absents.
+ ****
+ * Getting a player out with present[i]=0 isn't enough to destroy his pairing.
+ * The following function must be called; it uncouples all absent players.
  */
 
-void decouplage_absents() {
+void absents_uncoupling(void) {
     long i;
 
-    for (i=0; i<joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
         if (!present[i])
-            decoupler(joueurs_inscrits->liste[i]->numero);
+            uncouple(registered_players->list[i]->ID);
 }
 
 /*
  * La fonction suivante permet d'enregistrer dans l'historique la presence
- * (presence =1) ou l'absence (presence=0) d'un joueur a une ronde donnee
+ * (presence =1) ou l'absence (presence=0) d'un joueur a une ronde donnee.
+ ****
+ * The following function records in history the presence (presence=1) or
+ * absence (presence=0) of a player on a given round.
  */
 
-void set_historique_presence(long numero_elo, long quelle_ronde, long presence) {
+void set_history_presence(long ID, long which_round, long presence) {
     long i, which_bit_field;
     unsigned long mask;
 
 
-    assert(quelle_ronde >= 0 && quelle_ronde <= ronde);
-    assert(numero_elo >= 0);
+    assert(which_round >= 0 && which_round <= current_round);
+    assert(ID >= 0);
 
-    which_bit_field = (quelle_ronde / TAILLE_ENTIERS);
-    mask = ((unsigned long)1) << (quelle_ronde % TAILLE_ENTIERS);
+    which_bit_field = (which_round / INTEGER_SIZE);
+    mask = ((unsigned long)1) << (which_round % INTEGER_SIZE);
 
     assert(which_bit_field >= 0  &&  which_bit_field < NB_SLOTS_BITS);
 
-    for (i=0; i<joueurs_inscrits->n; i++)
-        if (joueurs_inscrits->liste[i]->numero == numero_elo)  {
-            if (presence != ((historique_presences[i][which_bit_field] & mask) != 0))
-                historique_presences[i][which_bit_field] ^= mask;
+    for (i=0; i<registered_players->n; i++)
+        if (registered_players->list[i]->ID == ID)  {
+            if (presence != ((presences_history[i][which_bit_field] & mask) != 0))
+                presences_history[i][which_bit_field] ^= mask;
         }
 }
 
 /*
-* La fonction suivante permet de tester si un joueur etait present a une
+ * La fonction suivante permet de tester si un joueur etait present a une
  * ronde passee. Note : pour la ronde courante, utiliser plutot le tableau
- * global "present" (car la variable 'ronde' peut avoir ete  modifiee).
+ * global "present[]" (car la variable 'round' peut avoir ete modifiee).
+ ****
+ * Following function enables to test whether a player was present in a previous round.
+ * Note: for current round, rather use global array "present[]"
+ * as variable "round" may have been modified.
  */
 
-long joueur_etait_present(long numero_elo, long quelle_ronde) {
+long player_was_present(long ID, long which_round) {
     long i, which_bit_field;
     unsigned long mask;
 
 
-    assert(quelle_ronde >= 0);
-    assert(numero_elo >= 0);
+    assert(which_round >= 0);
+    assert(ID >= 0);
 
-    which_bit_field = (quelle_ronde / TAILLE_ENTIERS);
-    mask = ((unsigned long)1) << (quelle_ronde % TAILLE_ENTIERS);
+    which_bit_field = (which_round / INTEGER_SIZE);
+    mask = ((unsigned long)1) << (which_round % INTEGER_SIZE);
 
     assert(which_bit_field >= 0 && which_bit_field < NB_SLOTS_BITS);
 
-    for (i=0; i<joueurs_inscrits->n; i++)
-        if (joueurs_inscrits->liste[i]->numero == numero_elo) {
-	        return ((historique_presences[i][which_bit_field] & mask) != 0);
+    for (i=0; i<registered_players->n; i++)
+        if (registered_players->list[i]->ID == ID) {
+	        return ((presences_history[i][which_bit_field] & mask) != 0);
         }
 
-    /* le joueur n'est meme pas inscrit ! */
+    /* le joueur n'est meme pas inscrit ! - Player isn't even registered! */
     return 0;
 }
 
 
 /*
- * Maintenant la vraie routine de manipulation des appariements
+ * Maintenant la vraie routine de manipulation des appariements.
+ ****
+ * Now the true pairings manipulation function.
  */
 
-void manipule_appariements() {
-    char chaine[256], c , *ligne;
+void pairings_manipulate(void) {
+    char string[256], c , *line;
     long l, lmax, nbc, i, k, n1, n2, _n1, _n2, passe;
-    pions_t v;
+    discs_t v;
 
     for(;;) {
-        /* Afficher la liste des joueurs apparies */
+        /* Afficher la liste des joueurs apparies - display list of paired players */
         eff_ecran();
         printf(MAN_PAIRED " :\n");
         lmax = nbc = 0;
         for (passe=0; passe<2; passe++) {
             k = 0;
-            iterer_ronde(ronde);
-            while (couple_suivant(&n1,&n2,&v)) {
+            round_iterate(current_round);
+            while (next_couple(&n1, &n2, &v)) {
 
-#ifdef AFFICH_COUPLAGES_ALPHA
-                sprintf(chaine,"%-8.8s(%6ld)--%-8.8s(%6ld) ",
-                        trouver_joueur(n1)->nom,n1,trouver_joueur(n2)->nom,n2);
+#ifdef DISPLAY_ALPHA_COUPLING
+                sprintf(string,"%-8.8s(%6ld)--%-8.8s(%6ld) ",
+                        trouver_joueur(n1)->fullname,n1,trouver_joueur(n2)->fullname,n2);
 #else
-                sprintf(chaine,"%ld--%ld",n1,n2);
+                sprintf(string,"%ld--%ld",n1,n2);
 #endif
 
                 if (passe) {
-                    /* Deuxieme passe, faire l'affichage */
+                    /* Deuxieme passe, faire l'affichage  -
+                     * second pass, do display */
                     assert(nbc > 0);
-                    printf("%c%-*s", k++%nbc ? ' ':'\n', (int)lmax, chaine);
+                    printf("%c%-*s", k++%nbc ? ' ':'\n', (int)lmax, string);
                 } else {
-                    /* Premiere passe, calculer la largeur maximum */
-                    l = strlen(chaine);
+                    /* Premiere passe, calculer la largeur maximum -
+                     * first pass, calculate maximum width */
+                    l = strlen(string);
                     if (l > lmax)
                         lmax = l;
                 }
@@ -810,27 +947,27 @@ void manipule_appariements() {
                 break;
             nbc = nb_colonnes / (lmax + 1);
         }
-        /* Afficher la liste des joueurs non apparies */
+        /* Afficher la liste des joueurs non apparies - Display non-paired players */
         printf("\n\n" MAN_UNPAIRED " :\n");
         lmax = nbc = 0;
         for (passe=0; passe<2; passe++) {
             k = 0;
-            for (i=0; i<joueurs_inscrits->n; i++)
-                if (present[i] && !polarite(joueurs_inscrits->liste[i]->numero)) {
-#ifdef AFFICH_COUPLAGES_ALPHA
-                    sprintf(chaine,"%-8.8s(%ld)",
-                            joueurs_inscrits->liste[i]->nom,joueurs_inscrits->liste[i]->numero);
+            for (i=0; i<registered_players->n; i++)
+                if (present[i] && !polarity(registered_players->list[i]->ID)) {
+#ifdef DISPLAY_ALPHA_COUPLING
+                    sprintf(string,"%-8.8s(%ld)",
+                            registered_players->list[i]->fullname,registered_players->list[i]->ID);
 #else
-                    sprintf(chaine,"%ld",joueurs_inscrits->liste[i]->numero);
+                    sprintf(string,"%ld",registered_players->list[i]->ID);
 #endif
 
                     if (passe) {
-                        /* Deuxieme passe */
+                        /* Deuxieme passe - Second pass */
                         assert(nbc > 0);
-                        printf("%c%-*s", k++%nbc ? ' ':'\n', (int)lmax, chaine);
+                        printf("%c%-*s", k++%nbc ? ' ':'\n', (int)lmax, string);
                     } else {
-                        /* Premiere passe */
-                        l = strlen(chaine);
+                        /* Premiere passe - First pass */
+                        l = strlen(string);
                         if (l > lmax)
                             lmax = l;
                     }
@@ -840,12 +977,12 @@ void manipule_appariements() {
             nbc = nb_colonnes / (lmax + 1);
         }
         printf("\n\n");
-        /* Et afficher le prompt */
+        /* Et afficher le prompt - Print prompt */
         printf(MAN_PROMPT);
         c = lire_touche(); c = tolower(c);
         switch(c) {
             case 'v':
-                affiche_appariements(NULL, 0);
+                display_pairings(NULL, 0);
                 break;
             case 'l':
                 affiche_inscrits(NULL);
@@ -853,18 +990,21 @@ void manipule_appariements() {
             case 'f':
                 eff_ligne();
                 printf("\n");
-                if ((n1 = choix_d_un_joueur_au_clavier(WHICH_FEATS, joueurs_inscrits, &ligne)) >= 0)
+                if ((n1 = choix_d_un_joueur_au_clavier(WHICH_FEATS, registered_players, &line)) >= 0)
                     /*
                      * Il n'est pas necessaire de verifier que le joueur est
                      * inscrit puisque fiche_individuelle() le verifie elle-meme.
+                     ****
+                     * No need to check whether player is registered as
+                     * fiche_individuelle() will do it itself.
                      */
-                    fiche_individuelle(n1,NULL);
+                    fiche_individuelle(n1, NULL);
                     break;
             case 'z':
                 eff_ligne();
                 printf("\n");
                 if (oui_non(MAN_ZAP))
-                    raz_couplage();
+                    zero_coupling();
                     break;
             case 'a':
                 eff_ligne();
@@ -872,27 +1012,27 @@ void manipule_appariements() {
                 printf(MAN_ASS);
                 printf("\n");
 
-                sprintf(chaine, MAN_ASS_BLACK, couleur_1);
-                if (((n1 = choix_d_un_joueur_au_clavier(chaine, joueurs_inscrits, &ligne)) >= 0)
+                sprintf(string, MAN_ASS_BLACK, couleur_1);
+                if (((n1 = choix_d_un_joueur_au_clavier(string, registered_players, &line)) >= 0)
                     && ((_n1=numero_inscription(n1)) >=0) && present[_n1])
-                    puts(coupon(trouver_joueur(n1), NULL, SCORE_INCONNU));
+                    puts(coupon(trouver_joueur(n1), NULL, UNKNOWN_SCORE));
                 else { beep(); break;}
 
-                    sprintf(chaine, MAN_ASS_WHITE, couleur_2);
-                if (((n2 = choix_d_un_joueur_au_clavier(chaine, joueurs_inscrits, &ligne)) >= 0)
+                    sprintf(string, MAN_ASS_WHITE, couleur_2);
+                if (((n2 = choix_d_un_joueur_au_clavier(string, registered_players, &line)) >= 0)
                     && ((_n2=numero_inscription(n2)) >=0) && present[_n2])
-                    puts(coupon(trouver_joueur(n2), NULL, SCORE_INCONNU));
+                    puts(coupon(trouver_joueur(n2), NULL, UNKNOWN_SCORE));
                 else { beep(); break;}
 
-                accoupler(n1, n2, SCORE_INCONNU);
+                make_couple(n1, n2, UNKNOWN_SCORE);
                 break;
             case 'd':
                 eff_ligne();
                 printf("\n");
-                if (((n1 = choix_d_un_joueur_au_clavier(MAN_DISS, joueurs_inscrits, &ligne)) >= 0) &&
+                if (((n1 = choix_d_un_joueur_au_clavier(MAN_DISS, registered_players, &line)) >= 0) &&
                     ((_n1=numero_inscription(n1)) >=0 ) &&
                     present[_n1] )
-                    decoupler(n1);
+                    uncouple(n1);
                 else beep();
                 break;
             case 'q':
@@ -906,86 +1046,93 @@ void manipule_appariements() {
 }
 
 /*
- * changer_resultat(nro_ronde, nro_joueur1, nro_joueur2, valeur)
- * Cherche le couplage de la ronde <nro_ronde>
- * impliquant les joueurs <nro_joueur1> et <nro_joueur2>,
- * les reordonne eventuellement (changement de couleur)
- * et met le score <valeur> au premier joueur (changement de score)
+ * Cherche le couplage de la ronde <round_nbr> impliquant les joueurs <nbr_player1> et <nbr_player2>,
+ * les reordonne eventuellement (changement de couleur) et met le score <value> au premier joueur
+ * (changement de score)
  * Renvoie :
  *   1  si le changement a ete effectue
- *   0  si le changement n'a pas ete effectue parce que
- *      les joueurs et le bon score etait deja dans l'historique
- *  -1  si le changement n'a pas ete effectue parce que
- *      les joueurs n'ont pas joue ensemble a la ronde <nro_ronde>
+ *   0  si le changement n'a pas ete effectue parce que les joueurs et le bon score etait deja dans l'historique
+ *  -1  si le changement n'a pas ete effectue parce que les joueurs n'ont pas joue ensemble a la ronde <round_nbr>
+ ****
+ * Look for the pairing from round <round_nbr> involving players <nbr_player1> and <nbr_player2>,
+ * eventually resort them (change of colour) and set first player score to <value> (change of score)
+ * Returns:
+ *   1  if the change has been made
+ *   0  if no change was made because players and score were already in history
+ *  -1  if no change was made because players didn't play together at round <round_nbr>
  */
 
-long changer_resultat(long nro_ronde, long nro_joueur1, long nro_joueur2, pions_t valeur) {
+long change_result(long round_nbr, long nbr_player1, long nbr_player2, discs_t value) {
     Couple *q;
 
-    assert(nro_ronde >= 0 && nro_ronde <= ronde && nro_ronde < NMAX_RONDES);
-    assert(nro_joueur1 > 0);
-    assert(nro_joueur2 > 0);
-    assert(SCORE_EST_LEGAL(valeur));
+    assert(round_nbr >= 0 && round_nbr <= current_round && round_nbr < NMAX_ROUNDS);
+    assert(nbr_player1 > 0);
+    assert(nbr_player2 > 0);
+    assert(SCORE_IS_LEGAL(value));
 
 
-    for (q = historique[nro_ronde]; q; q = q->next) {
+    for (q = history[round_nbr]; q; q = q->next) {
 
-        if ((q->premier == nro_joueur1) &&
-            (q->second  == nro_joueur2) &&
-            EGALITE_SCORES(q->valeur, valeur))
-            return 0;  /* pas besoin de changer ! */
+        if ((q->first == nbr_player1) &&
+            (q->second  == nbr_player2) &&
+            SCORES_EQUALITY(q->value, value))
+            return 0;  /* pas besoin de changer ! - no need to change! */
 
-        if (((q->premier == nro_joueur1) && (q->second == nro_joueur2)) ||
-            ((q->premier == nro_joueur2) && (q->second == nro_joueur1))) {
-            /* changer les joueurs et le score */
-            q->premier = nro_joueur1;
-            q->second  = nro_joueur2;
-            q->valeur  = valeur;
+        if (((q->first == nbr_player1) && (q->second == nbr_player2)) ||
+            ((q->first == nbr_player2) && (q->second == nbr_player1))) {
+            /* changer les joueurs et le score - change players and score */
+            q->first = nbr_player1;
+            q->second  = nbr_player2;
+            q->value  = value;
             return 1;
         }
     }
 
-    /* pas trouve */
+    /* pas trouve - not found */
     return -1;
 }
 
 
 /*
- * Affecte un numero de table au match opposant n1 et n2 a la ronde nro_ronde.
+ * Affecte un ID de table au match opposant n1 et n2 a la ronde round_nbr.
+ ****
+ * Assigns table ID to the game between n1 and n2 at round <round_nbr>
  */
 
-void mettre_numero_de_table(long nro_ronde, long n1, long n2, long num_table) {
+void mettre_numero_de_table(long round_nbr, long n1, long n2, long table_ID) {
     Couple *q;
 
-    assert(nro_ronde >= 0 && nro_ronde <= ronde && nro_ronde < NMAX_RONDES);
+    assert(round_nbr >= 0 && round_nbr <= current_round && round_nbr < NMAX_ROUNDS);
     assert(n1 > 0);
     assert(n2 > 0);
 
-    for (q = historique[nro_ronde]; q; q = q->next) {
-        if (((q->premier == n1) && (q->second == n2)) ||
-            ((q->premier == n2) && (q->second == n1))) {
-            /* changer le numero de la table */
-            q->table = num_table;
+    for (q = history[round_nbr]; q; q = q->next) {
+        if (((q->first == n1) && (q->second == n2)) ||
+            ((q->first == n2) && (q->second == n1))) {
+            /* changer le ID de la table - change table ID */
+            q->table = table_ID;
         }
     }
 }
 
 /*
- * Renvoie le numero de table du match entre n1 et n2 de la ronde nro_ronde,
- * ou 0 si on ne trouve pas la table (pas de match, ou pas encore de table
- * affectee, etc)
+ * Renvoie le ID de table du match entre n1 et n2 de la ronde <round_nbr>, ou 0
+ * si on ne trouve pas la table (pas de match, ou pas encore de table affectee, etc)
+ ****
+ * Returns table ID for the game between n1 and n2 at round <round_nbr>, or 0 if
+ * table isn't found (no game or no table yet assigned, etc).
  */
 
-long numero_de_table(long nro_ronde, long n1, long n2) {
+long numero_de_table(long round_nbr, long n1, long n2) {
     Couple *q;
 
-    assert(nro_ronde >= 0 && nro_ronde <= ronde && nro_ronde < NMAX_RONDES);
+    assert(round_nbr >= 0 && round_nbr <= current_round && round_nbr < NMAX_ROUNDS);
     assert(n1 > 0);
     assert(n2 > 0);
 
-    for (q = historique[nro_ronde]; q; q = q->next) {
-        if (((q->premier == n1) && (q->second == n2)) ||
-            ((q->premier == n2) && (q->second == n1))) {
+    for (q = history[round_nbr]; q; q = q->next) {
+        if (((q->first == n1) && (q->second == n2)) ||
+            ((q->first == n2) && (q->second == n1))) {
             return (q->table);
         }
     }
@@ -993,64 +1140,63 @@ long numero_de_table(long nro_ronde, long n1, long n2) {
 }
 
 /*
- * Reaffecte tous les numeros de tables de la ronde nro_ronde.
+ * Reaffecte tous les numeros de tables de la ronde courante.
  * On utilise le meme tri que pour l'affichage des coupons.
+ *****
+ * Reassigns all table IDs for current round, using same sort as pairings display.
  */
 
-void numeroter_les_tables() {
+void tables_numbering(void) {
     long i, n1, n2;
-    pions_t v;
-    Paire *liste;
-    long nb_paires;
+    discs_t v;
+    Pair *list;
+    long pairs_number;
 
-    assert(ronde >= 0 && ronde < NMAX_RONDES);
+    assert(current_round >= 0 && current_round < NMAX_ROUNDS);
 
 
-    CALLOC(liste, 1 + joueurs_inscrits->n / 2, Paire);
-    nb_paires = 0;
+    CALLOC(list, 1 + registered_players->n / 2, Pair);
+    pairs_number = 0;
 
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
-        i = nb_paires++;
-        liste[i].j1 = trouver_joueur(n1);
-        liste[i].j2 = trouver_joueur(n2);
-        liste[i].score = v;
-        liste[i].valeur_tri = critere_tri_tables(n1, n2);
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
+        i = pairs_number++;
+        list[i].j1 = trouver_joueur(n1);
+        list[i].j2 = trouver_joueur(n2);
+        list[i].score = v;
+        list[i].sort_value = tables_sort_criteria(n1, n2);
     }
-    if (ronde >= 1)
-        SORT(liste, nb_paires, sizeof(Paire), tri_paires);
+    if (current_round >= 1)
+        SORT(list, pairs_number, sizeof(Pair), pairs_sort);
 
-    for (i = 0; i < nb_paires; i++)
-        mettre_numero_de_table(ronde, (liste[i].j1)->numero, (liste[i].j2)->numero, i+1);
+    for (i = 0; i < pairs_number; i++)
+        mettre_numero_de_table(current_round, (list[i].j1)->ID, (list[i].j2)->ID, i+1);
 
-    free(liste);
+    free(list);
 }
 
 
 /*
  * calcule le nombre de joueurs presents et non apparies
+ ****
+ * computes number of present but unpaired players
  */
 
-long nb_joueurs_napp() {
+long nbr_unpaired_players(void) {
     long n, i;
 
-    for (i = n = 0; i < joueurs_inscrits->n; i++)
-        if (present[i] && polarite(joueurs_inscrits->liste[i]->numero)==0)
+    for (i = n = 0; i < registered_players->n; i++)
+        if (present[i] && polarity(registered_players->list[i]->ID)==0)
             ++n;
     return n;
 }
 
-
-/*
- * Affichage des appariements
- */
-
-int tri_paires(const void *ARG1, const void *ARG2) {
-	const Paire *p1 = (const Paire *) ARG1 ;
-	const Paire *p2 = (const Paire *) ARG2 ;
+int pairs_sort(const void *ARG1, const void *ARG2) {
+	const Pair *p1 = (const Pair *) ARG1 ;
+	const Pair *p2 = (const Pair *) ARG2 ;
     double diff;
 
-    diff = (p2->valeur_tri) - (p1->valeur_tri);
+    diff = (p2->sort_value) - (p1->sort_value);
     if (diff > 0)
         return 1;
     else if (diff < 0)
@@ -1059,122 +1205,137 @@ int tri_paires(const void *ARG1, const void *ARG2) {
         return 0;
 }
 
-
 /*
  * Les paires de joueurs apparies sont triees par ordre decroissant de
  * "valeur", cette valeur etant le score du joueur le mieux classe, avec
  * comme critere secondaire la somme des scores des joueurs.
  * Ceci est susceptible de changer dans les prochaines versions.
+ ****
+ * Pairs of paired players are sorted in reverse order of "value".
+ * This value is the best player's score, then sum of players' scores.
+ * This may change in future versions.
  */
 
-double critere_tri_tables(long n1, long n2) {
+double tables_sort_criteria(long n1, long n2) {
 
     return 100000.0 * le_max_de(score[numero_inscription(n1)],score[numero_inscription(n2)])
     + 100.0*(score[numero_inscription(n1)] + score[numero_inscription(n2)] )
     + numero_inscription(n1)/10.0;
 }
 
+/*
+ * Affichage des appariements - Pairings display
+ */
 
-void affiche_appariements(const char *filename, long resultats_complets) {
-    char chaine[256];
-    char *nomTrn ;
+void display_pairings(const char *filename, long full_results) {
+    char string[256];
+    char *tournamentName ;
     long i, n1, n2;
-    pions_t v;
-    Joueur *j;
-    Paire *liste;
-    long nb_paires;
+    discs_t v;
+    Player *j;
+    Pair *list;
+    long pairs_nbr;
 
-    /* Peut-etre devons-nous sauvegarder l'etat */
+    /* Peut-etre devons-nous sauvegarder l'etat - maybe state should be saved */
     if (sauvegarde_immediate) {
         sauve_inscrits();
         sauve_appariements();
     }
     more_init(filename);
-    if (joueurs_inscrits->n == 0) {
+    if (registered_players->n == 0) {
         more_line(AFF_NOBODY);
         more_close();
         return;
     }
 
-    /* Pour afficher le nom du tournoi en tete */
-    nomTrn = malloc(strlen(nom_du_tournoi)+15) ;
-    if (nomTrn != NULL) {
-        sprintf(nomTrn, "*** %s ***\n", nom_du_tournoi) ;
-        more_line(nomTrn) ;
-        free(nomTrn) ;
+    /* Pour afficher le fullname du tournoi en tete - tournament full name is displayed first */
+    tournamentName = malloc(strlen(nom_du_tournoi)+15) ;
+    if (tournamentName != NULL) {
+        sprintf(tournamentName, "*** %s ***\n", nom_du_tournoi) ;
+        more_line(tournamentName) ;
+        free(tournamentName) ;
     }
-    sprintf(chaine, resultats_complets ? (RND_RESULTS "%s :") : (RND_PAIR "%s :"), ronde+1,
-            nb_joueurs_napp() > 1 ? INCOMPLETE_P : "");
-    more_line(chaine);
+    sprintf(string, full_results ? (RND_RESULTS "%s :") : (RND_PAIR "%s :"), current_round+1,
+        nbr_unpaired_players() > 1 ? INCOMPLETE_P : "");
+    more_line(string);
     more_line("");
 
-    /* D'abord afficher les joueurs apparies */
-    CALLOC(liste, 1 + joueurs_inscrits->n / 2, Paire);
-    nb_paires = 0;
+    /* D'abord afficher les joueurs apparies - First display paired players */
+    CALLOC(list, 1 + registered_players->n / 2, Pair);
+    pairs_nbr = 0;
 
-    iterer_ronde(ronde);
-    while (couple_suivant(&n1,&n2,&v)) {
-        i = nb_paires++;
-        liste[i].j1 = trouver_joueur(n1);
-        liste[i].j2 = trouver_joueur(n2);
-        liste[i].score = v;
-        liste[i].valeur_tri = critere_tri_tables(n1, n2);
+    round_iterate(current_round);
+    while (next_couple(&n1, &n2, &v)) {
+        i = pairs_nbr++;
+        list[i].j1 = trouver_joueur(n1);
+        list[i].j2 = trouver_joueur(n2);
+        list[i].score = v;
+        list[i].sort_value = tables_sort_criteria(n1, n2);
     }
-    if (ronde >= 1)
-        SORT(liste, nb_paires, sizeof(Paire), tri_paires);
+    if (current_round >= 1)
+        SORT(list, pairs_nbr, sizeof(Pair), pairs_sort);
 
-#ifdef NUMEROS_TABLES
+#ifdef TABLES_NUMBER
     {
         char tampon[400];
-        for (i = 0; i < nb_paires; i++){
+        for (i = 0; i < pairs_nbr; i++){
 
-            if (1)  /* afficher tous les numeros de table */
-                /* pour afficher un numero de table sur 5, utiliser la ligne ci-dessous */
-                /* if (((i % 5) == 4) || (i == 0)) */
-                sprintf(tampon, "%2ld %s", i+1 , coupon(liste[i].j1, liste[i].j2, liste[i].score));
+            if (1) /*
+                    * Afficher tous les numeros de table. Pour afficher un ID de table sur 5,
+                    * utiliser la ligne ci-dessous
+                    * if (((i % 5) == 4) || (i == 0))
+                    ****
+                    * Display all tables ID. To display one ID each 5, use line:
+                    * if (((i % 5) == 4) || (i == 0))
+                    */
+                sprintf(tampon, "%2ld %s", i+1 , coupon(list[i].j1, list[i].j2, list[i].score));
             else
-                sprintf(tampon, "   %s" , coupon(liste[i].j1, liste[i].j2, liste[i].score));
+                sprintf(tampon, "   %s" , coupon(list[i].j1, list[i].j2, list[i].score));
             more_line(tampon);
         }
     }
 #else
-    for (i = 0; i < nb_paires; i++)
-        more_line(coupon(liste[i].j1, liste[i].j2, liste[i].score));
+    for (i = 0; i < pairs_nbr; i++)
+        more_line(coupon(list[i].j1, list[i].j2, list[i].score));
 #endif
-    free(liste);
+    free(list);
 
-    /* Puis les joueurs non apparies */
+    /* Puis les joueurs non apparies - Then non-paired players */
     more_line("");
-    for (i = 0; i < joueurs_inscrits->n; i++)
+    for (i = 0; i < registered_players->n; i++)
         if (present[i]) {
-            j = (joueurs_inscrits->liste)[i];
-            if (polarite(j->numero) == 0)
-                more_line(coupon(j, NULL, SCORE_INCONNU));
+            j = (registered_players->list)[i];
+            if (polarity(j->ID) == 0)
+                more_line(coupon(j, NULL, UNKNOWN_SCORE));
         }
-    /* Termine */
+    /* Termine - Finished */
     more_close();
-    /* Creons les numeros de tables, si ce n'est deja fait */
-    numeroter_les_tables();
+    /* Creons les numeros de tables, si ce n'est deja fait  - Create tables ID if not already done */
+    tables_numbering();
 }
 
 
-/*  sauvegardes dans les fichiers "ronde###.txt"  */
+/*
+ * sauvegardes dans les fichiers "ronde###.txt"
+ ****
+ * Saving in files "round###.txt"
+ */
 
-void sauver_fichier_appariements() {
+void save_pairings_file(void) {
     char    *filename;
     long     i;
 
     if (sauvegarde_fichier_appariements) {
-        filename = nom_fichier_numerote(nom_fichier_appariements, ronde+1);
-        affiche_appariements(filename,0);
+        filename = nom_fichier_numerote(nom_fichier_appariements, current_round+1);
+        display_pairings(filename, 0);
         if (impression_automatique)
             for (i = 0; i < nb_copies_impression; i++)
                 imprime_fichier(filename);
     }
 
-	/* Faut-il generer le fichier XML des resultats ? */
+	/* Faut-il generer le fichier XML des resultats ? -
+	 * Should we generate an XML file with pairings? */
 	if (generer_fichiers_XML) {
 		creer_ronde_XML();
 	}
-    printf("*ICI apres XML*\n");fflush(stdout);
 }

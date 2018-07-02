@@ -13,7 +13,7 @@
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
  * (EL) 12/02/2007 : Modification de 'sortie_tableau_croise_HTML()', 'sortie_tableau_croise_texte()'
- *                   pour qu'ils affichent le nom du tournoi au debut.
+ *                   pour qu'ils affichent le fullname du tournoi au debut.
  * (EL) 02/02/2007 : changement du type de 'Departage' en double
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
@@ -32,7 +32,7 @@
 #include "version.h"
 #include "more.h"
 #include "pions.h"
-#include "departage.h"
+#include "tiebreak.h"
 #include "crosstable.h"
 
 
@@ -69,12 +69,12 @@
 /* Variables globales pour stocker tous les resultats */
 
 typedef struct {
-    long      ronde;           /* numero de la ronde */
-    long      table;           /* numero de la table ou a eu lieu la partie */
+    long      ronde;           /* ID de la ronde */
+    long      table;           /* ID de la table ou a eu lieu la partie */
     long      present ;        /* 1 si le joueur etait present a cette ronde, 0 sinon */
     long      bip ;            /* 1 si le joueur a joue contre bip, 0 sinon */
-    long      adv ;            /* numero FFO (Elo) de l'adversaire */
-    pions_t  pions ;          /* score de la partie, du point de vue du joueur */
+    long      adv ;            /* ID FFO (Elo) de l'adversaire */
+    discs_t  pions ;          /* score de la partie, du point de vue du joueur */
     char     couleur ;        /* couleur dans la partie */
     long      points ;         /* 2=victoire, 1=nulle, 0=defaite */
     long      cumul_points ;   /* depuis le debut du tournoi */
@@ -95,9 +95,9 @@ typedef struct {
 
 typedef struct {
     long                 Num_FFO ;
-    structure_ronde     TabRondes[NMAX_RONDES] ;
+    structure_ronde     TabRondes[NMAX_ROUNDS] ;
     long                 Total_Points ;
-    pions_t             Total_Pions ;
+    discs_t             Total_Pions ;
     long                 Bucholtz ;
     double              Departage ;
 } structure_joueur;
@@ -111,7 +111,7 @@ long partial_ronde;            /* utilisee pour trier les joueurs dans compar() 
 
 long local_trouver_joueur(long num_FFO);
 long PresentToutTournoi(long num_FFO);
-long Point_Par_Partie(pions_t v);
+long Point_Par_Partie(discs_t v);
 void local_calcul_departage(long rr);
 void recuperation_resultats(void);
 int  compar (const void *p, const void *q);
@@ -136,8 +136,8 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp);
 
 /* long local_trouver_joueur(long num_FFO)
  *
- * Trouve le numero d'un joueur dans le tableau local de tous les resultats
- * a partir de son numero FFO. Renvoie le numero ou JOUEUR_INCONNU si on ne le
+ * Trouve le ID d'un joueur dans le tableau local de tous les resultats
+ * a partir de son ID FFO. Renvoie le ID ou JOUEUR_INCONNU si on ne le
  * trouve pas.
  *
  */
@@ -145,9 +145,9 @@ long local_trouver_joueur(long num_FFO) {
     long i ;
 
     assert(num_FFO >= 0) ;
-    if (!joueurs_inscrits->n || !num_FFO)
+    if (!registered_players->n || !num_FFO)
         return JOUEUR_INCONNU ;
-    for (i = 0 ; i < joueurs_inscrits->n  ; i++)
+    for (i = 0 ; i < registered_players->n  ; i++)
         if (TabJoueurs[i].Num_FFO == num_FFO) return i ;
     return JOUEUR_INCONNU ;
 }
@@ -169,7 +169,7 @@ long PresentToutTournoi(long num_FFO) {
     if (n == JOUEUR_INCONNU)
         return 0 ;
     pj = &TabJoueurs[n] ;
-    for (i = 0 ; i < ronde ; i++)
+    for (i = 0 ; i < current_round ; i++)
         if (!pj->TabRondes[i].present)
             return 0 ;
     return 1 ;
@@ -182,11 +182,11 @@ long PresentToutTournoi(long num_FFO) {
  * victoire = 2, nulle = 1, defaite = 0
  *
  */
-long Point_Par_Partie(pions_t v) {
-    assert(SCORE_EST_LEGAL(v)) ;
-    if (EST_UNE_VICTOIRE(v))
+long Point_Par_Partie(discs_t v) {
+    assert(SCORE_IS_LEGAL(v)) ;
+    if (IS_VICTORY(v))
         return 2 ;
-    else if (EST_UNE_DEFAITE(v))
+    else if (IS_DEFEAT(v))
         return 0 ;
     else
         return 1 ;
@@ -218,9 +218,9 @@ long score_de_machin_contre_bidule(long num_ffo_1, long num_ffo_2) {
 
     somme = 0;
     pj = &TabJoueurs[n1] ;
-    for (i = 0 ; i < ronde ; i++) {
+    for (i = 0 ; i < current_round ; i++) {
         pr = &pj->TabRondes[i] ;
-        if ((pr->adv == num_ffo_2) && !COUPON_EST_VIDE(pr->pions)) {
+        if ((pr->adv == num_ffo_2) && !COUPON_IS_EMPTY(pr->pions)) {
             ont_joue_ensemble = 1;
             somme += Point_Par_Partie(pr->pions);
         }
@@ -237,29 +237,29 @@ long score_de_machin_contre_bidule(long num_ffo_1, long num_ffo_2) {
 /* void local_calcul_departage(long rr)
  *
  * Calcul du departage apres la ronde rr (>=0)
- * Appelle la fonction DepartageJoueur() (departage.c)
+ * Appelle la fonction DepartageJoueur() (tiebreak.c)
  * pour tous les joueurs.
  */
 void local_calcul_departage(long rr) {
     long i, j, n;
-    BQ_resultats TabJ ;
+    BQ_results TabJ ;
     structure_joueur *pj ;
     structure_ronde *pr ;
 
-    assert ((rr >= 0) && (rr < ronde));
-    for (i = 0 ; i < joueurs_inscrits->n ; i++) {
+    assert ((rr >= 0) && (rr < current_round));
+    for (i = 0 ; i < registered_players->n ; i++) {
         pj = &TabJoueurs[i] ;
-        TabJ.points_joueur = pj->TabRondes[rr].cumul_points ;
+        TabJ.player_points = pj->TabRondes[rr].cumul_points ;
         for (j = 0 ; j <= rr ; j++) {
             pr = &pj->TabRondes[j] ;
             TabJ.score[j] = pr->pions ;
             if ((!pr->present) || (pr->bip)) {
-                TabJ.adv[j] = 0 ;
-                TabJ.points_adv[j] = 0 ;
+                TabJ.opp[j] = 0 ;
+                TabJ.opp_points[j] = 0 ;
             } else {
-                TabJ.adv[j] = pr->adv ;
+                TabJ.opp[j] = pr->adv ;
                 n = local_trouver_joueur(pr->adv) ;
-                TabJ.points_adv[j] = TabJoueurs[n].TabRondes[rr].cumul_points ;
+                TabJ.opp_points[j] = TabJoueurs[n].TabRondes[rr].cumul_points ;
             }
         }
         DepartageJoueur(&TabJ, rr, &pj->Departage, &pj->Total_Pions, &pj->Bucholtz) ;
@@ -277,33 +277,33 @@ void local_calcul_departage(long rr) {
  */
 void recuperation_resultats(void) {
     long i,j, Num_n1, Num_n2, n1, n2, num_elo, nro_table;
-    pions_t v ;
+    discs_t v ;
     structure_joueur *pj ;
     structure_ronde *pr ;
 
 /* Initialisation des variables */
-    for (i = 0 ; i < joueurs_inscrits->n ; i++) {
+    for (i = 0 ; i < registered_players->n ; i++) {
         pj = &TabJoueurs[i] ;
-        pj->Num_FFO = joueurs_inscrits->liste[i]->numero ;
+        pj->Num_FFO = registered_players->list[i]->ID ;
         pj->Total_Points = pj->Bucholtz = 0 ;
-        pj->Total_Pions = ZERO_PION ;
+        pj->Total_Pions = ZERO_DISC ;
         pj->Departage = 0.0 ;
-        for (j = 0 ; j < ronde ; j++) {
+        for (j = 0 ; j < current_round ; j++) {
             pr = &(pj->TabRondes[j]) ;
             pr->ronde = j;
             pr->table = 0;
-            pr->present = joueur_etait_present(pj->Num_FFO, j) ;
+            pr->present = player_was_present(pj->Num_FFO, j) ;
             pr->bip = pr->adv = pr->points = pr->cumul_points = 0 ;
             pr->couleur = '\0' ;
-            pr->pions = SCORE_INCONNU ;
+            pr->pions = UNKNOWN_SCORE ;
             pr->rang = 0;
         }
     }
 /* Recuperation des resultats ronde par ronde */
-    for (i = 0 ; i < ronde ; i++) {
-        iterer_ronde(i);
-        while (couple_suivant(&n1,&n2,&v)) {
-            assert(SCORE_EST_LEGAL(v)) ;
+    for (i = 0 ; i < current_round ; i++) {
+        round_iterate(i);
+        while (next_couple(&n1, &n2, &v)) {
+            assert(SCORE_IS_LEGAL(v)) ;
             Num_n1 = local_trouver_joueur(n1) ;
             Num_n2 = local_trouver_joueur(n2) ;
             nro_table = numero_de_table(i, n1, n2);
@@ -318,22 +318,22 @@ void recuperation_resultats(void) {
             pr->points = Point_Par_Partie(v) ;
             pr->cumul_points = (i == 0 ? pr->points : pr->points + pj->TabRondes[i-1].cumul_points) ;
             pj->Total_Points += pr->points ;
-            AJOUTE_SCORE(pj->Total_Pions, (v));
+            ADD_SCORE(pj->Total_Pions, (v));
             /* Donnees pour Blanc */
             pj = &TabJoueurs[Num_n2] ;
             pr = &(pj->TabRondes[i]) ;
             pr->ronde = i;
             pr->table = nro_table;
             pr->adv = n1 ;
-            pr->pions = SCORE_ADVERSE(v) ;
+            pr->pions = OPPONENT_SCORE(v) ;
             pr->couleur = BLANC ;
-            pr->points = Point_Par_Partie(SCORE_ADVERSE(v)) ;
+            pr->points = Point_Par_Partie(OPPONENT_SCORE(v)) ;
             pr->cumul_points = (i == 0 ? pr->points : pr->points + pj->TabRondes[i-1].cumul_points) ;
             pj->Total_Points += pr->points ;
-            AJOUTE_SCORE(pj->Total_Pions, SCORE_ADVERSE(v));
+            ADD_SCORE(pj->Total_Pions, OPPONENT_SCORE(v));
         }
         /* Qui a joue contre Bip ? */
-        for (j = 0 ; j < joueurs_inscrits->n; j++) {
+        for (j = 0 ; j < registered_players->n; j++) {
             pj=&TabJoueurs[j] ;
             num_elo = pj->Num_FFO ;
             pr = &TabJoueurs[j].TabRondes[i] ;
@@ -343,17 +343,17 @@ void recuperation_resultats(void) {
             }
             if (pr->present && (polar2(num_elo, i) == 0)) {
                 pr->bip = 1 ;
-                pr->pions = SCORE_ADVERSE(score_bip) ;
+                pr->pions = OPPONENT_SCORE(score_bip) ;
                 pr->couleur = '-' ;
-                if (EST_UNE_DEFAITE(score_bip))
+                if (IS_DEFEAT(score_bip))
                     pr->points = 2 ;
-                else if (EST_UNE_VICTOIRE(score_bip))
+                else if (IS_VICTORY(score_bip))
                     pr->points = 0 ;
                 else
                     pr->points = 1 ;
                 pr->cumul_points = (i == 0 ? pr->points : pr->points+pj->TabRondes[i-1].cumul_points) ;
                 pj->Total_Points += pr->points ;
-                AJOUTE_SCORE(TabJoueurs[j].Total_Pions, SCORE_ADVERSE(score_bip));
+                ADD_SCORE(TabJoueurs[j].Total_Pions, OPPONENT_SCORE(score_bip));
             }
         }
     }
@@ -363,7 +363,7 @@ void recuperation_resultats(void) {
 /* int compar (const void *p, const void *q)
  *
  * Fonction utilisee par qsort pour trier les joueurs pour le classement.
- * La variable globale 'partial_ronde' donne le numero de la ronde dont
+ * La variable globale 'partial_ronde' donne le ID de la ronde dont
  * on veut le classement trie.
  *
  * IMPORTANT : cet ordre de tri doit etre le meme que celui implemente
@@ -376,18 +376,18 @@ int compar (const void *p, const void *q) {
 
     if (pj->TabRondes[partial_ronde].cumul_points > pq->TabRondes[partial_ronde].cumul_points) return -1 ;
     if (pj->TabRondes[partial_ronde].cumul_points < pq->TabRondes[partial_ronde].cumul_points) return 1 ;
-/*  if (SCORE_STRICT_GRAND(pj->Departage, pq->Departage)) return -1 ;
-    if (SCORE_STRICT_GRAND(pq->Departage, pj->Departage)) return  1 ;
+/*  if (SCORE_STRICTLY_LARGER(pj->Departage, pq->Departage)) return -1 ;
+    if (SCORE_STRICTLY_LARGER(pq->Departage, pj->Departage)) return  1 ;
 */
     if (pj->Departage > pq->Departage) return -1 ;
     if (pq->Departage > pj->Departage) return  1 ;
-    if (SCORE_STRICT_GRAND(pj->Total_Pions, pq->Total_Pions)) return -1 ;
-    if (SCORE_STRICT_GRAND(pq->Total_Pions, pj->Total_Pions)) return  1 ;
+    if (SCORE_STRICTLY_LARGER(pj->Total_Pions, pq->Total_Pions)) return -1 ;
+    if (SCORE_STRICTLY_LARGER(pq->Total_Pions, pj->Total_Pions)) return  1 ;
 
-    return compare_chaines_non_sentitif(trouver_joueur(pj->Num_FFO)->nom,
-                                        trouver_joueur(pq->Num_FFO)->nom);
+    return compare_chaines_non_sentitif(trouver_joueur(pj->Num_FFO)->fullname,
+                                        trouver_joueur(pq->Num_FFO)->fullname);
 
-    /*if (trouver_joueur(pj->Num_FFO)->nom < trouver_joueur(pq->Num_FFO)->nom)
+    /*if (trouver_joueur(pj->Num_FFO)->fullname < trouver_joueur(pq->Num_FFO)->fullname)
         return -1 ;
     else
         return 1 ;
@@ -404,11 +404,11 @@ int compar (const void *p, const void *q) {
  * Remplace dans la chaine *str les codes speciaux par les valeurs passees
  * en parametre pour l'affichage d'une cellule dans le tableau HTML.
  * Les codes sont : PAPP_COLOR         = couleur
- *                  PAPP_OPP           = numero de l'adversaire dans le tableau
- *                  PAPP_OPP_NAME[n]   = n premiers caracteres du nom de l'adversaire
- *                  PAPP_MY_NAME[n]    = n premiers caracteres de mon nom
- *                  PAPP_BLACK_NAME[n] = n premiers caracteres du nom de Noir
- *                  PAPP_WHITE_NAME[n] = n premiers caracteres du nom de Blanc
+ *                  PAPP_OPP           = ID de l'adversaire dans le tableau
+ *                  PAPP_OPP_NAME[n]   = n premiers caracteres du fullname de l'adversaire
+ *                  PAPP_MY_NAME[n]    = n premiers caracteres de mon fullname
+ *                  PAPP_BLACK_NAME[n] = n premiers caracteres du fullname de Noir
+ *                  PAPP_WHITE_NAME[n] = n premiers caracteres du fullname de Blanc
  *                  PAPP_COUPON        = coupon de la partie (eg SEELEY Ben 12/52 SHAMAN David)
  *                  PAPP_SCORE         = score de la partie, vue de joueur (eg 52/12)
  *                  PAPP_SCORE_RELATIF = score de la partie en relatif (eg +40)
@@ -670,7 +670,7 @@ void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, st
     /* creation des infos generales de la partie */
     n = local_trouver_joueur(pr->adv) ;
     sprintf(rang, "%ld", pr->rang);
-    sprintf(mon_nom,"%s", trouver_joueur(pj->Num_FFO)->nom);
+    sprintf(mon_nom,"%s", trouver_joueur(pj->Num_FFO)->fullname);
     nb_chiffres_des_rondes = 2;
     sprintf(nro_ronde, "%0*ld", (int)nb_chiffres_des_rondes, pr->ronde + 1);
 
@@ -688,13 +688,13 @@ void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, st
                     pr->points, pr->cumul_points, "-", "-", rang) ;
     } else { /* cas normal */
 
-        /* creation du numero de l'aversaire et de son nom */
+        /* creation du ID de l'aversaire et de son fullname */
         sprintf(num_adv, "%ld", n+1) ;
-        sprintf(nom_adv,"%s", trouver_joueur(pr->adv)->nom);
+        sprintf(nom_adv,"%s", trouver_joueur(pr->adv)->fullname);
 
         /* creation des numeros de table */
-        nb_chiffres_des_tables = (joueurs_inscrits->n < 20 ? 1 :
-                                 (joueurs_inscrits->n < 200 ? 2 : 3));
+        nb_chiffres_des_tables = (registered_players->n < 20 ? 1 :
+                                 (registered_players->n < 200 ? 2 : 3));
         sprintf(nro_table, "%0*ld", (int)nb_chiffres_des_tables, pr->table);
 
         /* creation des scores (tjrs du point de vue du joueur) */
@@ -702,7 +702,7 @@ void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, st
         aff_diff_scores = 0; sprintf(score_partie, "%s", fscore(pr->pions));
         aff_diff_scores = 1; sprintf(score_partie_relatif, "%s", fscore(pr->pions));
         sprintf(my_score, "%s", pions_en_chaine(pr->pions));
-        sprintf(opp_score, "%s", pions_en_chaine(SCORE_ADVERSE(pr->pions)));
+        sprintf(opp_score, "%s", pions_en_chaine(OPPONENT_SCORE(pr->pions)));
         aff_diff_scores = temp;
 
         /* creation du coupon */
@@ -711,7 +711,7 @@ void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, st
         if (pr->couleur == NOIR)
             sprintf(coupon, "%s  %s  %s", mon_nom, fscore(pr->pions), nom_adv);
         else
-            sprintf(coupon, "%s  %s  %s", nom_adv, fscore(SCORE_ADVERSE(pr->pions)), mon_nom);
+            sprintf(coupon, "%s  %s  %s", nom_adv, fscore(OPPONENT_SCORE(pr->pions)), mon_nom);
         aff_diff_scores = temp;
 
 
@@ -918,17 +918,17 @@ void OutputCrosstable(char cellule[], FILE *out) {
 			"<td class=\"crosstable_title\">No.</td>\n"
 			"<td class=\"crosstable_title\" align=\"left\">Nom</td>\n"
 			"<td class=\"crosstable_title\">Pays</td>\n") ;
-    for (j = 0 ; j < ronde ; j++)
+    for (j = 0 ; j < current_round ; j++)
         fprintf(out, "<td class=\"crosstable_title\">r. %ld</td>\n", j+1) ;
     fprintf(out, "<td class=\"crosstable_title\">Points</td>\n"
 			"<td class=\"crosstable_title\">D&eacute;partage</td>\n</tr>\n") ;
     fflush(out) ;
 #endif
-    for (i = 0 ; i < joueurs_inscrits->n ; i++) {
+    for (i = 0 ; i < registered_players->n ; i++) {
         pj = &TabJoueurs[i] ;
         fprintf(out, "<tr><td align=\"center\">%ld</td><td class=\"crosstable_name\">%s</td><td class=\"crosstable_country\">%s</td>\n", i+1,
-				trouver_joueur(pj->Num_FFO)->nom, trouver_joueur(pj->Num_FFO)->pays);
-        for (j = 0 ; j < ronde ; j++) {
+				trouver_joueur(pj->Num_FFO)->fullname, trouver_joueur(pj->Num_FFO)->country);
+        for (j = 0 ; j < current_round ; j++) {
             fprintf(out, "<td class=\"crosstable_cell\">\n") ;
             pr = &pj->TabRondes[j] ;
             RemplaceCellule(cellule, cellule2, pr, pj) ;
@@ -944,8 +944,8 @@ void OutputCrosstable(char cellule[], FILE *out) {
  *
  * Remplace, dans une ligne du code HTML de cell.tmpl, les mots-clefs
  * par leur valeur.
- * PAPP_TOURNAMENT_NAME : nom du tournoi
- * PAPP_RONDE : numero de la ronde
+ * PAPP_TOURNAMENT_NAME : fullname du tournoi
+ * PAPP_RONDE : ID de la ronde
  */
 void TraiterLigneHTML(char str[]) {
 	char *p ;
@@ -956,7 +956,7 @@ void TraiterLigneHTML(char str[]) {
 	p = strstr(str, "PAPP_RONDE");
     if (p) {
 		strcpy(buf_tmp, p+(long)strlen("PAPP_RONDE"));
-		sprintf(buf2, "%ld", ronde) ;
+		sprintf(buf2, "%ld", current_round) ;
 		len = strlen(buf2);
 		strncpy(p, buf2, len);
 		strcpy(p+len, buf_tmp);
@@ -1050,11 +1050,11 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
     char *nomTrn ;
 
 
-    assert ((ronde_aff >= 0) && (ronde_aff < ronde)) ;
+    assert ((ronde_aff >= 0) && (ronde_aff < current_round)) ;
     more_init(NULL) ;
     eff_ecran() ;
 
-    /* Pour afficher le nom du tournoi en tete */
+    /* Pour afficher le fullname du tournoi en tete */
     nomTrn = malloc(strlen(nom_du_tournoi)+15) ;
     if (nomTrn != NULL) {
         sprintf(nomTrn, "*** %s ***\n", nom_du_tournoi) ;
@@ -1064,8 +1064,8 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
         free(nomTrn) ;
     }
 
-    for (i = 0; i < joueurs_inscrits->n ; i++) {
-        sprintf(buf , "%3ld. %s", i+1, trouver_joueur(TabJoueurs[i].Num_FFO)->nom) ;
+    for (i = 0; i < registered_players->n ; i++) {
+        sprintf(buf , "%3ld. %s", i+1, trouver_joueur(TabJoueurs[i].Num_FFO)->fullname) ;
         more_line(buf) ;
         if (fp)
             fprintf(fp, "%s\n", buf) ;
@@ -1074,7 +1074,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
     if (fp)
         fprintf(fp,"\n") ;
 
-    if ((joueurs_inscrits->n < 99) && (ronde_aff < 13)) {
+    if ((registered_players->n < 99) && (ronde_aff < 13)) {
         n = (5*ronde_aff-1)/2+3 ;
         m = 5*ronde_aff+9 ;
         strncpy(&titre[n], (ronde_aff == 0 ? STR_ROUND_1 : STR_ROUND_2), 6) ;
@@ -1082,7 +1082,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
         more_line(titre) ;
         if (fp)
             fprintf(fp, "%s   " STR_DISCS, titre) ;
-        for (i = 0; i < joueurs_inscrits->n ; i++) {
+        for (i = 0; i < registered_players->n ; i++) {
             sprintf(buf, "%2ld ", i+1) ;
             for (j = 0 ; j <= ronde_aff ; j++) {
                 pr = &TabJoueurs[i].TabRondes[j] ;
@@ -1143,7 +1143,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
         more_line(titre) ;
         if (fp)
             fprintf(fp, "%s   " STR_DISCS, titre) ;
-        for (i = 0; i < joueurs_inscrits->n ; i++) {
+        for (i = 0; i < registered_players->n ; i++) {
             sprintf(buf, "%3ld ", i+1) ;
             line1 = le_min_de(LIM-1, ronde_aff) ;
             for (j = 0 ; j <= line1 ; j++) {
@@ -1153,7 +1153,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
                 else if (!pr->present)
                     sprintf(buf2, "  --- ") ;
                 else
-                    sprintf(buf2, ((joueurs_inscrits->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
+                    sprintf(buf2, ((registered_players->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
                             pr->couleur, PlusMoins[pr->points], local_trouver_joueur(pr->adv)+1) ;
                 strcat(buf, buf2) ;
             }
@@ -1188,7 +1188,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
                     else if (!pr->present)
                         sprintf(buf2, "  --- ") ;
                     else
-                        sprintf(buf2, ((joueurs_inscrits->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
+                        sprintf(buf2, ((registered_players->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
                                 pr->couleur, PlusMoins[pr->points], local_trouver_joueur(pr->adv)+1) ;
                     strcat(buf, buf2) ;
                 }
@@ -1212,28 +1212,28 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
      * scores en demi-points */
 
     suisse_simple = 1;
-    for (i = 0; i < joueurs_inscrits->n ; i++)
-        for (j = 0; j < joueurs_inscrits->n ; j++)
+    for (i = 0; i < registered_players->n ; i++)
+        for (j = 0; j < registered_players->n ; j++)
             if (score_de_machin_contre_bidule(TabJoueurs[i].Num_FFO, TabJoueurs[j].Num_FFO) > 2)
                 suisse_simple = 0;
 
-    sprintf(buf, "%ld  ", 1 + joueurs_inscrits->n);
+    sprintf(buf, "%ld  ", 1 + registered_players->n);
     m = strlen(buf);
 
     /* Ecriture de la ligne en haut de la matrice */
     for (j = 0; j < m ; j++)
         buf[j] = ' ';
-    for (j = 0; j < joueurs_inscrits->n ; j++)
+    for (j = 0; j < registered_players->n ; j++)
         buf[m + j] = Chiffres[ (j+1) % 10 ];
-    buf[m + joueurs_inscrits->n] = '\0';
+    buf[m + registered_players->n] = '\0';
     more_line(buf);
     more_line("");
     if (fp) fprintf(fp, "%s\n\n", buf) ;
 
     /* Ecriture de la matrice */
-    for (i = 0; i < joueurs_inscrits->n ; i++) {
+    for (i = 0; i < registered_players->n ; i++) {
         sprintf(buf, "%ld     ", i+1);
-        for (j = 0; j < joueurs_inscrits->n ; j++)  {
+        for (j = 0; j < registered_players->n ; j++)  {
 
             if (i == j)
                 buf[m + j] = 'X';
@@ -1246,7 +1246,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
             }
         }
 
-        buf[m + joueurs_inscrits->n] = '\0';
+        buf[m + registered_players->n] = '\0';
         more_line(buf);
         if (fp) fprintf(fp, "%s\n", buf) ;
     }
@@ -1261,7 +1261,7 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
 /* long sauvegarder_tableau_croise_HTML(char *nom_fichier_html)
  *
  * Renvoie 1 si on arrive a sauvegarder le tableau croise dans le fichier
- * HTML de nom *nom_fichier_html, et 0 sinon.
+ * HTML de fullname *nom_fichier_html, et 0 sinon.
  */
 long sauvegarder_tableau_croise_HTML(char *nom_fichier_html) {
     FILE *fp;
@@ -1295,7 +1295,7 @@ long sauvegarder_tableau_croise_HTML(char *nom_fichier_html) {
  *
  * Affiche a l'ecran une version texte du tableau croise apres la ronde "quelle_ronde".
  * On peut optionnellement demander de sauvegarder ce tableau dans le fichier texte
- * de nom *nom_fichier_texte, avec le mode d'ecriture *mode_ouverture ("a"=append, "w"=write, etc.)
+ * de fullname *nom_fichier_texte, avec le mode d'ecriture *mode_ouverture ("a"=append, "w"=write, etc.)
  * Passer NULL dans *nom_fichier_texte pour ne pas sauvegarder dans un fichier.
  *
  * Cette fonction n'echoue jamais, sauf si on n'arrive pas a ouvrir le fichier
@@ -1350,10 +1350,10 @@ void calculer_classements_jusque(long quelle_ronde) {
         /* Trier les joueurs apres la ronde rr */
         partial_ronde = rr ;
         local_calcul_departage(partial_ronde) ;
-        SORT(TabJoueurs, joueurs_inscrits->n, sizeof(structure_joueur), compar);
+        SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
 
         /* Mettre dans le grand tableau le rang de chaque joueur a la ronde rr */
-        for (i = 0 ; i < joueurs_inscrits->n ; i++) {
+        for (i = 0 ; i < registered_players->n ; i++) {
             pj = &TabJoueurs[i] ;
             pr = &pj->TabRondes[rr] ;
             pr->rang = i+1;
@@ -1376,7 +1376,7 @@ void preparer_calculs_tableau_croise(long quelle_ronde) {
 
     partial_ronde = quelle_ronde ;
     local_calcul_departage(partial_ronde) ;
-    SORT(TabJoueurs, joueurs_inscrits->n, sizeof(structure_joueur), compar);
+    SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
 }
 
 
@@ -1395,11 +1395,11 @@ void afficher_cross_table(void) {
     long ronde_affichee ;
 
 
-    if (ronde < 1)
+    if (current_round < 1)
         return;
 
     assert(TabJoueurs != NULL);
-    preparer_calculs_tableau_croise(ronde-1);
+    preparer_calculs_tableau_croise(current_round-1);
 
     eff_ecran();
     /* Veut-on une sortie HTML ? */
@@ -1414,19 +1414,19 @@ void afficher_cross_table(void) {
 
 
     /* A quelle ronde faudra-t-il fabriquer le tableau croise texte ? */
-    printf(CROSS_PROMPT_1, ronde) ;
+    printf(CROSS_PROMPT_1, current_round) ;
     if (sscanf(lire_ligne(), "%ld", &ronde_affichee) != 1)
         return ;
     putchar('\n');
-    if ((ronde_affichee < 1) || (ronde_affichee>ronde))
+    if ((ronde_affichee < 1) || (ronde_affichee>current_round))
         return ;
-    assert( ronde_affichee >= 1 && ronde_affichee <= ronde);
+    assert( ronde_affichee >= 1 && ronde_affichee <= current_round);
 
 
     ronde_affichee-- ;
     partial_ronde = ronde_affichee;
     local_calcul_departage(partial_ronde);
-    SORT(TabJoueurs, joueurs_inscrits->n, sizeof(structure_joueur), compar);
+    SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
 
 
     /* Veut-on une sortie dans un fichier texte ? */
@@ -1458,7 +1458,7 @@ void afficher_cross_table(void) {
 
 long peut_allouer_memoire_cross_table(void) {
     TabJoueurs = NULL;
-    TabJoueurs = (structure_joueur*)malloc((MAX_INSCRITS+1)*sizeof(structure_joueur));
+    TabJoueurs = (structure_joueur*)malloc((MAX_REGISTERED+1)*sizeof(structure_joueur));
 
     if (!TabJoueurs)
         return 0;

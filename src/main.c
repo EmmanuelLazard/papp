@@ -10,7 +10,7 @@
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
  * (EL) 03/04/2007 : Changement de l'affichage initial.
  * (EL) 30/03/2007 : Ecriture de la fonction 'Init_Sous_Dossier()' qui cree
-                     un sous-dossier a partir du nom du tournoi et modifie les noms
+                     un sous-dossier a partir du fullname du tournoi et modifie les noms
                      des fichiers class/result/ronde...
  * (EL) 06/02/2007 : Test de la presence d'un ancien fichier intermediaire
                      ou de l'absence de ce fichier. Dans ce cas, demande
@@ -135,7 +135,7 @@ void messages_copyleft() {
 		   "        avec un maximum de %d rondes. Il y a %ld joueurs \n"
 		   "        dans la base.\n"
 #endif
-		   , VERSION, __DATE__, MAX_INSCRITS, NMAX_RONDES, nombre_joueurs_base());
+		   , VERSION, __DATE__, MAX_REGISTERED, NMAX_ROUNDS, nombre_joueurs_base());
 }
 
 void affiche_banniere_cfg(void) {
@@ -282,10 +282,10 @@ void Demander_caracteristiques_tournoi(long type_fichier) {
     time_t now;
 	char date_tmp[25];
 
-	assert(type_fichier == INEXISTANT || type_fichier == OLD) ;
+	assert(type_fichier == NONEXISTING || type_fichier == OLD) ;
 	/*	eff_ecran(); */
 	beep();
-	if (type_fichier == INEXISTANT) {
+	if (type_fichier == NONEXISTING) {
 		printf("\n"
 #ifdef ENGLISH
 			   "      You are starting a new tournament.\n"
@@ -312,7 +312,7 @@ void Demander_caracteristiques_tournoi(long type_fichier) {
 	COPIER(tmp, &nom_du_tournoi);
 	putchar('\n');
 	nombre_de_rondes = 0 ;
-	while( (nombre_de_rondes<1) || (nombre_de_rondes>NMAX_RONDES) ) {
+	while( (nombre_de_rondes<1) || (nombre_de_rondes>NMAX_ROUNDS) ) {
 		printf(MSG_NBR_ROUNDS) ;
 		if (sscanf(lire_ligne(), "%ld", &nombre_de_rondes) != 1) {
 			beep() ;
@@ -371,7 +371,7 @@ void Init_Sous_Dossier(void) {
 		return ;
 	if (nom_du_tournoi == NULL || nom_du_tournoi[0] == '\0')
 		return ;
-	/* On cree d'abord le nom du sous-dossier sans les espaces et caracteres speciaux */
+	/* On cree d'abord le fullname du sous-dossier sans les espaces et caracteres speciaux */
 	COPIER(nom_du_tournoi, &nom_sous_dossier) ;
 	for (i=0 ; i<strlen(nom_sous_dossier) ; i++) {
 		if (nom_sous_dossier[i] == ' ')
@@ -386,7 +386,7 @@ void Init_Sous_Dossier(void) {
 		if (errno != EEXIST)
 			/* Le repertoire ne peut etre cree et ce n'est pas parce qu'il existe */
 			return ;
-	/* Modifier le nom des fichiers */
+	/* Modifier le fullname des fichiers */
 	CONCAT(nom_sous_dossier, nom_fichier_appariements, &nom_fichier_appariements) ;
 	CONCAT(nom_sous_dossier, nom_fichier_result, &nom_fichier_result) ;
 	CONCAT(nom_sous_dossier, nom_fichier_classement, &nom_fichier_classement) ;
@@ -428,20 +428,20 @@ int main (int argc, char **argv) {
 	/* Obtenir un verrou */
 	ret = poser_verrou();
 	if (ret < 0)
-		erreur_fatale(MSG_CANTLOCK);
+		fatal_error(MSG_CANTLOCK);
 	if (ret > 0) {
 		beep();
-		erreur_fatale(MSG_LOCKED);
+		fatal_error(MSG_LOCKED);
 	}
 
 	/* Initialisation des listes de joueurs */
-	joueurs_inscrits   = creer_liste();
-	joueurs_nouveaux   = creer_liste();
-	joueurs_emigres    = creer_liste();
-	capitaines_equipes = creer_liste();
+	registered_players   = creer_liste();
+	new_players   = creer_liste();
+	emigrant_players    = creer_liste();
+	team_captain = creer_liste();
 
 	/* Initialisation de l'historique */
-	premiere_ronde();
+	first_round();
 	/* Initialisation des tableaux de penalites */
 	init_penalites_defaut();
 
@@ -449,16 +449,16 @@ int main (int argc, char **argv) {
 	if (getenv("PAPP_CFG"))
 		nom_fichier_config = getenv("PAPP_CFG");
 	if (argc > 2)
-		erreur_fatale("usage: papp [config-file]");
+		fatal_error("usage: papp [config-file]");
 	else if (argc == 2)
 		nom_fichier_config = argv[1];
 
 	/* Lecture du fichier de config */
-	type_fichier_config = INEXISTANT ;
+	type_fichier_config = NONEXISTING ;
 	affiche_banniere_cfg() ;
-	ret = lire_fichier(nom_fichier_config, F_CONFIG);
+	ret = lire_fichier(nom_fichier_config, CONFIG_F);
 	if (ret > 0)
-		erreur_fatale(BAD_CONFIG);
+		fatal_error(BAD_CONFIG);
 	if (ret == -1 && errno == ENOENT) {
 		/* Sauvegarde de la configuration par defaut, si possible */
 		FILE *fp;
@@ -476,7 +476,7 @@ int main (int argc, char **argv) {
 	}
 	affiche_param_type2() ;
 
-	/* Fabrication du nom de fichier "joueurs.txt" */
+	/* Fabrication du fullname de fichier "joueurs.txt" */
 	(void)strcpy(nom_fichier_joueurs_alt, nom_fichier_joueurs);
 	(void)strcat(nom_fichier_joueurs_alt, ".txt");
 
@@ -486,38 +486,38 @@ int main (int argc, char **argv) {
 	    fichier_existe(nom_fichier_joueurs_alt))
 	    {
 	    warning_deux_fichiers_de_joueurs(nom_fichier_joueurs, nom_fichier_joueurs_alt);
-	    terminer();
+			terminate();
 	    return (-999);
 	    }
 
 	/* Lecture du fichier des joueurs, sans l'extension .txt */
-	ret = lire_fichier(nom_fichier_joueurs, F_JOUEURS);
+	ret = lire_fichier(nom_fichier_joueurs, PLAYERS_F);
 	if (ret > 0)
-		erreur_fatale(BAD_PLAYERS);
+		fatal_error(BAD_PLAYERS);
 
 	/* Lecture du fichier des joueurs, avec l'extension .txt */
-	ret = lire_fichier(nom_fichier_joueurs_alt, F_JOUEURS);
+	ret = lire_fichier(nom_fichier_joueurs_alt, PLAYERS_F);
 	if (ret > 0)
-		erreur_fatale(BAD_PLAYERS);
+		fatal_error(BAD_PLAYERS);
 
 	/* Lecture des nouveaux */
-	ret = lire_fichier(nom_fichier_nouveaux, F_NOUVEAUX);
+	ret = lire_fichier(nom_fichier_nouveaux, NEWPLAYERS_F);
 	if (ret > 0)
-		erreur_fatale(BAD_NEWP);
+		fatal_error(BAD_NEWP);
 
-	/* Si le nom du fichier intermediaire est different de '__papp__',
-	   on renomme un ancien fichier '__papp__' avec ce nouveau nom.        */
+	/* Si le fullname du fichier intermediaire est different de '__papp__',
+	   on renomme un ancien fichier '__papp__' avec ce nouveau fullname.        */
 	if (strcmp(nom_fichier_inter, "__papp__")) {
 		if (fichier_existe("__papp__") && !fichier_existe(nom_fichier_inter)) {
 			rename("__papp__", nom_fichier_inter);
 		}
 	}
 	/* Nous pouvons maintenant lire le fichier de sauvegarde */
-	type_fichier_intermediaire = INEXISTANT ;
+	type_fichier_intermediaire = NONEXISTING ;
 	affiche_banniere_tournoi() ;
-	ret = lire_fichier(nom_fichier_inter, F_CONFIG);
+	ret = lire_fichier(nom_fichier_inter, CONFIG_F);
 	if (ret > 0)
-		erreur_fatale(BAD_SAVE);
+		fatal_error(BAD_SAVE);
 
 	if (type_fichier_intermediaire != CORRECT) {
 		/* On a soit un vieux fichier intermediaire, soit pas de fichier */
@@ -532,8 +532,8 @@ int main (int argc, char **argv) {
 		Init_Sous_Dossier() ;
 	}
 	/* Pour eviter une sauvegarde automatique */
-	ne_pas_sauver_inscrits();
-	ne_pas_sauver_appariements();
+	do_not_save_registered();
+	do_not_save_pairings();
 
 	installer_signaux();
 	verification_penalites();
@@ -668,14 +668,14 @@ lire:
 	        case '\026':	/* Ctrl-V */
 			    ASK_FILENAME(fichier);
 	        case 'v':
-			    affiche_appariements(fichier, 0);
+				display_pairings(fichier, 0);
 			    break;
 	        case '\006':	/* Ctrl-F */
 			    ASK_FILENAME(fichier);
 	        case 'f':
 			    eff_ecran();
 			    printf("\n\n");
-			    if ((no_joueur = choix_d_un_joueur_au_clavier(WHICH_FEATS, joueurs_inscrits, &ligne)) <= 0)
+			    if ((no_joueur = choix_d_un_joueur_au_clavier(WHICH_FEATS, registered_players, &ligne)) <= 0)
 				    break;
 				fiche_individuelle(no_joueur, fichier);
 			    break;
@@ -698,45 +698,45 @@ lire:
 			    break;
 #endif
 	        case 'x':
-			    terminer();
+				terminate();
 			    break;
 	        case '+':
 			    eff_ecran();
-			    no_joueur = choix_d_un_joueur_au_clavier(WHO_COMES, joueurs_inscrits, &ligne);
+			    no_joueur = choix_d_un_joueur_au_clavier(WHO_COMES, registered_players, &ligne);
 			    if (no_joueur == TOUS_LES_JOUEURS) {
-				    for (k = 0; k < joueurs_inscrits->n; k++)
-					    es_joueur(joueurs_inscrits->liste[k]->numero, 1);
+				    for (k = 0; k < registered_players->n; k++)
+                        player_InOut(registered_players->list[k]->ID, 1);
 				    goto touche; /* Laisser les messages a l'ecran */
 			    }
-				else if (no_joueur >= 0) { es_joueur(no_joueur, 1); goto touche; }
+				else if (no_joueur >= 0) {player_InOut(no_joueur, 1); goto touche; }
 				    break;
 	        case '-':
 			    eff_ecran();
-			    no_joueur = choix_d_un_joueur_au_clavier(WHO_LEAVES,joueurs_inscrits, &ligne);
+			    no_joueur = choix_d_un_joueur_au_clavier(WHO_LEAVES,registered_players, &ligne);
 			    if (no_joueur == TOUS_LES_JOUEURS) {
-				    for (k = 0; k < joueurs_inscrits->n; k++)
-					    es_joueur(joueurs_inscrits->liste[k]->numero, 0);
+				    for (k = 0; k < registered_players->n; k++)
+                        player_InOut(registered_players->list[k]->ID, 0);
 				    goto touche; /* Laisser les messages a l'ecran */
 			    }
-				else if (no_joueur >= 0) { es_joueur(no_joueur, 0); goto touche; }
+				else if (no_joueur >= 0) {player_InOut(no_joueur, 0); goto touche; }
 				    break;
 	        case 'n':
 			    printf("\n\n");
 			    if ((no_joueur = choix_d_un_joueur_au_clavier(WHICH_PLAYER, NULL, &ligne)) <= 0)
 				    break;
 				{
-				Joueur *j = trouver_joueur(no_joueur);
+				Player *j = trouver_joueur(no_joueur);
 				if (j == NULL)
 					beep();
 				else {
 					eff_ligne();
-					printf("%s (%ld)\n", j->nom, j->numero);
-					printf( OLD_NATION "%s\n", j->pays);
+					printf("%s (%ld)\n", j->fullname, j->ID);
+					printf( OLD_NATION "%s\n", j->country);
 					printf( NEW_NATION);
 					ligne = lire_ligne();
 					if (ligne[0]) {
 						change_nationalite(no_joueur, ligne);
-						ajouter_joueur(joueurs_emigres, j);
+						ajouter_joueur(emigrant_players, j);
 					}
 				}
 				}
@@ -762,7 +762,7 @@ lire:
 			    calcul_appariements();
 			    break;
 		    case 'm':
-			    manipule_appariements();
+				pairings_manipulate();
 			    break;
 	        case 'e':
 			    cree_fichier_elo();

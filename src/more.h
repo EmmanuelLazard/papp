@@ -3,10 +3,11 @@
  *  - prototypes pour more.c
  *  - prototypes for more.c
  *
+ * (EL) 15/06/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change.
  * (EL) 16/07/2012 : v1.34, no change
- * (EL) 05/05/2008 : v1.33 Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
+ * (EL) 05/05/2008 : v1.33 All 'int' become 'long' to force 4 bytes storage.
  * (EL) 21/04/2008 : v1.32, no change
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 13/01/2007 : v1.30 E. Lazard, no change
@@ -24,15 +25,17 @@ extern long  nb_lignes, nb_colonnes;
 
 long oui_non(const char *prompt);
 
-void more_init(const char *filename);   /* prepare l'ecran pour more     */
-void more_line(const char *ligne);      /* affiche une ligne avec more   */
-void more_close(void);                  /* termine avec more             */
+void more_init(const char *filename);   /* prepare l'ecran pour more - prepare screen for more     */
+void more_line(const char *ligne);      /* affiche une ligne avec more - display a line with more  */
+void more_close(void);                  /* termine avec more  - end with more                      */
 void more_set_mode(const char *mode);   /* change le mode d'ouverture du prochain fichier */
-                                        /* avec more */
+                                        /* avec more - change next file opening mode      */
+                                        /* with more                                      */
 char *more_get_mode(void);              /* recupere le mode d'ouverture du prochain fichier */
-                                        /* avec more */
+                                        /* avec more - retreive next file opening mode      */
+                                        /* with more.                                       */
 
-/* Gestion de la console */
+/* Gestion de la console - console management */
 
 long lire_touche(void);
 char *lire_ligne(void);
