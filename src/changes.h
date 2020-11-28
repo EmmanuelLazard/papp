@@ -1,10 +1,9 @@
 /* change.h
  *
- *  - definitions diverses et variables d'environnement
- *  pour chaque compilateur. Voir aussi le "makefile".
- *  - various definitions for each compiler. See also
- *  the "makefile" file for operating systems/compilers
- *  supporting makefiles.
+ *  - definitions diverses et variables d'environnement pour chaque compilateur.
+ *    Voir aussi le "makefile".
+ *  - various definitions for each compiler. See also the "makefile" file
+ *    for operating systems/compilers supporting makefiles.
  *
  * (EL) 15/06/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
@@ -72,7 +71,7 @@
 
        /* Semble manquer dans CodeWarrior */
        #define ENOENT (-43)   /* -43 = FileNotFoundErr */
-       /* On ralonge goodbye et beep pour eviter des conflits avec des librairies obscures */
+       /* On redefinit goodbye et beep pour eviter des conflits avec des librairies obscures */
        #define goodbye Papp_goodbye
        #define beep Papp_beep
 

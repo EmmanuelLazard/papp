@@ -22,10 +22,34 @@
  *                   la constante lorsqu'on compte 1 point par victoire.
  * (EL) 04/02/2007 : Test de la presence du type precedent (<= 1.29)
  *                   du fichier de config (avec Brightwell ou toutes-rondes)
- *                   -> memoriser dans variable 'type_fichier_config'
+ *                   -> memoriser dans variable 'config_file_type'
  * (EL) 02/02/2007 : Ajout du token 'INT_ET_DEMI' pour distinguer
  *                   du token 'DOUBLE' utilise uniquement pour
  *                   definir la constante de Brightwell.
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
+ *
+ ****
+ *
+ * pap.y: Syntaxical analysis of configuration file and players file.
+ *
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change.
+ * (EL) 25/06/2012 : v1.34, Add 'XML' keyword for XML file generation
+ * (EL) 20/07/2008 : v1.33, v1.33, add recognition of 'DIESE_DATE' token in workfile.
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, no change
+ * (EL) 29/04/2007 : v1.31, no change
+ * (EL) 30/03/2007 : Add 'KW_DOSSIER', 'KW_TRUE' and 'KW_FALSE' tokens indicating
+ *                   grouping of class/result/pairings files... in the same sub-directory
+ *                   having tournament name as filename
+ * (EL) 07/02/2007 : Add 'DIESE_NOM', 'DIESE_RONDES' and 'DIESE_BRIGHTWELL_DBL' tokens
+ *                   to be able to put these infos in workfile
+ *                   Addition of rules in internal commands.
+ * (EL) 04/02/2007 : Add 'KW_BRIGHTWELL_DBL' token which gives BQ constant when 1 point is used for a victory
+ * (EL) 04/02/2007 : Testing presence of previous version (<= 1.29) in configuration file.
+ *                   -> memorisation in 'config_file_type'
+ * (EL) 02/02/2007 : Add 'INT_ET_DEMI' token to distinguish from token 'DOUBLE' used only
+ *                   to define Brightwell constant.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
  */
@@ -35,11 +59,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "appari.h"
+#include "pairings.h"
 #include "couplage.h"
 #include "global.h"
-#include "joueur.h"
-#include "pions.h"
+#include "player.h"
+#include "discs.h"
 
 #define yyerror(x)
 
@@ -101,7 +125,7 @@
 # define PENCH_TOOFAR           "ronde trop eloignee, penalite ignoree"
 # define PENEL_TOOFAR           "ronde trop eloignee, penalite ignoree"
 # define ICMD_BPAIR             "mauvais appariement"
-# define ICMD_APAIR             "joueur(s) deja apparie(s)"
+# define ICMD_APAIR             "joueur(s) deja doPairings(s)"
 # define ICMD_TOTS              "mauvais total de pions"
 # define ICMD_BRES              "mauvais resultat"
 # define ICMD_DEMI              "resulat en demi pions impossible"
@@ -119,8 +143,7 @@ static char buffer[80];
 static long i, taille_ttr, *table_ttr;
 int yylex (void);
 
-static char *
-bout_a_bout (char *s1, char *s2) {
+static char *end_to_end(char *s1, char *s2) {
     char *s3, *p, *q;
 
     s3 = new_string();
@@ -134,58 +157,58 @@ bout_a_bout (char *s1, char *s2) {
     return s3;
 }
 
-static void Nouveau_joueur (long numero, const char *nom, const char *firstname,
-        const char *programmeur, const char *pays, long classement,
-        const char *commentaire, const long nv) {
-    if (!numero) {
+static void New_player(long number, const char *name, const char *firstname,
+        const char *programmer, const char *country, long rating,
+        const char *comment, const long new) {
+    if (!number) {
         char *s = new_string();
-        sprintf(s, NUM_ZERO, nom);  /* numero 0 interdit */
-        erreur_syntaxe(s);
+        sprintf(s, NUM_ZERO, name);  /* 0 number forbidden */
+        syntax_error(s);
     }
-    if (nv_joueur(numero, nom, firstname, programmeur, pays, classement, commentaire, nv) == NULL) {
+    if (new_player(number, name, firstname, programmer, country, rating, comment, new) == NULL) {
         char *s = new_string();
-        sprintf(s, FOUND_DUP, numero);  /* doublon */
-        erreur_syntaxe(s);
+        sprintf(s, FOUND_DUP, number);  /* duplicate */
+        syntax_error(s);
     }
 }
 
-static void elargir_table (pen_t **table, long *taille, long nv_taille) {
-    long i, o_taille;
+static void enlarge_table (pen_t **table, long *size, long new_size) {
+    long i, old_size;
 
-    o_taille = *taille;
-    assert(0 < o_taille && o_taille < nv_taille);
-    REALLOC(*table, nv_taille, pen_t);
-    for (i = o_taille; i < nv_taille; i++) {
-        (*table)[i] = (*table)[o_taille-1];
+    old_size = *size;
+    assert(0 < old_size && old_size < new_size);
+    REALLOC(*table, new_size, pen_t);
+    for (i = old_size; i < new_size; i++) {
+        (*table)[i] = (*table)[old_size-1];
     }
-    *taille = nv_taille;
+    *size = new_size;
 }
 
-static void raz_toutes_penalites (void) {
+static void clear_all_penalties (void) {
     long i;
 
-    /* Penalites de couleur */
-    for (i = 0; i < nmax_couleur; i++)
-        penalite_couleur[i] = 0;
-    penalite_repcoul = 0;
+    /* Colour penalties */
+    for (i = 0; i < colors_nmax; i++)
+        color_penalty[i] = 0;
+    repeated_color_penalty = 0;
 
-    /* Penalites de flottement */
-    for (i = 0; i < nmax_flottement; i++)
-        penalite_flottement[i] = 0;
-    penalite_flcum = minoration_fac = 0;
+    /* Flotting penalties */
+    for (i = 0; i < floats_nmax; i++)
+        float_penalty[i] = 0;
+    cumulative_floats_penalty = opposite_float_pen = 0;
 
-    /* Penalites de repetition */
-    penalite_mcoul   = penalite_copp   =
-    penalite_desuite = penalite_bipbip = 0;
+    /* Repetition penalties */
+    same_colors_replay_penalty   = opposite_colors_replay_penalty   =
+    immediate_replay_penalty = bye_replay_penalty = 0;
 
-    /* Penalites de chauvinisme */
+    /* Same country penalties */
     for (i = 0; i < NMAX_ROUNDS; i++)
-        penalite_chauvinisme[i] = 0;
+        country_penalty[i] = 0;
 
-    /* Penalites d'elitisme */
+    /* Elitisme penalties */
 #ifdef ELITISM
     for (i = 0; i < NMAX_ROUNDS; i++)
-        penalite_elitisme[i] = 0;
+        elitism_penalty[i] = 0;
 #endif
 }
 
@@ -225,7 +248,7 @@ static void raz_toutes_penalites (void) {
 
 %%
 
-entree: /* rien */
+entree: /* nothing */
         | entree_config
         | entree_joueurs
         ;
@@ -248,33 +271,33 @@ ligne_joueur:
         ;
 
 indication_pays: KW_PAYS '=' STRING
-            { COPIER($3, &pays_courant); }
+            { COPY($3, &current_country); }
         ;
 
 description_joueur:
           INTEGER chaines STRING opt_pays opt_jech opt_comm
-                { Nouveau_joueur($1,$2,$3,NULL,$4,$5,$6, fichier_des_nouveaux); }
+                { New_player($1,$2,$3,NULL,$4,$5,$6, new_players_file); }
         | INTEGER chaines ',' opt_chaines opt_pays opt_jech opt_comm
-                { Nouveau_joueur($1,$2,$4,NULL,$5,$6,$7, fichier_des_nouveaux); }
+                { New_player($1,$2,$4,NULL,$5,$6,$7, new_players_file); }
         | INTEGER STRING opt_pays opt_jech opt_comm
-                { Nouveau_joueur($1,$2,NULL,NULL,$3,$4,$5, fichier_des_nouveaux); }
+                { New_player($1,$2,NULL,NULL,$3,$4,$5, new_players_file); }
         | INTEGER chaines '(' opt_chaines ')' opt_pays opt_jech opt_comm
-                { Nouveau_joueur($1,$2,NULL,$4,$6,$7,$8, fichier_des_nouveaux); }
+                { New_player($1,$2,NULL,$4,$6,$7,$8, new_players_file); }
         | INTEGER '{' STRING '}' opt_comm
-                { change_nationalite($1,$3); }
+                { change_nationality($1,$3); }
         ;
 
 chaines:  STRING
-        | chaines STRING        { $$ = bout_a_bout($1, $2);  }
-        | chaines '+'           { $$ = bout_a_bout($1, "+"); }
-        | chaines '/'           { $$ = bout_a_bout($1, "/"); }
+        | chaines STRING        { $$ = end_to_end($1, $2);  }
+        | chaines '+'           { $$ = end_to_end($1, "+"); }
+        | chaines '/'           { $$ = end_to_end($1, "/"); }
         ;
 
-opt_chaines: /* rien */         { $$ = ""; }
+opt_chaines: /* nothing */      { $$ = ""; }
         | chaines               { $$ = $1; }
         ;
 
-opt_jech: /* rien */            { $$ =  0; }
+opt_jech: /* nothing */         { $$ =  0; }
         | '<' entier_signe '>'  { $$ = $2; }
         ;
 
@@ -282,15 +305,15 @@ entier_signe: INTEGER           { $$ =  $1; }
         | '-' INTEGER           { $$ = -$2; }
         ;
 
-opt_pays: /* rien */            { $$ = pays_courant; }
+opt_pays: /* nothing */         { $$ = current_country; }
         | '{' STRING '}'        { $$ = $2; }
         ;
 
-opt2_pays: /* rien */           { $$ = ""; }
+opt2_pays: /* nothing */        { $$ = ""; }
         | STRING                { $$ = $1; }
         ;
 
-opt_comm: /* rien */            { $$ = NULL; }
+opt_comm: /* nothing */         { $$ = NULL; }
         | COMMENT               { $$ = $1;   }
         ;
 
@@ -304,131 +327,131 @@ entree_config:
         | entree_config commande point_virgule
         ;
 
-commande: /* rien */
+commande: /* nothing */
         | KW_XML KW_TRUE
-                { generer_fichiers_XML = 1;}
+                { generate_xml_files = 1;}
         | KW_XML KW_FALSE
-                { generer_fichiers_XML = 0;}
+                { generate_xml_files = 0;}
         | KW_DOSSIER KW_TRUE
-                { utiliser_sous_dossier = 1 ;}
+                { use_subfolder = 1 ;}
         | KW_DOSSIER KW_FALSE
-                { utiliser_sous_dossier = 0 ;}
+                { use_subfolder = 0 ;}
         | KW_FICHIER KW_JOUEURS  '=' STRING
-                { COPIER($4, &nom_fichier_joueurs); }
+                { COPY($4, &players_filename); }
         | KW_FICHIER KW_NOUVEAUX '=' STRING
-                { COPIER($4, &nom_fichier_nouveaux); }
+                { COPY($4, &new_players_filename); }
         | KW_FICHIER KW_INTER    '=' STRING
-                { COPIER($4, &nom_fichier_inter); }
+                { COPY($4, &workfile_filename); }
         | KW_FICHIER KW_RESULT   '=' STRING
-            { COPIER($4, &nom_fichier_result);
-            sauvegarde_fichier_result = nom_fichier_result[0]? 1 : 0 ; }
+            { COPY($4, &results_filename);
+            result_file_save = results_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_CLASS    '=' STRING
-            { COPIER($4, &nom_fichier_classement);
-            sauvegarde_fichier_classement = nom_fichier_classement[0]? 1 : 0 ; }
+            { COPY($4, &standings_filename);
+            standings_file_save = standings_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_EQUIPES  '=' STRING
-            { COPIER($4, &nom_fichier_class_equipes);
-            sauvegarde_fichier_class_equipes = nom_fichier_class_equipes[0]? 1 : 0 ; }
+            { COPY($4, &team_standings_filename);
+            team_standings_file_save = team_standings_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_APPARIEMENTS   '=' STRING
-            { COPIER($4, &nom_fichier_appariements);
-            sauvegarde_fichier_appariements = nom_fichier_appariements[0]? 1 : 0 ; }
+            { COPY($4, &pairings_filename);
+            pairings_file_save = pairings_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_CROSSTABLE   '=' STRING
-            { COPIER($4, &nom_fichier_crosstable_HTML);
-            sauvegarde_fichier_crosstable_HTML = nom_fichier_crosstable_HTML[0]? 1 : 0 ; }
+            { COPY($4, &HTML_crosstable_filename);
+            html_crosstable_file_save = HTML_crosstable_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_ELO   '=' STRING
-            { COPIER($4, &nom_fichier_elo);
-            sauvegarde_fichier_elo = nom_fichier_elo[0]? 1 : 0 ; }
+            { COPY($4, &elo_filename);
+            elo_file_save = elo_filename[0]? 1 : 0 ; }
         | KW_FICHIER KW_LOG      '=' STRING
-                { COPIER($4, &nom_fichier_log); }
+                { COPY($4, &log_filename); }
         | KW_ZONE_INS opt2_pays  '=' INTEGER '-' INTEGER
             {
                 /*
                  * zone-insertion [pays] = inf-sup;
                  */
                 if ($4<0 || $4>$6) {
-                    /* mauvais parametres */
-                    erreur_syntaxe(ZIS_BADP);
+                    /* bad parametres */
+                    syntax_error(ZIS_BADP);
                 } else
-                    nv_zone($2,$4,$6);
+                    newInsertionZone($2,$4,$6);
             }
         | indication_pays
         | KW_BRIGHTWELL '=' nbr_reel
             {
-                coef_brightwell = $3;
-                type_fichier_config = OLD ; /* Vieux fichier de config */
+                brightwell_coeff = $3;
+                config_file_type = OLD ; /* Old config file */
             }
         | KW_BRIGHTWELL_DBL '=' nbr_reel
             {
-                coef_brightwell = ($3)/2;
-                type_fichier_config = OLD ; /* Vieux fichier de config */
+                brightwell_coeff = ($3)/2;
+                config_file_type = OLD ; /* Old config file */
             }
         | KW_SCORE_BIP  '=' INTEGER
             {
-                score_bip = INTEGER_TO_SCORE($3);
-                if (SCORE_TOO_LARGE(score_bip))
-                    erreur_syntaxe(BIP_ERROR);
-                if (IS_VICTORY(score_bip))
-                    avert_syntaxe(BIP_WINS);
+                bye_score = INTEGER_TO_SCORE($3);
+                if (SCORE_TOO_LARGE(bye_score))
+                    syntax_error(BIP_ERROR);
+                if (IS_VICTORY(bye_score))
+                    syntax_warning(BIP_WINS);
             }
         | KW_SCORE_BIP  '=' INTEGER '/' INTEGER
             {
-                score_bip = INTEGER_TO_SCORE($3);
-                total_pions = $5;
-                if (total_pions < 1)
-                    erreur_syntaxe(BIP_TOTAL);
+                bye_score = INTEGER_TO_SCORE($3);
+                discsTotal = $5;
+                if (discsTotal < 1)
+                    syntax_error(BIP_TOTAL);
                 else
-                    nb_chiffres_des_scores = nombre_chiffres(total_pions);
+                    scores_digits_number = number_of_digits(discsTotal);
 
-                if (SCORE_TOO_LARGE(score_bip))
-                    erreur_syntaxe(BIP_ERROR);
-                else if (IS_VICTORY(score_bip))
-                    avert_syntaxe(BIP_WINS);
+                if (SCORE_TOO_LARGE(bye_score))
+                    syntax_error(BIP_ERROR);
+                else if (IS_VICTORY(bye_score))
+                    syntax_warning(BIP_WINS);
             }
         | KW_COULEUR '=' '{' STRING ',' STRING '}'
-            { COPIER($4, &couleur_1); COPIER($6, &couleur_2); }
+            { COPY($4, &color_1); COPY($6, &color_2); }
         | KW_SAUVEGARDE KW_SAUVIMM
-                { sauvegarde_immediate = 1; }
+                { immediate_save = 1; }
         | KW_SAUVEGARDE KW_SAUVDIF
-                { sauvegarde_immediate = 0; }
+                { immediate_save = 0; }
         | KW_IMPRESSION KW_MANUELLE
-            { impression_automatique = 0; }
+            { automatic_printing = 0; }
         | KW_IMPRESSION KW_AUTOMATIQUE INTEGER
-            { nb_copies_impression = $3;
-            impression_automatique = nb_copies_impression? 1 : 0 ; }
+            { print_copies = $3;
+            automatic_printing = print_copies? 1 : 0 ; }
         | KW_IMPRESSION KW_AUTOMATIQUE
-            { nb_copies_impression = 1;
-            impression_automatique = 1; }
+            { print_copies = 1;
+            automatic_printing = 1; }
         | KW_AFF_PIONS KW_AFF_DIFF
-                { aff_diff_scores = 1; }
+                { display_score_diff = 1; }
         | KW_AFF_PIONS KW_AFF_NORMAL
-                { aff_diff_scores = 0; }
+                { display_score_diff = 0; }
         | KW_TTRONDES '=' INTEGER '-' INTEGER KW_JOUEURS
             {
                 /*
-                 * toutes-rondes = inf-sup joueurs
+                 * round-robin = inf-sup players
                  */
-                type_fichier_config = OLD ; /* Vieux fichier de config */
+                config_file_type = OLD ; /* Old config file */
                 if ($3 < 1 || $3 > $5) {
-                    /* mauvais parametres */
-                    erreur_syntaxe(TTR_BADP);
+                    /* bad parametres */
+                    syntax_error(TTR_BADP);
                 } else {
-                    ttr_minj = $3;
-                    ttr_maxj = $5;
+                    minPlayers4rr = $3;
+                    maxPlayers4rr = $5;
                 }
             }
         | KW_PENALITES '{'
             {
                 /*
-                 * Remettre a zero toutes les penalites, avant de commencer
-                 * a lire les differentes sections
+                 * Clear all penalties before starting to read different sections
                  */
-                raz_toutes_penalites();
+
+                clear_all_penalties();
             }
         liste_sections '}'
         | commande_interne
         | ligne_invalide
         ;
 
-liste_sections: /* rien */
+liste_sections: /* nothing */
         | liste_sections section
         ;
 
@@ -445,133 +468,133 @@ section_repetition:  KW_REPET      ':' liste_pen_repetition;
 section_chauvinisme: KW_CHAUVIN    ':' liste_pen_chauvinisme;
 section_elitisme:    KW_ELITISME   ':' liste_pen_elitisme;
 
-liste_pen_couleur: /* rien */
+liste_pen_couleur: /* nothing */
         | liste_pen_couleur pen_couleur point_virgule
         ;
 
-liste_pen_flottement: /* rien */
+liste_pen_flottement: /* nothing */
         | liste_pen_flottement pen_flottement point_virgule
         ;
 
-liste_pen_repetition: /* rien */
+liste_pen_repetition: /* nothing */
         | liste_pen_repetition pen_repetition point_virgule
         ;
 
-liste_pen_chauvinisme: /* rien */
+liste_pen_chauvinisme: /* nothing */
         | liste_pen_chauvinisme pen_chauvinisme point_virgule
         ;
 
-liste_pen_elitisme: /*rien */
+liste_pen_elitisme: /*nothing */
     | liste_pen_elitisme pen_elitisme point_virgule
     ;
 
-opt_plus: /* rien */    { $$ = 0; }
+opt_plus: /* nothing */ { $$ = 0; }
         | '+'           { $$ = 1; }
         ;
 
 v_pen: INTEGER
         {
             /*
-             * Renvoie un entier entre 0 et MAX_PEN
+             * Returns an integer between 0 and MAX_PEN
              */
-            long valeur = $1;
-            if (valeur < 0) {
-                avert_syntaxe(PEN_NEGATIVE);
-                valeur = 0;
-            } else if (valeur > MAX_PEN) {
-                /* LONG_MAX signifie l'infini */
-                if (valeur != LONG_MAX) {
-                    avert_syntaxe(PEN_INFINITE);
+            long value = $1;
+            if (value < 0) {
+                syntax_warning(PEN_NEGATIVE);
+                value = 0;
+            } else if (value > MAX_PEN) {
+                /* LONG_MAX means infinitiy */
+                if (value != LONG_MAX) {
+                    syntax_warning(PEN_INFINITE);
                 }
-                valeur = MAX_PEN;
+                value = MAX_PEN;
             }
-            $$ = valeur;
+            $$ = value;
         }
         ;
 
-pen_couleur: /* rien */
+pen_couleur: /* nothing */
         | INTEGER opt_plus KW_FOIS '=' v_pen
             {
                 i = $1;
                 if (i < 1) {
-                    avert_syntaxe(PENC_NULL);
+                    syntax_warning(PENC_NULL);
                 } else {
-                    if (i+1 >= nmax_couleur) {
-                        elargir_table(&penalite_couleur,
-                                &nmax_couleur,i+2);
+                    if (i+1 >= colors_nmax) {
+                        enlarge_table(&color_penalty,
+                                &colors_nmax,i+2);
                     }
-                    while (i < nmax_couleur) {
-                                penalite_couleur[i++] = $5;
+                    while (i < colors_nmax) {
+                                color_penalty[i++] = $5;
                                 if ($2==0) break;
                     }
                 }
             }
         | KW_DESUITE '=' v_pen
-            { penalite_repcoul = $3; }
+            { repeated_color_penalty = $3; }
         ;
 
-pen_flottement: /* rien */
+pen_flottement: /* nothing */
         | INTEGER opt_plus KW_DPOINT '=' v_pen
             {
                 i = $1;
                 if (i < 1) {
-                    avert_syntaxe(PENF_NULL);
+                    syntax_warning(PENF_NULL);
                 } else {
-                    if (i+1 >= nmax_flottement) {
-                        elargir_table(&penalite_flottement,
-                                &nmax_flottement, i+2);
+                    if (i+1 >= floats_nmax) {
+                        enlarge_table(&float_penalty,
+                                &floats_nmax, i+2);
                     }
-                    while (i < nmax_flottement) {
-                        penalite_flottement[i++] = $5;
+                    while (i < floats_nmax) {
+                        float_penalty[i++] = $5;
                         if ($2==0) break;
                     }
                 }
             }
         | KW_MINORATION '=' v_pen
-                { minoration_fac = $3; }
+                { opposite_float_pen = $3; }
         | KW_DESUITE '=' v_pen
-                { penalite_flcum = $3; }
+                { cumulative_floats_penalty = $3; }
         ;
 
-pen_repetition: /* rien */
+pen_repetition: /* nothing */
         | KW_MCOUL '=' v_pen
-                { penalite_mcoul = $3; }
+                { same_colors_replay_penalty = $3; }
         | KW_COPP '=' v_pen
-                { penalite_copp = $3; }
+                { opposite_colors_replay_penalty = $3; }
         | KW_BIPBIP '=' v_pen
-                { penalite_bipbip = $3; }
+                { bye_replay_penalty = $3; }
         | KW_DESUITE '=' v_pen
-                { penalite_desuite = $3; }
+                { immediate_replay_penalty = $3; }
         ;
 
-pen_chauvinisme: /* rien */
+pen_chauvinisme: /* nothing */
         | KW_RONDE INTEGER opt_plus '=' v_pen
             {
                 i = $2;
                 if (i < 1)
-                        avert_syntaxe(PENCH_NULL);
+                        syntax_warning(PENCH_NULL);
                 else if (i > NMAX_ROUNDS)
-                        avert_syntaxe(PENCH_TOOFAR);
+                        syntax_warning(PENCH_TOOFAR);
                 else while (i <= NMAX_ROUNDS) {
-                        penalite_chauvinisme[i-1] = $5;
+                        country_penalty[i-1] = $5;
                         i++;
                         if ($3 == 0) break;
                     }
             }
         ;
 
-pen_elitisme: /* rien */
+pen_elitisme: /* nothing */
     | KW_RONDE INTEGER opt_plus '=' v_pen
        {
 #ifdef ELITISM
 
                 i = $2;
                 if (i < 1)
-                        avert_syntaxe(PENEL_NULL);
+                        syntax_warning(PENEL_NULL);
                 else if (i > NMAX_ROUNDS)
-                        avert_syntaxe(PENEL_TOOFAR);
+                        syntax_warning(PENEL_TOOFAR);
                 else while (i <= NMAX_ROUNDS) {
-                        penalite_elitisme[i-1] = $5;
+                        elitism_penalty[i-1] = $5;
                         i++;
                         if ($3 == 0) break;
                     }
@@ -579,8 +602,8 @@ pen_elitisme: /* rien */
 #else
         i = $2;
         if (i > 0) {
-            puts("WARNING : penalite d'elitisme ignoree dans cette version de PAPP");
-            /* lire_touche(); */
+            puts("WARNING : Elitism penalty ignored in the version of Papp!");
+            /* read_key(); */
         }
 
 #endif
@@ -590,30 +613,30 @@ pen_elitisme: /* rien */
 
 commande_interne:
 		  DIESE_DATE '=' STRING
-			{   COPIER($3, &date_tournoi); }
+			{   COPY($3, &tournament_date); }
 
 		| DIESE_NOM '=' STRING
             {
-                COPIER($3, &nom_du_tournoi);
-                type_fichier_intermediaire = CORRECT ;
+                COPY($3, &tournament_name);
+                workfile_type = CORRECT ;
             }
         | DIESE_RONDES '=' INTEGER
             {
                 if( ($3<1) || ($3>NMAX_ROUNDS) )
-                    erreur_syntaxe(ICMD_BAD_RND) ;
+                    syntax_error(ICMD_BAD_RND) ;
                 else {
-                    nombre_de_rondes = $3 ;
-                    /* Si 2n-1 ou 2n rondes, on a 2n joueurs max pour un toutes-rondes */
-                    ttr_maxj = ((nombre_de_rondes+1)/2)*2 ;
-                    ttr_minj = 1 ;
+                    number_of_rounds = $3 ;
+                    /* If 2n-1 or 2n rounds, there are 2n max players for a round-robin */
+                    maxPlayers4rr = ((number_of_rounds+1)/2)*2 ;
+                    minPlayers4rr = 1 ;
                 }
             }
         | DIESE_BRIGHTWELL_DBL '=' nbr_reel
-            { coef_brightwell = ($3)/2; }
+            { brightwell_coeff = ($3)/2; }
         | KW_RONDESUIV
             {
                 tables_numbering();
-                mettre_aj_scores();
+                updateScores();
                 next_round();
             }
         | '&' liste_inscrits
@@ -623,26 +646,26 @@ commande_interne:
         | '(' INTEGER INTEGER ')'
             {
                 long Jn=$2, Jb=$3, n1, n2;
-                n1 = numero_inscription(Jn);
-                n2 = numero_inscription(Jb);
+                n1 = inscription_ID(Jn);
+                n2 = inscription_ID(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
-                        /* mauvais appariement */
-                        erreur_syntaxe(ICMD_BPAIR);
+                        /* Bad pairing */
+                        syntax_error(ICMD_BPAIR);
                 else if (polarity(Jn) || polarity(Jb))
                         /* deja apparies */
-                        erreur_syntaxe(ICMD_APAIR);
+                        syntax_error(ICMD_APAIR);
                 else
                         make_couple(Jn, Jb, UNKNOWN_SCORE);
             }
         | '(' INTEGER INTEGER INTEGER ')'
             {
                 long Jn=$2, Jb=$3, n1, n2;
-                n1 = numero_inscription(Jn);
-                n2 = numero_inscription(Jb);
+                n1 = inscription_ID(Jn);
+                n2 = inscription_ID(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
-                        erreur_syntaxe(ICMD_BPAIR);
+                        syntax_error(ICMD_BPAIR);
                 else if (polarity(Jn) || polarity(Jb))
-                        erreur_syntaxe(ICMD_APAIR);
+                        syntax_error(ICMD_APAIR);
                 else
                         make_couple(Jn, Jb, INTEGER_TO_SCORE($4));
             }
@@ -650,16 +673,16 @@ commande_interne:
             {
 #ifndef USE_HALF_DISCS
             beep();
-            erreur_syntaxe(ICMD_DEMI);
+            syntax_error(ICMD_DEMI);
 #else
                 long Jn=$2, Jb=$3, n1, n2;
                 double Scn=$4;
-                n1 = numero_inscription(Jn);
-                n2 = numero_inscription(Jb);
+                n1 = inscription_ID(Jn);
+                n2 = inscription_ID(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
-                        erreur_syntaxe(ICMD_BPAIR);
+                        syntax_error(ICMD_BPAIR);
                 else if (polarity(Jn) || polarity(Jb))
-                        erreur_syntaxe(ICMD_APAIR);
+                        syntax_error(ICMD_APAIR);
                 else
                         make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
@@ -668,13 +691,13 @@ commande_interne:
             {
                 long Jn=$2, Scn=$3, Jb=$4, Scb=$5, n1, n2;
                 if (BAD_TOTAL(INTEGER_TO_SCORE(Scn),INTEGER_TO_SCORE(Scb)))
-                        erreur_syntaxe(ICMD_TOTS);
-                n1 = numero_inscription(Jn);
-                n2 = numero_inscription(Jb);
+                        syntax_error(ICMD_TOTS);
+                n1 = inscription_ID(Jn);
+                n2 = inscription_ID(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
-                        erreur_syntaxe(ICMD_BRES);
+                        syntax_error(ICMD_BRES);
                 else if (polarity(Jn) || polarity(Jb))
-                        erreur_syntaxe(ICMD_APAIR);
+                        syntax_error(ICMD_APAIR);
                 else
                         make_couple(Jn, Jb, INTEGER_TO_SCORE(Scn));
             }
@@ -682,18 +705,18 @@ commande_interne:
             {
 #ifndef USE_HALF_DISCS
             beep();
-            erreur_syntaxe(ICMD_DEMI);
+            syntax_error(ICMD_DEMI);
 #else
         long Jn=$2, Jb=$4, n1, n2;
                 double Scn=$3, Scb=$5;
                 if (BAD_TOTAL(FLOAT_TO_SCORE(Scn),FLOAT_TO_SCORE(Scb)))
-                        erreur_syntaxe(ICMD_TOTS);
-                n1 = numero_inscription(Jn);
-                n2 = numero_inscription(Jb);
+                        syntax_error(ICMD_TOTS);
+                n1 = inscription_ID(Jn);
+                n2 = inscription_ID(Jb);
                 if (n1<0 || n2<0 || !present[n1] || !present[n2])
-                        erreur_syntaxe(ICMD_BRES);
+                        syntax_error(ICMD_BRES);
                 else if (polarity(Jn) || polarity(Jb))
-                        erreur_syntaxe(ICMD_APAIR);
+                        syntax_error(ICMD_APAIR);
                 else
                         make_couple(Jn, Jb, FLOAT_TO_SCORE(Scn));
 #endif
@@ -709,51 +732,51 @@ commande_interne:
             {
                 assert(table_ttr);
                 if (i != taille_ttr)
-                        erreur_syntaxe(TTR_TOOSMALL);
+                        syntax_error(TTR_TOOSMALL);
                 else
-                        charge_table_ttr(taille_ttr, table_ttr);
+                        load_rrTable(taille_ttr, table_ttr);
                 free(table_ttr);
             }
         ;
 
-liste_tabttr:   /* rien */
+liste_tabttr:   /* nothing */
         | liste_tabttr entier_signe
             {
                 if (i >= taille_ttr)
-                        erreur_syntaxe(TTR_TOOBIG);
+                        syntax_error(TTR_TOOBIG);
                 else
                         table_ttr[i++] = $2;
             }
         ;
 
-liste_inscrits: /* rien */
+liste_inscrits: /* nothing */
         | liste_inscrits '+' INTEGER
             {
-                long n = inscrire_joueur($3);
+                long n = register_player($3);
                 if (n < 0) {
                         sprintf(buffer, PLR_UNKNOWN, $3);
-                        erreur_syntaxe(buffer);
+                        syntax_error(buffer);
                 } else
                         present[n] = 1;
             }
         | liste_inscrits '-' INTEGER
             {
-                long n = inscrire_joueur($3);
+                long n = register_player($3);
                 if (n < 0) {
                         sprintf(buffer, PLR_UNKNOWN, $3);
-                        erreur_syntaxe(buffer);
+                        syntax_error(buffer);
                 } else
                         present[n] = 0;
             }
         ;
 
 ligne_invalide: INVALID_KEYWORD error
-            { erreur_syntaxe(CMD_UNKNOWN); }
+            { syntax_error(CMD_UNKNOWN); }
         | error
-            { erreur_syntaxe(ERR_SYNTAX); }
+            { syntax_error(ERR_SYNTAX); }
         ;
 
 point_virgule: ';'
         | error
-            { erreur_syntaxe(M_SEMICOLON); }
+            { syntax_error(M_SEMICOLON); }
         ;

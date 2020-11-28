@@ -10,8 +10,8 @@
  * (EL) 21/04/2008 : v1.32, no change
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 30/03/2007 : Remove 'CONCAT()' macro and turn it into function.
- * (EL) 06/02/2007 : Add 'copier_fichier()' function
- * (EL) 05/02/2007 : Add 'nom_du_tournoi' and 'nombre_de_rondes' variables
+ * (EL) 06/02/2007 : Add 'copy_files()' function
+ * (EL) 05/02/2007 : Add 'tournament_name' and 'number_of_rounds' variables
  * (EL) 04/02/2007 : Add two variables to save type of config file and work file
                      (old or new version)
  * (EL) 02/02/2007 : change Brightwell coefficient type to 'double'
@@ -23,10 +23,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "appari.h"
+#include "pairings.h"
 #include "changes.h"
 #include "more.h"
-#include "pions.h"
+#include "discs.h"
 
 /*
  *  global.c and pap.l prototypes
@@ -35,23 +35,23 @@
 #define CONFIG_F   300
 #define PLAYERS_F  301
 #define NEWPLAYERS_F 302
-long lire_fichier (char *filename, long type);
-void erreur_syntaxe(const char *erreur);
-void avert_syntaxe (const char *erreur);
+long read_file (char *filename, long type);
+void syntax_error(const char *erreur);
+void syntax_warning (const char *erreur);
 
-void bloquer_signaux(void), debloquer_signaux(void);
-void installer_signaux(void);
-void sauve_ronde(void);
-void sauve_inscrits(void);
-void sauve_appariements(void);
-void recreer_fichier_intermediaire(void);
-void grand_dump (FILE *fp);
-void init_penalites_defaut (void);
-void verification_penalites (void);
-long nombre_chiffres (long n);
-char *trivialloc (long longueur);
-void COPIER(const char *source, char **dest) ;
-void CONCAT(const char *source, const char *ajout, char **dest) ;
+void block_signals(void), unblock_signals(void);
+void install_signals(void);
+void save_round(void);
+void save_registered(void);
+void save_pairings(void);
+void recreate_workfile(void);
+void big_dump(FILE *fp);
+void init_default_penalties(void);
+void check_penalties(void);
+long number_of_digits(long n);
+char *trivialloc (long length);
+void COPY(const char *source, char **dest) ;
+void CONCAT(const char *source, const char *added, char **dest) ;
 char *fscore(discs_t score);
 
 /* This functions terminate the program -
@@ -64,27 +64,27 @@ char *fscore(discs_t score);
 # define EXITING
 #endif
 
-void fatal_error(const char *erreur)  EXITING;
+void fatal_error(const char *error)  EXITING;
 void terminate(void)         EXITING;
 
 /*
- *  penalite.c prototypes
+ *  penalties.c prototypes
  */
 
-void    calcul_appariements(void);
+void    compute_pairings(void);
 
 /*
  *  other prototypes
  */
 
-void    calcul_departage(void);                 /* resultat.c */
-void    fiche_individuelle(long, const char*);  /* resultat.c */
-void    cree_fichier_elo(void);                 /* elo.c      */
-void    copier_fichier_nouveaux(FILE *fp_dest); /* elo.c      */
-int     yyparse(void);                          /* pap_tab.c  */
+void    tieBreak_computation(void);                 /* results.c  */
+void    individualSheet(long, const char*);         /* results.c  */
+void    create_ELO_file(void);                      /* elo.c      */
+void    copy_nouveaux_file(FILE *fp_dest);          /* elo.c      */
+int     yyparse(void);                              /* pap_tab.c  */
 
-void    creer_classement_XML(void);             /* XML.c */
-void    creer_ronde_XML(void);                  /* XML.c */
+void    createXMLstandings(void);                   /* XML.c      */
+void    createXMLround(void);                       /* XML.c      */
 
 
 /*
@@ -115,7 +115,7 @@ typedef int (*Sort_function)(const void*, const void*);
  *  Taille du tampon d'entree pour l'emulation de terminal
  */
 
-#define TAILLE_TAMPON   70
+#define BUFFER_SIZE   70
 
 /*
  *  Alloc-ring management
@@ -146,82 +146,82 @@ char *new_string (void);
 #define CORRECT     1
 
 extern long
-        type_fichier_config,
-        type_fichier_intermediaire ,
-		fichier_des_nouveaux ; /* indicate if the new players file is being read.
+        config_file_type,
+        workfile_type ,
+		new_players_file ; /* indicate if the new players file is being read.
                                 * indique si c'est le fichier des nouveaux qu'on lit */
 
 /* User defined parameter.
  * Parametres definis par l'utilisateur */
 
 extern char
-        *nom_du_tournoi,
-        *nom_sous_dossier,
-		*date_tournoi ;
+        *tournament_name,
+        *subfolder_name,
+		*tournament_date ;
 
 extern long
-        nombre_de_rondes ;
+        number_of_rounds ;
 
 extern double
-        coef_brightwell ;
+        brightwell_coeff ;
 
 extern long
         current_round,
-        sauvegarde_immediate,
-        sauvegarde_fichier_result,
-        sauvegarde_fichier_classement,
-        sauvegarde_fichier_class_equipes,
-        sauvegarde_fichier_appariements,
-        sauvegarde_fichier_crosstable_HTML,
-        sauvegarde_fichier_elo,
-        utiliser_sous_dossier,
-		generer_fichiers_XML,
-        impression_automatique,
-        nb_copies_impression,
-        aff_diff_scores,
-        total_pions,
-        nb_chiffres_des_scores,
-        nmax_flottement,
-        nmax_couleur;
+        immediate_save,
+        result_file_save,
+        standings_file_save,
+        team_standings_file_save,
+        pairings_file_save,
+        html_crosstable_file_save,
+        elo_file_save,
+        use_subfolder,
+		generate_xml_files,
+        automatic_printing,
+        print_copies,
+        display_score_diff,
+        discsTotal,
+        scores_digits_number,
+        floats_nmax,
+        colors_nmax;
 
 extern discs_t
-        score_bip;
+        bye_score;
 
 /* User defined penalties
  * Penalites definies par l'utilisateur */
 
 extern pen_t
-        *penalite_couleur,
-        *penalite_flottement,
-        *penalite_chauvinisme,
-        penalite_mcoul, penalite_copp, penalite_desuite,
-        penalite_bipbip, penalite_flcum, minoration_fac,
+        *color_penalty,
+        *float_penalty,
+        *country_penalty,
+        same_colors_replay_penalty, opposite_colors_replay_penalty, immediate_replay_penalty,
+        bye_replay_penalty, cumulative_floats_penalty, opposite_float_pen,
 #ifdef ELITISM
-        *penalite_elitisme,
+        *elitism_penalty,
 #endif
-        penalite_repcoul;
+        repeated_color_penalty;
 
 /* User defined strings and filenames
  * Chaines et noms de fichiers definis par l'utilisateur */
 
 extern char
-        *pays_courant,
-        *pays_defaut,
-        *nom_fichier_joueurs,
-        *nom_fichier_nouveaux,
-        *nom_fichier_inter,
-        *nom_fichier_inter_backup,
-        *nom_fichier_log,
-        *nom_fichier_config,
-        *nom_fichier_result,
-        *nom_fichier_classement,
-        *nom_fichier_class_equipes,
-        *nom_fichier_appariements,
-        *nom_fichier_crosstable_HTML,
-        *nom_fichier_elo,
+        *current_country,
+        *default_country,
+        *players_filename,
+        *new_players_filename,
+        *workfile_filename,
+        *backup_workfile_filename,
+        *log_filename,
+        *config_filename,
+        *results_filename,
+        *standings_filename,
+        *team_standings_filename,
+        *pairings_filename,
+        *HTML_crosstable_filename,
+        *elo_filename,
         *nom_fichier_lu,
-        *nom_programme,
-        *couleur_1, *couleur_2;
+        *program_name,
+        *color_1, *color_2;
 
 
 #ifdef NO_RAISE
@@ -229,29 +229,29 @@ extern char
 #endif
 
 /* utilities - utilitaires */
-long le_max_de(long n1, long n2);
-long le_min_de(long n1, long n2);
-char *nom_fichier_numerote(char *pattern, long numero);
-long debuts_differents(const char *s1, const char *s2, long n);
-long compare_chaines_non_sentitif(const char *scan1, const char *scan2);
-long copier_fichier(FILE *dest, FILE *source) ;
-void backup_inter(void) ;
-void init_fichier_intermediaire(long type_fichier) ;
-FILE *myfopen_dans_sous_dossier(const char *filename, const char *mode, const char *folder, long utilise, long err) ;
+long max_of(long n1, long n2);
+long min_of(long n1, long n2);
+char *numbered_filename(char *pattern, long number);
+long different_beginnings(const char *s1, const char *s2, long n);
+long compare_strings_insensitive(const char *scan1, const char *scan2);
+long copy_files(FILE *dest, FILE *source) ;
+void backup_workfile(void) ;
+void init_workfile(long file_type) ;
+FILE *myfopen_in_subfolder(const char *filename, const char *mode, const char *folder, long used, long err) ;
 
 /*
- * Variables and prototypes from ttrondes.c. Functions return 1
+ * Variables and prototypes from roundrobin.c. Functions return 1
  * in case of success and 0 otherwise.
- * Variables et prototypes de ttrondes.c. Les fonctions renvoient 1 en
+ * Variables et prototypes de roundrobin.c. Les fonctions renvoient 1 en
  * cas de succes et 0 en cas d'echec.
  */
 
-extern long ttr_minj, ttr_maxj;
+extern long minPlayers4rr, maxPlayers4rr;
 
-long sauve_table_ttr(FILE *fp);
-long charge_table_ttr(long card, long *table);
-long init_ttrondes(void);
-long appariement_ttrondes(void);
+long save_rrTable(FILE *fp);
+long load_rrTable(long card, long *table);
+long initRoundRobin(void);
+long roundRobin_pairings(void);
 
 
 

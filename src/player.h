@@ -1,4 +1,4 @@
-/* joueur.h
+/* player.h
  *
  *  - Gestion des joueurs
  *  - Players management
@@ -18,7 +18,7 @@
                      Cela est necessaire pour separer ces informations dans le fichier nouveaux.
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 02/02/2007 : changement du type 'tieBreak[]' en double
-                      tieBreak[] is changed to 'double' type
+                      tieBreak[] is changed to 'double' type
  * (EL) 13/01/2007 : v1.30 E. Lazard, no change
  */
 
@@ -27,7 +27,7 @@
 
 
 #include "changes.h"
-#include "pions.h"
+#include "discs.h"
 
 
 typedef struct _Player {
@@ -71,46 +71,46 @@ extern double       tieBreak[MAX_REGISTERED];
 extern long         last_float[MAX_REGISTERED];
 extern long         team_score[MAX_REGISTERED];
 
-/* Operations, definies dans joueurs.c et entrejou.c */
+/* Operations, defined in joueurs.c and entrejou.c */
 
-Player *nv_joueur (long numero, const char *nom, const char *prenom,
-    const char *programmeur, const char *pays, long classement,
-    const char *commentaire, const long nv);
-Player *trouver_joueur (long numero);
-Player *premier_joueur(void);   /* premier joueur de la base */
-long nombre_joueurs_base(void);  /* nb de joueurs dans la base*/
-long inserer_joueur (const char *pays);
-void nv_zone(const char *pays, long min_ins, long max_ins);
-Insertion_Zone *premiere_zone(void);
-char *coupon(const Player *j1, const Player *j2, discs_t score);
-char *entree_clav_nom_joueur(const char *prompt, char *tampon_initial, Players_list *parmi_ces_joueurs);
-void entree_joueurs(void);
-void affiche_inscrits(const char *filename);
-void affiche_equipes(const char *filename);
-long numero_inscription(long numero_elo);
+Player *new_player(long number, const char *name, const char *firstname,
+        const char *programmer, const char *country, long rating,
+        const char *comment, const long isNewPlayer);
+Player *findPlayer(long IDnumber);
+Player *firstPlayer(void);   /* premier joueur de la base - First player in database */
+long countPlayersInDatabase(void);  /* nb de joueurs dans la base - Number of players in database */
+long insertPlayer(const char *country);
+void newInsertionZone(const char *country, long min_ins, long max_ins);
+Insertion_Zone *firstZone(void);
+char *coupon(const Player *player_1, const Player *player_2, discs_t score);
+char *enter_player_name_kbd(const char *prompt, char *initial_buffer, Players_list *from_these_players);
+void enter_players(void);
+void display_registered(const char *filename);
+void display_teams(const char *filename);
+long inscription_ID(long ELO_ID);
 long est_nouveau(long numero_elo) ;
-long inscrire_joueur(long numero_elo);
-long change_nationalite (long numero, const char *pays);
- int tri_joueurs(const void *ARG1, const void *ARG2) ;
+long register_player(long ELO_ID);
+long change_nationality(long ELO_ID, const char *new_country);
+ int sort_players(const void *ARG1, const void *ARG2) ;
 
-/* Gestion des listes */
+/* Gestion des listes - list management */
 
-Players_list *creer_liste(void);
-Players_list *ajouter_joueur(Players_list *l, Player *j);
-Players_list *recherche_nom(Players_list *l, const char *chaine);
-Players_list *recherche_nom_dans_liste(Players_list *lj, const char *chaine, Players_list *liste_completion);
-void vider_liste(Players_list *l);
+Players_list *createList(void);
+Players_list *addPlayer(Players_list *lpl, Player *j);
+Players_list *searchName(Players_list *lpl, const char *string);
+Players_list *recherche_nom_dans_liste(Players_list *lpl, const char *string, Players_list *completionList);
+void emptyList(Players_list *lpl);
 
-#define TOUS_LES_JOUEURS (-1)
-long choix_d_un_joueur_au_clavier(const char *prompt, Players_list *parmi_ces_joueurs, char **chaine);
-long nb_completions_dans_coupons(char *chaine, long *nroJoueur, char *chaineScore);
+#define ALL_PLAYERS (-1)
+long selectPlayerFromKeyboard(const char *prompt, Players_list *fromThesePlayers, char **string);
+long numberCompletionInCoupons(char *line, long *playerID, char *scoreString);
 
 
-/* Utilitaires sur les chaines de caracteres des noms de joueurs */
+/* Utilitaires sur les chaines de caracteres des noms de joueurs - String utilities on players' names */
 
-long enleve_espaces_de_gauche(char *chaine);
-long enleve_espaces_de_droite(char *chaine);
-long est_un_nom_de_joueur_valide(char *tampon);
+long removeLeftSpaces(char *string);
+long removeRightSpaces(char *string);
+long SeemsValidPlayerName(char *buffer);
 
 
 #endif    /*  #ifndef __Joueur_h__  */

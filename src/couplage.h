@@ -17,12 +17,12 @@
 #define __Couplage_h__
 
 
-#include "pions.h"
-#include "joueur.h"
+#include "discs.h"
+#include "player.h"
 
 void    first_round(void), next_round(void);
-void    raz_scores(void);
-void    _save_round(void), mettre_aj_scores(void);
+void    clearScores(void);
+void    _save_round(void), updateScores(void);
 void    _save_registered(void), _save_pairings(void);
 void    _recreate_workfile(void);
 void    do_not_save_registered(void), do_not_save_pairings(void);
@@ -49,8 +49,8 @@ void    player_InOut(long ID_player, long direction);
 void    set_history_presence(long ID, long which_round, long presence);
 long    player_was_present(long ID, long which_round);
 long    change_result(long round_nbr, long nbr_player1, long nbr_player2, discs_t value);
-void    mettre_numero_de_table(long round_nbr, long n1, long n2, long table_ID);
-long    numero_de_table(long round_nbr, long n1, long n2);
+void    assign_table_number(long round_nbr, long n1, long n2, long table_ID);
+long    find_table_number(long round_nbr, long n1, long n2);
 void    tables_numbering(void);
 void    pairings_manipulate(void);
 void    absents_uncoupling(void);
@@ -58,16 +58,16 @@ long    nbr_unpaired_players(void);
 int     pairs_sort(const void *p1, const void *p2);
 double  tables_sort_criteria(long n1, long n2);
 void    display_pairings(const char *filename, long full_results);
-void    afficher_remplissage_coupons(void);
-void    entree_resultats(void);
+void    displayEnterGameResults(void);
+void    enterResults(void);
 void    save_pairings_file(void);
-void    sauver_fichier_resultats(void);
-void    sauver_fichier_classement(void);
-void    sauver_fichier_equipes(void);
-void    sauver_fichier_tableau_croise_html(void);
-void    imagine_resultats(void);
-void    validation_resultats(long sauve_results_en_clair);
-void    correction_resultat(void);
+void    saveResultsFile(void);
+void    saveStandingsFile(void);
+void    saveTeamsFile(void);
+void    saveHTMLcrosstableFile(void);
+void    imagineResults(void);
+void    resultsValidation(long isSaveResultsFile);
+void    ResultCorrection(void);
 
 
 #endif  /*  #ifndef __Couplage_h__ */

@@ -3,6 +3,7 @@
 /*
  * pap.l: Analyse lexicale pour PAPP
  *
+ * (EL) 03/04/2020 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change.
  * (EL) 25/06/2012 : v1.34, Aout du mot-clef 'XML' indiquant la generation des fichiers XML
@@ -21,11 +22,33 @@
                      permettant de mettre ces informations dans le fichier intermediaire.
  * (EL) 04/02/2007 : Ajout du mot-clef 'BQ-double' qui donne
  *                   la constante lorsqu'on compte 1 point par victoire.
- * (EL) 04/02/2007 : initialisation des variables 'type_fichier_config'
- *                   et 'type_fichier_intermediaire' au debut de la lecture
+ * (EL) 04/02/2007 : initialisation des variables 'config_file_type'
+ *                   et 'workfile_type' au debut de la lecture
  * (EL) 02/02/2007 : Ajout de la reconnaissance des nombres flottants et demi_entiers.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ ****
+ *
+ * pap.l: Lexical analysis for PAPP
+ *
+ * (EL) 03/04/2020 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change.
+ * (EL) 25/06/2012 : v1.34, Add 'XML' keyword for XML file generation
+ * (EL) 20/07/2008 : v1.33, add recognition of '#_Date' in workfile
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, Add '%option noyywrap' and remove #define yywrap to prevent a compile error
+ * (EL) 29/04/2007 : v1.31, Add a rule to put aside characters indicating Unicode coding
+                     (added by Notepad Windows for example)
+ * (EL) 30/03/2007 : Add 'dossier', 'true' and 'false' keywords indicating
+                     grouping of class/result/pairings files... in the same sub-directory
+                     having tournament name as filename
+ * (EL) 07/02/2007 : Add recognition of '#_Nom-Tournoi', '#_Nombre-Rondes' and '#_BQ-double'
+                    (with corresponding tokens) to be able to put these infos in workfile
+ * (EL) 04/02/2007 : Add 'BQ-double' keyword which gives BQ constant when 1 point is used for a victory
+ * (EL) 04/02/2007 : Initialization of 'config_file_type' and 'workfile_type' variables at start of reading
+ * (EL) 02/02/2007 : Add recognition of flotting and half-integers numbers
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
 #include <assert.h>
@@ -48,12 +71,14 @@
 #include "global.h"
 
 /*
- * Pour Flex : il est necessaire de caster "yytext", qui est de type
- * "unsigned char *", en un simple "char *". La definition de yywrap()
- * permet d'eviter l'edition de liens avec libfl.a.
+ * Pour Flex : il est necessaire de caster "yytext", qui est de type "unsigned char *",
+ * en un simple "char *". La definition de yywrap() permet d'eviter l'edition de liens avec libfl.a.
+ ****
+ * For Flex: it is necessary to cast "yytext", which is "unsigned char *" type, to a simple
+ * "char *". yywrap() definition prevents linking with labfl.a library. 
  */
 
-#define texte		((char *)yytext)
+#define text		((char *)yytext)
 /*#define yywrap()	1*/
 
 #ifdef ENGLISH
@@ -70,17 +95,17 @@
 # define AT_LINE			"%s, ligne %ld: %s\n"
 #endif
 
-/* Etat de l'analyse lexicale */
-static long erreur_constatee = 0;
-static long numero_ligne;
-/* static */char *nom_fichier_lu;
-char *pays_courant;
+/* Etat de l'analyse lexicale - Lexical analysis state */
+static long found_errors = 0;
+static long line_number;
+/* static */char *read_file_name;
+char *current_country;
 
-/* Table des mots-cles */
-static struct mot_cle {
-	const char    *nom;
-	long     valeur;
-} mots_cles[] = {
+/* Table des mots-cles - keywords table */
+static struct keyword {
+	const char    *name;
+	long     value;
+} keywords[] = {
 	{"fichier",                      KW_FICHIER},
 	{"joueurs",                      KW_JOUEURS},
 	{"nouveaux",                     KW_NOUVEAUX},
@@ -121,6 +146,7 @@ static struct mot_cle {
 	{"raz-couplage",                 KW_RAZ_COUPL},
 	{"toutes-rondes",                KW_TTRONDES},
 	{"table-toutes-rondes",          KW_TABTTR},
+	{"round-robin-table",            KW_TABTTR},
 
 	{"fois",                         KW_FOIS},
 	{"demi-point",                   KW_DPOINT},
@@ -142,7 +168,7 @@ static struct mot_cle {
 	{"rondes",                       KW_RONDE},
 
 	{(char*) 0,                      0}
-}, *mc;
+}, *kw;
 
 %}
 %option noyywrap
@@ -160,9 +186,9 @@ NOT_EOL [^\x0A\x0D]
 __eof__         return 0;
 
 {UTF_BOM}       ;
-[0-9]+          { yylval.integer = strtol(texte, NULL, 10); return INTEGER; }
-[0-9]+\.[05]    { yylval.reel    = atof(texte); return INT_ET_DEMI; }
-[0-9]*\.[0-9]+  { yylval.reel    = atof(texte); return DOUBLE; }
+[0-9]+          { yylval.integer = strtol(text, NULL, 10); return INTEGER; }
+[0-9]+\.[05]    { yylval.reel    = atof(text); return INT_ET_DEMI; }
+[0-9]*\.[0-9]+  { yylval.reel    = atof(text); return DOUBLE; }
 [ \t\000]+      ;
 \%              ;
 \%_             ;
@@ -173,57 +199,57 @@ __eof__         return 0;
 #_Nombre-Rondes { return DIESE_RONDES ; }
 #_BQ-double     { return DIESE_BRIGHTWELL_DBL ; }
 #_Date          { return DIESE_DATE ; }
-\%!{NOT_EOL}*           { fprintf(stderr, "%s\n", texte); }
+\%!{NOT_EOL}*           { fprintf(stderr, "%s\n", text); }
 
 \"[^\x0A\x0D\"]*\"    {
-		yylval.string = strcpy(new_string(), texte+1);
+		yylval.string = strcpy(new_string(), text+1);
 		yylval.string[yyleng-2] = 0;
 		return STRING;
 		}
 
 \"[^\x0A\x0D\"]*{EOL}    {
-		erreur_syntaxe(BAD_QUOTE);
-		++numero_ligne;
-		yylval.string = strcpy(new_string(), texte+1);
+		syntax_error(BAD_QUOTE);
+		++line_number;
+		yylval.string = strcpy(new_string(), text+1);
 		yylval.string[yyleng-2] = 0;
 		return STRING;
 		}
 
-<UNQUOTED>{CRLF}[Pp]ays    { ++numero_ligne; return KW_PAYS; }
-<UNQUOTED>{EOL}[Pp]ays     { ++numero_ligne; return KW_PAYS; }
+<UNQUOTED>{CRLF}[Pp]ays    { ++line_number; return KW_PAYS; }
+<UNQUOTED>{EOL}[Pp]ays     { ++line_number; return KW_PAYS; }
 <UNQUOTED>^[Pp]ays          return KW_PAYS;
-<UNQUOTED>{CRLF}[Ff]ederation{NOT_EOL}*   {++numero_ligne;}
-<UNQUOTED>{EOL}[Ff]ederation{NOT_EOL}*    {++numero_ligne;}
+<UNQUOTED>{CRLF}[Ff]ederation{NOT_EOL}*   {++line_number;}
+<UNQUOTED>{EOL}[Ff]ederation{NOT_EOL}*    {++line_number;}
 <UNQUOTED>^[Ff]ederation{NOT_EOL}*         ;
 
-<INITIAL>{CRLF}    { ++numero_ligne; }
-<INITIAL>{EOL}     { ++numero_ligne; }
-<UNQUOTED>{CRLF}   { ++numero_ligne; return TOK_NEWLINE; }
-<UNQUOTED>{EOL}    { ++numero_ligne; return TOK_NEWLINE; }
+<INITIAL>{CRLF}    { ++line_number; }
+<INITIAL>{EOL}     { ++line_number; }
+<UNQUOTED>{CRLF}   { ++line_number; return TOK_NEWLINE; }
+<UNQUOTED>{EOL}    { ++line_number; return TOK_NEWLINE; }
 
 <UNQUOTED>[a-z_A-Z][a-z_A-Z'0-9\-\.]* {
-		yylval.string = strcpy(new_string(), texte);
+		yylval.string = strcpy(new_string(), text);
 		return STRING;
 		}
 
 <UNQUOTED>`[^\x0A\x0D\000]*	{
-		yylval.string = strcpy(new_string(), texte+1);
+		yylval.string = strcpy(new_string(), text+1);
 		return COMMENT;
 		}
 
 <INITIAL>[a-zA-Z][a-zA-Z\-]* {
-		/* chercher le mot dans la table */
-		for (mc = mots_cles; mc->nom; mc++)
-			if (!compare_chaines_non_sentitif(mc->nom,texte))
-				return mc->valeur;
-		/* il n'y est pas */
-		if (!compare_chaines_non_sentitif("infini",texte)) {
+		/* chercher le mot dans la table - lookup keyword in table */
+		for (kw = keywords; kw->name; kw++)
+			if (!compare_strings_insensitive(kw->name,text))
+				return kw->value;
+		/* il n'y est pas - not in table */
+		if (!compare_strings_insensitive("infini",text)) {
 			yylval.integer = LONG_MAX;
 			return INTEGER;
 		} else {
 			char *buf = new_string();
-			sprintf(buf, BAD_KEYWORD, texte);
-			erreur_syntaxe(buf);
+			sprintf(buf, BAD_KEYWORD, text);
+			syntax_error(buf);
 			return INVALID_KEYWORD;
 			}
 		}
@@ -232,7 +258,7 @@ __eof__         return 0;
 		if (yytext[0] & 0x80) {
 			char *buf = new_string();
 			sprintf(buf, BAD_BYTE, yytext[0]);
-			erreur_syntaxe(buf);
+			syntax_error(buf);
 		}
 		return yytext[0];
 		}
@@ -243,30 +269,32 @@ __eof__         return 0;
 %%
 
 /*
- *  Fonction de conversion des CR du Mac en CR/LF (en conservant
- *  les CR/LF du DOS) pour la version PC de Papp, car le parser
- *  genere par Flex sur PC n'aime pas les lignes tres longues.
- *  Le fichier d'origine n'est pas touche, on cree un fichier
- *  temporaire qu'il faudra penser a effacer apres l'avoir parse.
- *  Retourne 0 si tout se passe bien, -1 sinon.
+ *  Fonction de conversion des CR du Mac en CR/LF (en conservant les CR/LF du DOS)
+ *  pour la version PC de Papp, car le parser genere par Flex sur PC n'aime pas les lignes tres longues.
+ *  Le fichier d'origine n'est pas touche, on cree un fichier temporaire qu'il faudra penser a effacer
+ *  apres l'avoir parse.  Retourne 0 si tout se passe bien, -1 sinon.
+ ****
+ *  Conversion function between Vintage MacOS CR into CR/LF (while keeping DOS CR/LF) for PC version of Papp
+ *  because flex parser on PC doesn't like long lines. Original file isn't changed, a temporary file is
+ *  created and must be removed after parsing. Returns 0 if all goes well, -1 otherwise.
  */
 
 
 long Macintosh_to_PC(char *filename, char **tempfile) {
 	FILE *old,*temp;
 	long c1,c2;
-    char nom_temp[]="temp.XXXXXX" ;
+    char temp_name[]="temp.XXXXXX" ;
 
     *tempfile = "";
 	old = fopen( filename, "rb" );
 	if ( old == NULL )
 		return -1;
 
-	/* On essaie d'avoir un nom temporaire */
-	if (mktemp(nom_temp)==NULL)
-		return -1 ;
+	/* On essaie d'avoir un nom temporaire - trying to get temporary filename */
+	if (mktemp(temp_name) == NULL)
+		return -1;
 
-	temp = fopen( nom_temp, "wb" );
+	temp = fopen( temp_name, "wb" );
 	if ( temp == NULL )
 		return -1;
 	c1 = fgetc(old);
@@ -289,33 +317,39 @@ long Macintosh_to_PC(char *filename, char **tempfile) {
 		fputc(10,temp);
 	fclose( old );
 	fclose( temp );
-	strcpy(*tempfile,nom_temp);
+	strcpy(*tempfile,temp_name);
 	return 0;
 }
 
 /*
- * Fonction de lecture; type==0 pour le fichier de config, et ==1 pour
- * un fichier de joueurs.
+ * Fonction de lecture;
+ *   type==0 pour le fichier de config,
+ *   type==1 pour un fichier de joueurs.
+ ****
+ * Read function
+ *  type==0 for configuration file
+ *  type==1 for players file
  */
 
 
 /*
- * Sur les anciens Macintosh, les fonctions de lecture de la librairie
- * standard sont trop intelligentes pour les fichiers textes et
- * inversent carrement les CR et les LF ! On ouvre donc les fichiers
- * en binaire.
- * Question : est-ce que les parseurs marchent encore sur les autres
- * plate-formes si on fait la meme chose ?
+ * Sur les anciens Macintosh, les fonctions de lecture de la librairie standard sont trop intelligentes
+ * pour les fichiers textes et inversent carrement les CR et les LF ! On ouvre donc les fichiers en binaire.
+ * Question : est-ce que les parseurs marchent encore sur les autres plate-formes si on fait la meme chose ?
+ ****
+ * On old Macintosh platforms, standard library reading functions are too intelligent for text files and
+ * swap CR and LF! Files are therefore opened in binary mode.
+ * Question: do parsers still work on other platforms if we do the same?
  */
 
 #if defined(__THINK_C__) || defined(PAPP_MAC_METROWERKS)
-   #define MODE_OUVERTURE_FICHIER "rb"
+   #define FILE_OPENING_MODE "rb"
 #else
-   #define MODE_OUVERTURE_FICHIER "r"
+   #define FILE_OPENING_MODE "r"
 #endif
 
-long lire_fichier (char *filename, long type) {
-	static long nb_lectures = 0;
+long read_file(char *filename, long type) {
+	static long nbr_reads = 0;
 	long ret;
 #ifdef DUPLIQUE_FICHIER_PARSER
 	long use_temp_file;
@@ -324,39 +358,39 @@ long lire_fichier (char *filename, long type) {
 
 	assert(type == CONFIG_F || type == PLAYERS_F || type == NEWPLAYERS_F);
 #ifdef DEBUG
-	fprintf(stderr,"Lecture de '%s' (%s)\n", filename,
-		type == CONFIG_F ? "config" : "joueurs ou nouveaux");
+	fprintf(stderr,"Reading '%s' (%s)\n", filename,
+		type == CONFIG_F ? "config" : "players or newPlayers");
 #endif
 
 #ifdef DUPLIQUE_FICHIER_PARSER
     tempfile = trivialloc(250);
     if (Macintosh_to_PC(filename,&tempfile) == 0) {
-       yyin = fopen(tempfile, MODE_OUVERTURE_FICHIER);
+       yyin = fopen(tempfile, FILE_OPENING_MODE);
        use_temp_file = 1;
     } else {
-       yyin = fopen(filename, MODE_OUVERTURE_FICHIER);
+       yyin = fopen(filename, FILE_OPENING_MODE);
        use_temp_file = 0;
     }
 #else
-    yyin = fopen(filename, MODE_OUVERTURE_FICHIER);
+    yyin = fopen(filename, FILE_OPENING_MODE);
 #endif
 
 	if (yyin == NULL)
 		return -1;
-	if (nb_lectures++)
+	if (nbr_reads++)
 		yyrestart(yyin);
-	erreur_constatee = 0;
-	numero_ligne = 1;
-	nom_fichier_lu = filename;
-	pays_courant = pays_defaut;
-	/* Type d'analyse lexicale? */
+	found_errors = 0;
+	line_number = 1;
+	read_file_name = filename;
+	current_country = default_country;
+	/* Type d'analyse lexicale? - Which lexical analysis type? */
 	if (type == CONFIG_F) {
 		BEGIN(INITIAL);
-		type_fichier_config = CORRECT ;
-		type_fichier_intermediaire = OLD ;
+		config_file_type = CORRECT ;
+		workfile_type = OLD ;
 	} else {
 		BEGIN(UNQUOTED) ;
-		fichier_des_nouveaux = ((type == NEWPLAYERS_F) ? 1 : 0) ;
+		new_players_file = ((type == NEWPLAYERS_F) ? 1 : 0) ;
 	}
 	ret = yyparse();
 	fclose(yyin);
@@ -366,20 +400,19 @@ long lire_fichier (char *filename, long type) {
        { remove(tempfile); }
 #endif
 
-
     if (type == CONFIG_F)
-		pays_defaut = pays_courant;
-	return (ret + erreur_constatee);
+		default_country = current_country;
+	return (ret + found_errors);
 }
 
-/* Fonctions d'erreur */
+/* Fonctions d'erreur - Error functions */
 
-void erreur_syntaxe(const char *erreur) {
-	avert_syntaxe(erreur);
-	if (++erreur_constatee >= 15)
+void syntax_error(const char *error) {
+	syntax_warning(error);
+	if (++found_errors >= 15)
 		fatal_error(TOO_MANY_ERRS);
 }
 
-void avert_syntaxe(const char *erreur) {
-	fprintf(stderr, AT_LINE, nom_fichier_lu, numero_ligne, erreur);
+void syntax_warning(const char *error) {
+	fprintf(stderr, AT_LINE, read_file_name, line_number, error);
 }

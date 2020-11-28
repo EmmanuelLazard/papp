@@ -16,7 +16,7 @@
  * (EL) 05/05/2008 : v1.33, Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
  * (EL) 21/04/2008 : v1.32, Modification de la structure de sauvegarde du fichier 'Nouveaux'.
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
+ * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
  * (EL) 12/02/2007 : Modification de 'affiche_appariements()' pour qu'il affiche
  *                   le nom du tournoi au debut.
  * (EL) 02/02/2007 : Changement du type de 'tieBreak[]' en double
@@ -39,10 +39,10 @@
  * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
  * (EL) 21/04/2008 : v1.32, change 'nouveaux" file structure
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_dans_sous_dossier()'
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
  * (EL) 12/02/2007 : Modify 'display_pairings()' so that it displays
  *                   tournament fullname at the start.
- * (EL) 02/02/2007 : tieBreak[] is changed to 'double' type
+ * (EL) 02/02/2007 : tieBreak[] is changed to 'double' type
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
@@ -51,8 +51,8 @@
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
-#include "pions.h"
-#include "joueur.h"
+#include "discs.h"
+#include "player.h"
 #include "couplage.h"
 #include "global.h"
 #include "more.h"
@@ -187,7 +187,7 @@ void first_round(void) {
      ****
      * scores, discs, tiebreak are zeroed.
      */
-    raz_scores();
+    clearScores();
 
     current_round = 0;
     modified_coupling = 0;
@@ -233,15 +233,15 @@ void _save_round(void) {
     discs_t v;
     FILE *fp;
 
-    fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(workfile_filename, "a", "", 0, 1) ;
 #ifdef DEBUG
     fprintf(stderr, RND_SAVE "\n", current_round+1);
 #endif
     /* Nous en profitons pour sauvegarder la table du toutes-rondes */
     /* Take the chance to save round-robin table */
     if (current_round == 0) {
-        init_ttrondes();
-        sauve_table_ttr(fp);
+        initRoundRobin();
+        save_rrTable(fp);
     }
     /* Puis les resultats proprement dits */
     /* Then save results */
@@ -249,12 +249,12 @@ void _save_round(void) {
     round_iterate(current_round);
     while (next_couple(&n1, &n2, &v)) {
         assert(SCORE_IS_LEGAL(v));
-        fprintf(fp,"(%06ld %-5s %06ld %s);\n", n1, pions_en_chaine(v),
-                n2, pions_en_chaine(OPPONENT_SCORE(v)));
+        fprintf(fp,"(%06ld %-5s %06ld %s);\n", n1, discs2string(v),
+                n2, discs2string(OPPONENT_SCORE(v)));
     }
     fprintf(fp,"ronde-suivante;\n\n");
     fclose(fp);
-    backup_inter() ;
+    backup_workfile() ;
     modified_coupling = 0;
 }
 
@@ -283,7 +283,7 @@ void _save_registered(void) {
 
     /* ecriture dans le fichier intermediaire 'papp-internal-workfile.txt' */
     /* write in the Papp workfile */
-    fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(workfile_filename, "a", "", 0, 1) ;
 #ifdef DEBUG
     fprintf(stderr, RND_SINSC "\n", current_round+1);
 #endif
@@ -295,11 +295,11 @@ void _save_registered(void) {
                     registered_players->list[i]->ID);
     fprintf(fp,";\n\n");
     fclose(fp);
-    backup_inter() ;
+    backup_workfile() ;
 
     /* Mais il faut egalement sauvegarder les nouveaux joueurs */
     /* But new players must also be saved */
-    fp = myfopen_dans_sous_dossier(nom_fichier_nouveaux,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(new_players_filename, "a", "", 0, 1) ;
     for (i=0; i<new_players->n; i++) {
         j = new_players->list[i];
         if (j->ID > 0)
@@ -309,10 +309,10 @@ void _save_registered(void) {
 
     /* On met les nouveaux en commentaires dans le fichier intermediaire */
     /* New players are added as comment in the workfile */
-    fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(workfile_filename, "a", "", 0, 1) ;
     if (new_players->n > 0) {
         fprintf(fp,"%%%%  ");
-        fprintf(fp, NEW_BEGIN_BLOCK , (long)(current_round+1));
+        fprintf(fp, NEW_BEGIN_BLOCK , current_round+1);
         fprintf(fp,"\n%%\n");
         for (i=0; i<new_players->n; i++) {
             j = new_players->list[i];
@@ -324,15 +324,15 @@ void _save_registered(void) {
         fprintf(fp,"\n\n\n");
     }
     fclose(fp);
-    backup_inter() ;
+    backup_workfile() ;
 
     /* Les nouveaux sont connus maintenant */
     /* New players are now known */
-    vider_liste(new_players);
+    emptyList(new_players);
 
     /* Ainsi que les joueurs emigres */
     /* And also emigrate players */
-    fp = myfopen_dans_sous_dossier(nom_fichier_nouveaux,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(new_players_filename, "a", "", 0, 1) ;
     for (i=0; i<emigrant_players->n; i++) {
         j = emigrant_players->list[i];
         if (j->ID > 0)
@@ -342,7 +342,7 @@ void _save_registered(void) {
 
     /* On met aussi les emmigres en commentaires dans le fichier intermediaire */
     /* emigrate players are also added as comment in the workfile */
-    fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(workfile_filename, "a", "", 0, 1) ;
     if (emigrant_players->n > 0) {
         fprintf(fp,"%%%%  ");
         fprintf(fp, MIGR_BEGIN_BLOCK, (current_round+1));
@@ -357,10 +357,10 @@ void _save_registered(void) {
         fprintf(fp,"\n\n\n");
     }
     fclose(fp);
-    backup_inter() ;
+    backup_workfile() ;
     /* Les emmigres sont connus maintenant */
     /* emigrate players are now known */
-    vider_liste(emigrant_players);
+    emptyList(emigrant_players);
 
     previous_nb_registered = registered_players->n;
     modified_presents = 0;
@@ -383,7 +383,7 @@ void _save_pairings(void) {
 
     if (modified_coupling == 0)
         return;
-    fp = myfopen_dans_sous_dossier(nom_fichier_inter,"a","",0, 1) ;
+    fp = myfopen_in_subfolder(workfile_filename, "a", "", 0, 1) ;
 #ifdef DEBUG
     fprintf(stderr, RND_SPAIR "\n", current_round+1);
 #endif
@@ -392,10 +392,10 @@ void _save_pairings(void) {
     round_iterate(current_round);
     while (next_couple(&n1, &n2, &v))
         fprintf(fp, COUPON_IS_EMPTY(v) ? "(%06ld %06ld);\n" : "(%06ld %06ld %s);\n",
-                n1, n2, pions_en_chaine(v));
+                n1, n2, discs2string(v));
     fprintf(fp,"\n");
     fclose(fp);
-    backup_inter() ;
+    backup_workfile() ;
     modified_coupling = 0;
 }
 
@@ -432,7 +432,7 @@ void _recreate_workfile(void) {
     cur_modified_presents  = modified_presents;
     for (i = 0; i < registered_players->n; i++)
         cur_presents[i]    = present[i];
-    COPIER(nom_fichier_inter, &cur_workfile_name);
+    COPY(workfile_filename, &cur_workfile_name);
 
 
     /* On ecrase le fichier "__papp.tmp" (s'il y en a un) */
@@ -440,20 +440,20 @@ void _recreate_workfile(void) {
     error = remove(temp_file);
     /* On fait les sauvegardes intermediaires dans "__papp.tmp" */
     /* intermediate saves are done in file "__papp.tmp"         */
-    COPIER(temp_file, &nom_fichier_inter);
+    COPY(temp_file, &workfile_filename);
 
     /* d'abord les infos du tournoi */
     /* First tournament info        */
-    init_fichier_intermediaire(NONEXISTING) ;
+    init_workfile(NONEXISTING) ;
     /* Puis le fichier des nouveaux */
     /* Then new players file        */
-    if ((papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "ab", "", 0, 0)) != NULL) {
-        copier_fichier_nouveaux(papp_file) ;
+    if ((papp_file = myfopen_in_subfolder(workfile_filename, "ab", "", 0, 0)) != NULL) {
+        copy_nouveaux_file(papp_file) ;
         fclose(papp_file) ;
     }
 
 #ifdef DEBUG
-    fprintf(stderr, FIC_TEMP "\n", nom_fichier_inter);
+    fprintf(stderr, FIC_TEMP "\n", workfile_filename);
 #endif
 
     /* on initialise le tableau des presents */
@@ -519,7 +519,7 @@ void _recreate_workfile(void) {
     error = rename(cur_workfile_name,save_file);
     /* puis le fichier "__papp.tmp" en "papp-internal-workfile.txt" */
     /* And temporary file "__papp.tmp" to workfile                  */
-    error = rename(nom_fichier_inter,cur_workfile_name);
+    error = rename(workfile_filename,cur_workfile_name);
 
     /* Termine, retablir les variables globales de papp */
     /* Finished, retrieve Papp's global variables       */
@@ -529,8 +529,8 @@ void _recreate_workfile(void) {
     modified_presents  = cur_modified_presents;
     for (i = 0; i < registered_players->n; i++)
         present[i]     = cur_presents[i];
-    COPIER(cur_workfile_name, &nom_fichier_inter);
-    backup_inter() ;
+    COPY(cur_workfile_name, &workfile_filename);
+    backup_workfile() ;
 }
 
 
@@ -759,10 +759,10 @@ void player_InOut(long ID_player, long direction) {
 
             if (present[i] == direction)
 #ifdef ENGLISH
-                printf("Player %s (%ld) was already %s\n", fullname, ID_player,
+                printf("Player %s (%ld) was already %s\n", name, ID_player,
                        direction ? "in" : "out");
             else
-                printf("Player %s (%ld) %s the tournament\n", fullname, ID_player,
+                printf("Player %s (%ld) %s the tournament\n", name, ID_player,
                        direction ? "enters" : "leaves");
 #else
                 printf("Le joueur %s (%ld) etait deja %s\n", name, ID_player,
@@ -792,7 +792,7 @@ void player_InOut(long ID_player, long direction) {
                 if (never_played) {
                     printf(SUPP_REASON, name, ID_player);
                     sprintf(string, SUPP_ASK);
-                    if (oui_non(string)) {
+                    if (yes_no(string)) {
 
                         /*
                          * on met temporairement le ID du joueur a zero,
@@ -804,14 +804,14 @@ void player_InOut(long ID_player, long direction) {
                          * regenerating.
                          */
                         registered_players->list[i]->ID = 0;
-                        recreer_fichier_intermediaire();
+                        recreate_workfile();
                         registered_players->list[i]->ID = ID_player;
 
                         /* on relit immediatement le nouveau fichier "papp-internal-workfile.txt"
                          * The new "papp-internal-workfile.txt" file is immediately reread */
-                        vider_liste(registered_players);
+                        emptyList(registered_players);
                         first_round();
-                        ret = lire_fichier(nom_fichier_inter, CONFIG_F);
+                        ret = read_file(workfile_filename, CONFIG_F);
                         if (ret > 0)
                             fatal_error("ERREUR DE FICHIER dans la fonction player_InOut");
                     }
@@ -915,7 +915,7 @@ void pairings_manipulate(void) {
 
     for(;;) {
         /* Afficher la liste des joueurs apparies - display list of paired players */
-        eff_ecran();
+        clearScreen();
         printf(MAN_PAIRED " :\n");
         lmax = nbc = 0;
         for (passe=0; passe<2; passe++) {
@@ -925,7 +925,7 @@ void pairings_manipulate(void) {
 
 #ifdef DISPLAY_ALPHA_COUPLING
                 sprintf(string,"%-8.8s(%6ld)--%-8.8s(%6ld) ",
-                        trouver_joueur(n1)->fullname,n1,trouver_joueur(n2)->fullname,n2);
+                        findPlayer(n1)->fullname,n1, findPlayer(n2)->fullname,n2);
 #else
                 sprintf(string,"%ld--%ld",n1,n2);
 #endif
@@ -945,7 +945,7 @@ void pairings_manipulate(void) {
             }
             if (lmax == 0)
                 break;
-            nbc = nb_colonnes / (lmax + 1);
+            nbc = nbrOfColumns / (lmax + 1);
         }
         /* Afficher la liste des joueurs non apparies - Display non-paired players */
         printf("\n\n" MAN_UNPAIRED " :\n");
@@ -974,63 +974,63 @@ void pairings_manipulate(void) {
                 }
             if (lmax == 0)
                 break;
-            nbc = nb_colonnes / (lmax + 1);
+            nbc = nbrOfColumns / (lmax + 1);
         }
         printf("\n\n");
         /* Et afficher le prompt - Print prompt */
         printf(MAN_PROMPT);
-        c = lire_touche(); c = tolower(c);
+        c = read_key(); c = tolower(c);
         switch(c) {
             case 'v':
                 display_pairings(NULL, 0);
                 break;
             case 'l':
-                affiche_inscrits(NULL);
+                display_registered(NULL);
                 break;
             case 'f':
-                eff_ligne();
+                clear_line();
                 printf("\n");
-                if ((n1 = choix_d_un_joueur_au_clavier(WHICH_FEATS, registered_players, &line)) >= 0)
+                if ((n1 = selectPlayerFromKeyboard(WHICH_FEATS, registered_players, &line)) >= 0)
                     /*
                      * Il n'est pas necessaire de verifier que le joueur est
                      * inscrit puisque fiche_individuelle() le verifie elle-meme.
                      ****
                      * No need to check whether player is registered as
-                     * fiche_individuelle() will do it itself.
+                     * individualSheet() will do it itself.
                      */
-                    fiche_individuelle(n1, NULL);
+                    individualSheet(n1, NULL);
                     break;
             case 'z':
-                eff_ligne();
+                clear_line();
                 printf("\n");
-                if (oui_non(MAN_ZAP))
+                if (yes_no(MAN_ZAP))
                     zero_coupling();
                     break;
             case 'a':
-                eff_ligne();
+                clear_line();
                 printf("\n");
                 printf(MAN_ASS);
                 printf("\n");
 
-                sprintf(string, MAN_ASS_BLACK, couleur_1);
-                if (((n1 = choix_d_un_joueur_au_clavier(string, registered_players, &line)) >= 0)
-                    && ((_n1=numero_inscription(n1)) >=0) && present[_n1])
-                    puts(coupon(trouver_joueur(n1), NULL, UNKNOWN_SCORE));
+                sprintf(string, MAN_ASS_BLACK, color_1);
+                if (((n1 = selectPlayerFromKeyboard(string, registered_players, &line)) >= 0)
+                    && ((_n1= inscription_ID(n1)) >=0) && present[_n1])
+                    puts(coupon(findPlayer(n1), NULL, UNKNOWN_SCORE));
                 else { beep(); break;}
 
-                    sprintf(string, MAN_ASS_WHITE, couleur_2);
-                if (((n2 = choix_d_un_joueur_au_clavier(string, registered_players, &line)) >= 0)
-                    && ((_n2=numero_inscription(n2)) >=0) && present[_n2])
-                    puts(coupon(trouver_joueur(n2), NULL, UNKNOWN_SCORE));
+                    sprintf(string, MAN_ASS_WHITE, color_2);
+                if (((n2 = selectPlayerFromKeyboard(string, registered_players, &line)) >= 0)
+                    && ((_n2= inscription_ID(n2)) >=0) && present[_n2])
+                    puts(coupon(findPlayer(n2), NULL, UNKNOWN_SCORE));
                 else { beep(); break;}
 
                 make_couple(n1, n2, UNKNOWN_SCORE);
                 break;
             case 'd':
-                eff_ligne();
+                clear_line();
                 printf("\n");
-                if (((n1 = choix_d_un_joueur_au_clavier(MAN_DISS, registered_players, &line)) >= 0) &&
-                    ((_n1=numero_inscription(n1)) >=0 ) &&
+                if (((n1 = selectPlayerFromKeyboard(MAN_DISS, registered_players, &line)) >= 0) &&
+                    ((_n1= inscription_ID(n1)) >=0 ) &&
                     present[_n1] )
                     uncouple(n1);
                 else beep();
@@ -1099,7 +1099,7 @@ long change_result(long round_nbr, long nbr_player1, long nbr_player2, discs_t v
  * Assigns table ID to the game between n1 and n2 at round <round_nbr>
  */
 
-void mettre_numero_de_table(long round_nbr, long n1, long n2, long table_ID) {
+void assign_table_number(long round_nbr, long n1, long n2, long table_ID) {
     Couple *q;
 
     assert(round_nbr >= 0 && round_nbr <= current_round && round_nbr < NMAX_ROUNDS);
@@ -1123,7 +1123,7 @@ void mettre_numero_de_table(long round_nbr, long n1, long n2, long table_ID) {
  * table isn't found (no game or no table yet assigned, etc).
  */
 
-long numero_de_table(long round_nbr, long n1, long n2) {
+long find_table_number(long round_nbr, long n1, long n2) {
     Couple *q;
 
     assert(round_nbr >= 0 && round_nbr <= current_round && round_nbr < NMAX_ROUNDS);
@@ -1161,8 +1161,8 @@ void tables_numbering(void) {
     round_iterate(current_round);
     while (next_couple(&n1, &n2, &v)) {
         i = pairs_number++;
-        list[i].j1 = trouver_joueur(n1);
-        list[i].j2 = trouver_joueur(n2);
+        list[i].j1 = findPlayer(n1);
+        list[i].j2 = findPlayer(n2);
         list[i].score = v;
         list[i].sort_value = tables_sort_criteria(n1, n2);
     }
@@ -1170,7 +1170,7 @@ void tables_numbering(void) {
         SORT(list, pairs_number, sizeof(Pair), pairs_sort);
 
     for (i = 0; i < pairs_number; i++)
-        mettre_numero_de_table(current_round, (list[i].j1)->ID, (list[i].j2)->ID, i+1);
+        assign_table_number(current_round, (list[i].j1)->ID, (list[i].j2)->ID, i + 1);
 
     free(list);
 }
@@ -1218,9 +1218,9 @@ int pairs_sort(const void *ARG1, const void *ARG2) {
 
 double tables_sort_criteria(long n1, long n2) {
 
-    return 100000.0 * le_max_de(score[numero_inscription(n1)],score[numero_inscription(n2)])
-    + 100.0*(score[numero_inscription(n1)] + score[numero_inscription(n2)] )
-    + numero_inscription(n1)/10.0;
+    return 100000.0 * max_of(score[inscription_ID(n1)], score[inscription_ID(n2)])
+    + 100.0*(score[inscription_ID(n1)] + score[inscription_ID(n2)] )
+    + inscription_ID(n1)/10.0;
 }
 
 /*
@@ -1237,9 +1237,9 @@ void display_pairings(const char *filename, long full_results) {
     long pairs_nbr;
 
     /* Peut-etre devons-nous sauvegarder l'etat - maybe state should be saved */
-    if (sauvegarde_immediate) {
-        sauve_inscrits();
-        sauve_appariements();
+    if (immediate_save) {
+        save_registered();
+        save_pairings();
     }
     more_init(filename);
     if (registered_players->n == 0) {
@@ -1249,9 +1249,9 @@ void display_pairings(const char *filename, long full_results) {
     }
 
     /* Pour afficher le fullname du tournoi en tete - tournament full name is displayed first */
-    tournamentName = malloc(strlen(nom_du_tournoi)+15) ;
+    tournamentName = malloc(strlen(tournament_name)+15) ;
     if (tournamentName != NULL) {
-        sprintf(tournamentName, "*** %s ***\n", nom_du_tournoi) ;
+        sprintf(tournamentName, "*** %s ***\n", tournament_name) ;
         more_line(tournamentName) ;
         free(tournamentName) ;
     }
@@ -1267,8 +1267,8 @@ void display_pairings(const char *filename, long full_results) {
     round_iterate(current_round);
     while (next_couple(&n1, &n2, &v)) {
         i = pairs_nbr++;
-        list[i].j1 = trouver_joueur(n1);
-        list[i].j2 = trouver_joueur(n2);
+        list[i].j1 = findPlayer(n1);
+        list[i].j2 = findPlayer(n2);
         list[i].score = v;
         list[i].sort_value = tables_sort_criteria(n1, n2);
     }
@@ -1325,17 +1325,17 @@ void save_pairings_file(void) {
     char    *filename;
     long     i;
 
-    if (sauvegarde_fichier_appariements) {
-        filename = nom_fichier_numerote(nom_fichier_appariements, current_round+1);
+    if (pairings_file_save) {
+        filename = numbered_filename(pairings_filename, current_round + 1);
         display_pairings(filename, 0);
-        if (impression_automatique)
-            for (i = 0; i < nb_copies_impression; i++)
-                imprime_fichier(filename);
+        if (automatic_printing)
+            for (i = 0; i < print_copies; i++)
+                print_file(filename);
     }
 
 	/* Faut-il generer le fichier XML des resultats ? -
 	 * Should we generate an XML file with pairings? */
-	if (generer_fichiers_XML) {
-		creer_ronde_XML();
+	if (generate_xml_files) {
+        createXMLround();
 	}
 }

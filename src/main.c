@@ -1,15 +1,16 @@
 /*
  * main.c: module principal de PAPP
  *
+ * (EL) 15/10/2019 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change
  * (EL) 16/07/2012 : v1.34, no change
  * (EL) 05/05/2008 : v1.33, Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
  * (EL) 21/04/2008 : v1.32, no change
  * (EL) 02/05/2007 : v1.31, changements dans les #include
- * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
+ * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
  * (EL) 03/04/2007 : Changement de l'affichage initial.
- * (EL) 30/03/2007 : Ecriture de la fonction 'Init_Sous_Dossier()' qui cree
+ * (EL) 30/03/2007 : Ecriture de la fonction 'Init_Subfolder()' qui cree
                      un sous-dossier a partir du fullname du tournoi et modifie les noms
                      des fichiers class/result/ronde...
  * (EL) 06/02/2007 : Test de la presence d'un ancien fichier intermediaire
@@ -21,6 +22,28 @@
                      Ecriture de la fonction 'warning_old_papp_cfg'.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ ****
+ *
+ *  * main.c: PAPP main module
+ *
+ * (EL) 15/10/2019 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change
+ * (EL) 16/07/2012 : v1.34, no change
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, no change
+ * (EL) 02/05/2007 : v1.31, changements dans les #include
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
+ * (EL) 03/04/2007 : Changes in initial display.
+ * (EL) 30/03/2007 : Writing of function 'Init_Subfolder()' which creates a subfolder
+ *                   from the tournament fullname and modifies names of standing/result/round files
+ * (EL) 06/02/2007 : Tests if no or an old workfile is present. In that case,
+                     asks for tournament informations and save a new workfile.
+                     Function 'askTournamentInformation' is written.
+ * (EL) 04/02/2007 : Test if an old version of configuration file is present,
+ *                   in which case a warning is display. Function 'warning_old_papp_cfg' is written.
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
+
  */
 
 #include <stdio.h>
@@ -38,31 +61,31 @@
 #endif
 
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
-#include <unistd.h>
-#include <sys/stat.h>
-#include <dirent.h>
+	#include <unistd.h>
+	#include <sys/stat.h>
+	#include <dirent.h>
 #endif
 
 
 #include "global.h"
-#include "joueur.h"
+#include "player.h"
 #include "version.h"
 #include "changes.h"
 #include "couplage.h"
 #include "more.h"
 #include "crosstable.h"
-#include "pions.h"
+#include "discs.h"
 
 
-static void main_menu(void)	EXITING ;	/* decl.forward */
+static void main_menu(void)	EXITING ;	/* forward declaration */
 void messages_copyleft(void);
-void warning_absence_papp_cfg(void);
+void WarningNoConfigFile(void);
 void warning_old_papp_cfg(void) ;
-void warning_deux_fichiers_de_joueurs(char *nom_fichier_joueurs,
-                                      char *nom_fichier_joueurs_alt);
-void Demander_caracteristiques_tournoi(long type_fichier) ;
+void warningTwoPlayersFilesFound(char *PlayersFilenamne,
+                                      char *PlayersFilename_Alt);
+void askTournamentInformation(long fileType) ;
 void Sauver_fichier_intermediaire(long type_fichier) ;
-void Init_Sous_Dossier(void) ;
+void Init_Subfolder(void) ;
 
 /* static void printnewline(void) {} */
 /* static void main_menu(void) /-- decl.forward --/ */
@@ -110,7 +133,7 @@ void Init_Sous_Dossier(void) ;
 
 
 void messages_copyleft() {
-	eff_ecran();
+	clearScreen();
 	printf("\n\n"
 #ifdef ENGLISH
 		   "        %s (pairing program)  [%s]\n"
@@ -135,10 +158,10 @@ void messages_copyleft() {
 		   "        avec un maximum de %d rondes. Il y a %ld joueurs \n"
 		   "        dans la base.\n"
 #endif
-		   , VERSION, __DATE__, MAX_REGISTERED, NMAX_ROUNDS, nombre_joueurs_base());
+		   , VERSION, __DATE__, MAX_REGISTERED, NMAX_ROUNDS, countPlayersInDatabase());
 }
 
-void affiche_banniere_cfg(void) {
+void displayConfigBanner(void) {
 	printf("\n\n"
 #ifdef ENGLISH
 		   "   **************************************************************\n"
@@ -152,8 +175,7 @@ void affiche_banniere_cfg(void) {
 		   );
 }
 
-void warning_absence_papp_cfg(void) {
-	/* eff_ecran(); */
+void WarningNoConfigFile(void) {
 	beep();
 	printf("\n"
 #ifdef ENGLISH
@@ -177,12 +199,12 @@ void warning_absence_papp_cfg(void) {
 		   "      de la distribution officielle de %s [www.ffothello.org/info/appa.php].\n"
 		   "      Lisez la documentation pour les details.\n"
 #endif
-		   , nom_fichier_config, nom_fichier_config, VERSION);
-	/* (void)lire_touche(); */
+		   , config_filename, config_filename, VERSION);
+	/* (void)read_key(); */
 }
 
 void warning_old_papp_cfg(void) {
-	/* eff_ecran(); */
+	/* clearScreen(); */
 	beep();
 	printf("\n"
 #ifdef ENGLISH
@@ -201,11 +223,11 @@ void warning_old_papp_cfg(void) {
 		   "      configuration de la distribution officielle de %s\n"
 		   "      [www.ffothello.org/info/appa.php].\n"
 #endif
-		   , nom_fichier_config, VERSION );
-	/* (void)lire_touche();*/
+		   , config_filename, VERSION );
+	/* (void)read_key();*/
 }
 
-void affiche_param_type2(void) {
+void displayParameterType(void) {
 	printf("\n"
 #ifdef ENGLISH
 		   "      Parameters currently in use, which you may wish \n"
@@ -220,18 +242,18 @@ void affiche_param_type2(void) {
 		   "          Score de BIP et total de pions : %s/%ld\n"
 		   "          Utilisation d'un sous-repertoire : %s\n"
 #endif
-		   , pays_defaut, pions_en_chaine(score_bip), total_pions,
+		   , default_country, discs2string(bye_score), discsTotal,
 #ifdef ENGLISH
-		   (utiliser_sous_dossier?"YES":"NO"));
+		   (use_subfolder?"YES":"NO"));
 #else
-	(utiliser_sous_dossier?"OUI":"NON"));
+	(use_subfolder?"OUI":"NON"));
 #endif
-	/* (void)lire_touche(); */
+	/* (void)read_key(); */
 }
 
-void warning_deux_fichiers_de_joueurs(char *nom_fichier_joueurs,
-                                      char *nom_fichier_joueurs_alt) {
-	eff_ecran();
+void warningTwoPlayersFilesFound(char *PlayersFilenamne,
+                                      char *PlayersFilename_Alt) {
+	clearScreen();
 	beep();
 	printf("\n\n"
 #ifdef ENGLISH
@@ -255,11 +277,11 @@ void warning_deux_fichiers_de_joueurs(char *nom_fichier_joueurs,
 		   "      En tout cas, veuillez detruire ou renommer le fichier\n"
 		   "      obsolete, puis relancer Papp. Merci !\n"
 #endif
-		   , nom_fichier_joueurs, nom_fichier_joueurs_alt);
-	(void)lire_touche();
+		   , PlayersFilenamne, PlayersFilename_Alt);
+	(void) read_key();
 }
 
-void affiche_banniere_tournoi(void) {
+void displayTournamentBanner(void) {
 	printf("\n\n"
 #ifdef ENGLISH
 		   "   **************************************************************\n"
@@ -274,18 +296,22 @@ void affiche_banniere_tournoi(void) {
 }
 
 /* Si c'est un nouveau tournoi ou un ancien fichier intermediaire
-   On demande les caracteristiques du tournoi */
-void Demander_caracteristiques_tournoi(long type_fichier) {
+ *  On demande les caracteristiques du tournoi.
+ ****
+ * If it is a new tournament or an old workfile, the tournament information
+ *  are asked.
+   */
+void askTournamentInformation(long fileType) {
 	char *tmp;
 	double BQ_tmp ;
 	struct tm *t;
     time_t now;
 	char date_tmp[25];
 
-	assert(type_fichier == NONEXISTING || type_fichier == OLD) ;
-	/*	eff_ecran(); */
+	assert(fileType == NONEXISTING || fileType == OLD) ;
+	/*	clearScreen(); */
 	beep();
-	if (type_fichier == NONEXISTING) {
+	if (fileType == NONEXISTING) {
 		printf("\n"
 #ifdef ENGLISH
 			   "      You are starting a new tournament.\n"
@@ -308,42 +334,43 @@ void Demander_caracteristiques_tournoi(long type_fichier) {
 			   ) ;
 	}
 	printf(MSG_NAME_TRN) ;
-	tmp = lire_ligne() ;
-	COPIER(tmp, &nom_du_tournoi);
+	tmp = read_Line() ;
+	COPY(tmp, &tournament_name);
 	putchar('\n');
-	nombre_de_rondes = 0 ;
-	while( (nombre_de_rondes<1) || (nombre_de_rondes>NMAX_ROUNDS) ) {
+	number_of_rounds = 0 ;
+	while( (number_of_rounds<1) || (number_of_rounds>NMAX_ROUNDS) ) {
 		printf(MSG_NBR_ROUNDS) ;
-		if (sscanf(lire_ligne(), "%ld", &nombre_de_rondes) != 1) {
+		if (sscanf(read_Line(), "%ld", &number_of_rounds) != 1) {
 			beep() ;
-			nombre_de_rondes = 0 ;
+			number_of_rounds = 0 ;
 		}
 		putchar('\n');
 	}
-	/* Si 2n-1 ou 2n rondes, on a 2n joueurs max pour un toutes-rondes */
-	ttr_maxj = ((nombre_de_rondes+1)/2)*2 ;
-	ttr_minj = 1 ;
-	printf(MSG_RROBIN, ttr_maxj) ;
-	coef_brightwell = (nombre_de_rondes<8 ? 0.0 : 3.0) ; /* coeff par defaut */
+	/* Si 2n-1 ou 2n rondes, on a 2n joueurs max pour un toutes-rondes -
+	 * maximum of 2n players for a round-robin if we have 2n or 2n-1 rounds.*/
+	maxPlayers4rr = ((number_of_rounds+1)/2)*2 ;
+	minPlayers4rr = 1 ;
+	printf(MSG_RROBIN, maxPlayers4rr) ;
+	brightwell_coeff = (number_of_rounds<8 ? 0.0 : 3.0) ; /* coeff par defaut - default coeff. */
 	BQ_tmp = -1.0 ;
 	do {
-		printf(MSG_BQ, coef_brightwell*2) ;
-		if (sscanf(lire_ligne(), "%lf", &BQ_tmp) < 1)
-			BQ_tmp = coef_brightwell*2 ;
+		printf(MSG_BQ, brightwell_coeff*2) ;
+		if (sscanf(read_Line(), "%lf", &BQ_tmp) < 1)
+			BQ_tmp = brightwell_coeff*2 ;
 		putchar('\n');
 	} while (BQ_tmp<0) ;
-	coef_brightwell = BQ_tmp/2 ;
-/* Quelle date pour le tournoi ? */
+	brightwell_coeff = BQ_tmp/2 ;
+/* Quelle date pour le tournoi ? - Which date for the tournament? */
     time(&now);
     t = localtime(&now);
     assert(t != NULL);
     sprintf(date_tmp, "%02d/%02d/%04d",t->tm_mday, t->tm_mon+1, t->tm_year+1900);
-	COPIER(date_tmp, &date_tournoi);
+	COPY(date_tmp, &tournament_date);
 
-	/*	(void)lire_touche(); */
+	/*	(void)read_key(); */
 }
 
-void affiche_params_tournoi(void) {
+void displayTournamentParameters(void) {
 	printf("\n"
 #ifdef ENGLISH
 		   "          Name of tournament: %s\n"
@@ -356,77 +383,86 @@ void affiche_params_tournoi(void) {
 		   "          Nombre de rondes : %ld\n"
 		   "          Coefficient de Brightwell : %f\n"
 #endif
-		   , nom_du_tournoi, date_tournoi, nombre_de_rondes, coef_brightwell*2) ;
+		   , tournament_name, tournament_date, number_of_rounds, brightwell_coeff*2) ;
 
-	bas_ecran();
-	inv_video(PRESS_KEY);
-	(void)lire_touche();
+	screen_bottom();
+	reverse_video(PRESS_KEY);
+	(void) read_key();
 }
 
-void Init_Sous_Dossier(void) {
-	const char *char_speciaux = "#&%:?*!/'`\"\\" ;
+void Init_Subfolder(void) {
+	const char *special_chars = "#&%:?*!/'`\"\\" ;
 	unsigned long i ;
 
-	if (utiliser_sous_dossier != 1)
+	if (use_subfolder != 1)
 		return ;
-	if (nom_du_tournoi == NULL || nom_du_tournoi[0] == '\0')
+	if (tournament_name == NULL || tournament_name[0] == '\0')
 		return ;
-	/* On cree d'abord le fullname du sous-dossier sans les espaces et caracteres speciaux */
-	COPIER(nom_du_tournoi, &nom_sous_dossier) ;
-	for (i=0 ; i<strlen(nom_sous_dossier) ; i++) {
-		if (nom_sous_dossier[i] == ' ')
-			nom_sous_dossier[i] = '_' ; /* on remplace les espaces par des '_' */
-		if (strchr(char_speciaux, nom_sous_dossier[i]))
-			nom_sous_dossier[i] = '-' ; /* on remplace les char speciaux par des '-' */
+	/* On cree d'abord le fullname du sous-dossier sans les espaces et caracteres speciaux -
+	 * subfolder fullname is created without spaces and special characters  */
+	COPY(tournament_name, &subfolder_name) ;
+	for (i=0 ; i<strlen(subfolder_name) ; i++) {
+		if (subfolder_name[i] == ' ')
+			subfolder_name[i] = '_' ; /* on remplace les espaces par des '_' - replace spaces by '_'*/
+		if (strchr(special_chars, subfolder_name[i]))
+			subfolder_name[i] = '-' ; /* on remplace les char speciaux par des '-' - replace special chars by '-'*/
 	}
-	CONCAT(nom_sous_dossier, "/", &nom_sous_dossier) ;
-	/* Le repertoire existe-t-il ? */
+	CONCAT(subfolder_name, "/", &subfolder_name) ;
+	/* Le repertoire existe-t-il ? - directory exists? */
 
-	if (mkdir(nom_sous_dossier, 0777) == -1)
+	if (mkdir(subfolder_name, 0777) == -1)
 		if (errno != EEXIST)
-			/* Le repertoire ne peut etre cree et ce n'est pas parce qu'il existe */
+			/* Le repertoire ne peut etre cree et ce n'est pas parce qu'il existe -
+			 * directory cannot by created and it is not because it exists */
 			return ;
-	/* Modifier le fullname des fichiers */
-	CONCAT(nom_sous_dossier, nom_fichier_appariements, &nom_fichier_appariements) ;
-	CONCAT(nom_sous_dossier, nom_fichier_result, &nom_fichier_result) ;
-	CONCAT(nom_sous_dossier, nom_fichier_classement, &nom_fichier_classement) ;
-	CONCAT(nom_sous_dossier, nom_fichier_class_equipes, &nom_fichier_class_equipes) ;
-	CONCAT(nom_sous_dossier, nom_fichier_crosstable_HTML, &nom_fichier_crosstable_HTML) ;
-	CONCAT(nom_sous_dossier, nom_fichier_elo, &nom_fichier_elo) ;
+	/* Modifier le fullname des fichiers - modify other files fullname */
+	CONCAT(subfolder_name, pairings_filename, &pairings_filename) ;
+	CONCAT(subfolder_name, results_filename, &results_filename) ;
+	CONCAT(subfolder_name, standings_filename, &standings_filename) ;
+	CONCAT(subfolder_name, team_standings_filename, &team_standings_filename) ;
+	CONCAT(subfolder_name, HTML_crosstable_filename, &HTML_crosstable_filename) ;
+	CONCAT(subfolder_name, elo_filename, &elo_filename) ;
 	/* Pour le fichier intermediaire, il faut garder les deux noms : l'original et celui
-	 * concatene avec le sous-dossier pour la sauvegarde */
-	CONCAT(nom_sous_dossier, nom_fichier_inter, &nom_fichier_inter_backup) ;
-	CONCAT(nom_fichier_inter_backup, "-BACKUP", &nom_fichier_inter_backup) ;
+	 * concatene avec le sous-dossier pour la sauvegarde
+	 ****
+	 * For the workfile, both fullnames must be kept: the original one
+	 *  and the one concatenated with the subfolder for the backup.
+	 */
+	CONCAT(subfolder_name, workfile_filename, &backup_workfile_filename) ;
+	CONCAT(backup_workfile_filename, "-BACKUP", &backup_workfile_filename) ;
 }
 
 int main (int argc, char **argv) {
 	long ret;
-	char nom_fichier_joueurs_alt[2048];
+	char PlayersFilename_Alt[2048];
 
  #if defined(PAPP_MAC_METROWERKS)
 	init_mac_SIOUX_console();
-	nom_programme = VERSION;
+	program_name = VERSION;
  #else
-	nom_programme = argv[0];
+	program_name = argv[0];
  #endif
 
 	/*
 	 * L'alloc-ring est utilise pour (quasiment) toutes les allocations
-	 * temporaires de chaines, mais il s'initialise tout seul!
+	 * temporaires de chaines, mais il s'initialise tout seul !
+	 ****
+	 * Alloc-ring is used for nearly all temporary string allocations
+	 * but it is self-initialized!
 	 */
 
 
-	/* Initialisation de l'ecran, puis du clavier */
-	init_ecran();
-	init_clavier();
+	/* Initialisation de l'ecran, puis du clavier - Screen and keyboard initialize */
+	init_screen();
+	init_keyboard();
 
-	/* Message de presentation/copyright */
-	eff_ecran() ;
+	/* Message de presentation/copyright - presentation/copyright message */
+	clearScreen() ;
 	printf(MSG_WELCOME, VERSION, __DATE__);
 
 
-	/* Obtenir un verrou */
-	ret = poser_verrou();
+	/* Obtenir un verrou - get a lock */
+	ret = put_lock();
 	if (ret < 0)
 		fatal_error(MSG_CANTLOCK);
 	if (ret > 0) {
@@ -434,117 +470,123 @@ int main (int argc, char **argv) {
 		fatal_error(MSG_LOCKED);
 	}
 
-	/* Initialisation des listes de joueurs */
-	registered_players   = creer_liste();
-	new_players   = creer_liste();
-	emigrant_players    = creer_liste();
-	team_captain = creer_liste();
+	/* Initialisation des listes de joueurs - list of players initialization */
+	registered_players   = createList();
+	new_players   = createList();
+	emigrant_players    = createList();
+	team_captain = createList();
 
-	/* Initialisation de l'historique */
+	/* Initialisation de l'historique - history initialization */
 	first_round();
-	/* Initialisation des tableaux de penalites */
-	init_penalites_defaut();
+	/* Initialisation des tableaux de penalites - penalties array initialization */
+    init_default_penalties();
 
-	/* Recherche du fichier de configuration */
+	/* Recherche du fichier de configuration - look for configuration file */
 	if (getenv("PAPP_CFG"))
-		nom_fichier_config = getenv("PAPP_CFG");
+		config_filename = getenv("PAPP_CFG");
 	if (argc > 2)
 		fatal_error("usage: papp [config-file]");
 	else if (argc == 2)
-		nom_fichier_config = argv[1];
+		config_filename = argv[1];
 
-	/* Lecture du fichier de config */
-	type_fichier_config = NONEXISTING ;
-	affiche_banniere_cfg() ;
-	ret = lire_fichier(nom_fichier_config, CONFIG_F);
+	/* Lecture du fichier de config - reading configuration file */
+	config_file_type = NONEXISTING ;
+	displayConfigBanner() ;
+	ret = read_file(config_filename, CONFIG_F);
 	if (ret > 0)
 		fatal_error(BAD_CONFIG);
 	if (ret == -1 && errno == ENOENT) {
-		/* Sauvegarde de la configuration par defaut, si possible */
+		/* Sauvegarde de la configuration par defaut, si possible - Saving default configuration, if possible */
 		FILE *fp;
-		if ((fp = myfopen_dans_sous_dossier(nom_fichier_config, "w", "", 0, 0)) != NULL) {
-			warning_absence_papp_cfg();
-			bloquer_signaux();
-			grand_dump(fp);
-			debloquer_signaux();
+		if ((fp = myfopen_in_subfolder(config_filename, "w", "", 0, 0)) != NULL) {
+			WarningNoConfigFile();
+			block_signals();
+            big_dump(fp);
+			unblock_signals();
 			fclose(fp);
 		}
 	}
-	if (ret == 0 && type_fichier_config == OLD) {
-		/* Prevenir l'utilisateur que c'est un ancien type de fichier cfg */
+	if (ret == 0 && config_file_type == OLD) {
+		/* Prevenir l'utilisateur que c'est un ancien type de fichier cfg -
+		 * Warn user it is an old format type for configuration file */
 		warning_old_papp_cfg() ;
 	}
-	affiche_param_type2() ;
+	displayParameterType() ;
 
-	/* Fabrication du fullname de fichier "joueurs.txt" */
-	(void)strcpy(nom_fichier_joueurs_alt, nom_fichier_joueurs);
-	(void)strcat(nom_fichier_joueurs_alt, ".txt");
+	/* Fabrication du fullname de fichier "joueurs.txt" - "joueurs.txt" fullname construction */
+	(void)strcpy(PlayersFilename_Alt, players_filename);
+	(void)strcat(PlayersFilename_Alt, ".txt");
 
 	/* Verifions que l'utilisateur ne s'est pas emmele les pinceaux
-	   avec les fichiers joueurs et joueurs.txt */
-	if (fichier_existe(nom_fichier_joueurs) &&
-	    fichier_existe(nom_fichier_joueurs_alt))
+	   avec les fichiers joueurs et joueurs.txt -
+	   Check user didn't mix "joueurs" and "joueurs.txt"*/
+	if (isFIleExist(players_filename) &&
+        isFIleExist(PlayersFilename_Alt))
 	    {
-	    warning_deux_fichiers_de_joueurs(nom_fichier_joueurs, nom_fichier_joueurs_alt);
+			warningTwoPlayersFilesFound(players_filename, PlayersFilename_Alt);
 			terminate();
 	    return (-999);
 	    }
 
-	/* Lecture du fichier des joueurs, sans l'extension .txt */
-	ret = lire_fichier(nom_fichier_joueurs, PLAYERS_F);
+	/* Lecture du fichier des joueurs, sans l'extension .txt - reading players file without extension .txt */
+	ret = read_file(players_filename, PLAYERS_F);
 	if (ret > 0)
 		fatal_error(BAD_PLAYERS);
 
-	/* Lecture du fichier des joueurs, avec l'extension .txt */
-	ret = lire_fichier(nom_fichier_joueurs_alt, PLAYERS_F);
+	/* Lecture du fichier des joueurs, avec l'extension .txt - reading players file with extension .txt */
+	ret = read_file(PlayersFilename_Alt, PLAYERS_F);
 	if (ret > 0)
 		fatal_error(BAD_PLAYERS);
 
-	/* Lecture des nouveaux */
-	ret = lire_fichier(nom_fichier_nouveaux, NEWPLAYERS_F);
+	/* Lecture des nouveaux - reading new players file */
+	ret = read_file(new_players_filename, NEWPLAYERS_F);
 	if (ret > 0)
 		fatal_error(BAD_NEWP);
 
 	/* Si le fullname du fichier intermediaire est different de '__papp__',
-	   on renomme un ancien fichier '__papp__' avec ce nouveau fullname.        */
-	if (strcmp(nom_fichier_inter, "__papp__")) {
-		if (fichier_existe("__papp__") && !fichier_existe(nom_fichier_inter)) {
-			rename("__papp__", nom_fichier_inter);
+	   on renomme un ancien fichier '__papp__' avec ce nouveau fullname.
+	   - if fullname of workfile is different from '__papp__',
+	   an old '__papp__' file is renamed with that new fullname. */
+	if (strcmp(workfile_filename, "__papp__")) {
+		if (isFIleExist("__papp__") && !isFIleExist(workfile_filename)) {
+			rename("__papp__", workfile_filename);
 		}
 	}
-	/* Nous pouvons maintenant lire le fichier de sauvegarde */
-	type_fichier_intermediaire = NONEXISTING ;
-	affiche_banniere_tournoi() ;
-	ret = lire_fichier(nom_fichier_inter, CONFIG_F);
+	/* Nous pouvons maintenant lire le fichier de sauvegarde - we can now read saved workfile */
+	workfile_type = NONEXISTING ;
+	displayTournamentBanner() ;
+	ret = read_file(workfile_filename, CONFIG_F);
 	if (ret > 0)
 		fatal_error(BAD_SAVE);
 
-	if (type_fichier_intermediaire != CORRECT) {
-		/* On a soit un vieux fichier intermediaire, soit pas de fichier */
-		Demander_caracteristiques_tournoi(type_fichier_intermediaire) ;
-		init_fichier_intermediaire(type_fichier_intermediaire) ;
+	if (workfile_type != CORRECT) {
+		/* On a soit un vieux fichier intermediaire, soit pas de fichier -
+		 * We either have an old workfile or no file at all. */
+		askTournamentInformation(workfile_type) ;
+		init_workfile(workfile_type) ;
 	} else {
-		affiche_params_tournoi() ;
+		displayTournamentParameters() ;
 	}
 
-	/* Creation eventuelle d'un sous-dossier et modification des noms de fichiers */
-	if (utiliser_sous_dossier == 1) {
-		Init_Sous_Dossier() ;
+	/* Creation eventuelle d'un sous-dossier et modification des noms de fichiers -
+	 * optionnal creation of subfolder and change of fullnames. */
+	if (use_subfolder == 1) {
+        Init_Subfolder() ;
 	}
-	/* Pour eviter une sauvegarde automatique */
+	/* Pour eviter une sauvegarde automatique - to prevent automatic saves */
 	do_not_save_registered();
 	do_not_save_pairings();
 
-	installer_signaux();
-	verification_penalites();
+	install_signals();
+	check_penalties();
 
-    /* afficher les infos */
+    /* afficher les infos - display informations */
     /*
     messages_copyleft();
-    (void)lire_touche();
+    (void)read_key();
     */
 
-	/* Boucle principale */
+	/* Boucle principale - main loop */
 	main_menu();
 
 	return (-999);
@@ -571,24 +613,24 @@ int main (int argc, char **argv) {
 
 #define ASK_FILENAME(var)				\
 	printf("\n\n%s ", WHICH_FILENAME);		\
-	var = strcpy(new_string(), lire_ligne());	\
+	var = strcpy(new_string(), read_Line());	\
 	putchar('\n'); if (*var == '\0')  break;
 
 #define ASK_PLAYER(var)					\
 	printf("\n\n%s ", WHICH_PLAYER);		\
-	if (sscanf(lire_ligne(), "%ld", &var) != 1)	\
+	if (sscanf(read_Line(), "%ld", &var) != 1)	\
 		break;
 
 static void main_menu (void) {
-    char c, *ligne, *fichier;
-    long no_joueur, k;
+    char c, *line, *file;
+    long playerID, k;
 #ifdef atarist
     extern int __mint;
 #endif
 
     for(;;) {
-        init_ecran();
-	    eff_ecran();
+		init_screen();
+		clearScreen();
 #ifdef ENGLISH
         printf("\n                MAIN MENU\n\n"
         "        & About this program\n"
@@ -636,48 +678,50 @@ static void main_menu (void) {
 #endif
 
 lire:
-        c = lire_touche();
+        c = read_key();
         c = tolower(c);
-        fichier = NULL;
-        init_ecran();
+        file = NULL;
+		init_screen();
 
-    /* sur Mac OS X, les touches speciales F1, .., F14 et
-	   les fleches (bas, haut, etc.) envoient deux caracteres
-	   ascii: on  appelle deux fois de plus lire_touche() pour
-	   consommer les caracteres parasites */
+    /* sur Mac OS X, les touches speciales F1, .., F14 et les fleches (bas, haut, etc.)
+     * envoient deux caracteres ascii: on  appelle deux fois de plus lire_touche() pour
+     * consommer les caracteres parasites
+     *****
+     * On MacOS X, special keys F1,...,F14 and arrows send two ascii characters;
+     * read_key() is called twice more to consume extra characters. */
 #if defined(MACOSX)
-        if (c == '\033') {lire_touche();lire_touche();c='\n';}
+        if (c == '\033') {read_key();read_key();c='\n';}
 #endif
 
         switch (c) {
 	        case '&':
 			    messages_copyleft();
-		    touche: (void)lire_touche();
+		    touche: (void) read_key();
 			    break;
 	        case 'i':
-			    entree_joueurs();
+                enter_players();
 			    break;
 	        case 's':
-			    ASK_FILENAME(fichier);
+			    ASK_FILENAME(file);
 	        case 'l':
-			    affiche_inscrits(fichier);
+			    display_registered(file);
 			    break;
 		    case 't':
-			    affiche_equipes(fichier);
+				display_teams(file);
 			    break;
 	        case '\026':	/* Ctrl-V */
-			    ASK_FILENAME(fichier);
+			    ASK_FILENAME(file);
 	        case 'v':
-				display_pairings(fichier, 0);
+				display_pairings(file, 0);
 			    break;
 	        case '\006':	/* Ctrl-F */
-			    ASK_FILENAME(fichier);
+			    ASK_FILENAME(file);
 	        case 'f':
-			    eff_ecran();
+				clearScreen();
 			    printf("\n\n");
-			    if ((no_joueur = choix_d_un_joueur_au_clavier(WHICH_FEATS, registered_players, &ligne)) <= 0)
+			    if ((playerID = selectPlayerFromKeyboard(WHICH_FEATS, registered_players, &line)) <= 0)
 				    break;
-				fiche_individuelle(no_joueur, fichier);
+                individualSheet(playerID, file);
 			    break;
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
 	        case '\032':	/* Ctrl-Z */
@@ -685,15 +729,15 @@ lire:
 			    if (__mint > 0)
 # endif
 		        {
-				bas_ecran();
-				eff_ligne();
+				screen_bottom();
+				clearScreen();
 				fflush(stdout);
-				reset_clavier();
-				reset_ecran();
+				keyboard_reset();
+				screen_reset();
 				goodbye();
 				raise(SIGTSTP);  /* STOP */
-				init_ecran();
-				init_clavier();
+				init_screen();
+				init_keyboard();
 		        }
 			    break;
 #endif
@@ -701,77 +745,77 @@ lire:
 				terminate();
 			    break;
 	        case '+':
-			    eff_ecran();
-			    no_joueur = choix_d_un_joueur_au_clavier(WHO_COMES, registered_players, &ligne);
-			    if (no_joueur == TOUS_LES_JOUEURS) {
+				clearScreen();
+			    playerID = selectPlayerFromKeyboard(WHO_COMES, registered_players, &line);
+			    if (playerID == ALL_PLAYERS) {
 				    for (k = 0; k < registered_players->n; k++)
                         player_InOut(registered_players->list[k]->ID, 1);
-				    goto touche; /* Laisser les messages a l'ecran */
+				    goto touche; /* Laisser les messages a l'ecran - leave messages on screen */
 			    }
-				else if (no_joueur >= 0) {player_InOut(no_joueur, 1); goto touche; }
+				else if (playerID >= 0) {player_InOut(playerID, 1); goto touche; }
 				    break;
 	        case '-':
-			    eff_ecran();
-			    no_joueur = choix_d_un_joueur_au_clavier(WHO_LEAVES,registered_players, &ligne);
-			    if (no_joueur == TOUS_LES_JOUEURS) {
+				clearScreen();
+			    playerID = selectPlayerFromKeyboard(WHO_LEAVES, registered_players, &line);
+			    if (playerID == ALL_PLAYERS) {
 				    for (k = 0; k < registered_players->n; k++)
                         player_InOut(registered_players->list[k]->ID, 0);
-				    goto touche; /* Laisser les messages a l'ecran */
+				    goto touche; /* Laisser les messages a l'ecran - leave messages on screen */
 			    }
-				else if (no_joueur >= 0) {player_InOut(no_joueur, 0); goto touche; }
+				else if (playerID >= 0) {player_InOut(playerID, 0); goto touche; }
 				    break;
 	        case 'n':
 			    printf("\n\n");
-			    if ((no_joueur = choix_d_un_joueur_au_clavier(WHICH_PLAYER, NULL, &ligne)) <= 0)
+			    if ((playerID = selectPlayerFromKeyboard(WHICH_PLAYER, NULL, &line)) <= 0)
 				    break;
 				{
-				Player *j = trouver_joueur(no_joueur);
+				Player *j = findPlayer(playerID);
 				if (j == NULL)
 					beep();
 				else {
-					eff_ligne();
+					clear_line();
 					printf("%s (%ld)\n", j->fullname, j->ID);
 					printf( OLD_NATION "%s\n", j->country);
 					printf( NEW_NATION);
-					ligne = lire_ligne();
-					if (ligne[0]) {
-						change_nationalite(no_joueur, ligne);
-						ajouter_joueur(emigrant_players, j);
+					line = read_Line();
+					if (line[0]) {
+						change_nationality(playerID, line);
+						addPlayer(emigrant_players, j);
 					}
 				}
 				}
 				break;
 	        case 'r':
-			    entree_resultats();
+				enterResults();
 			    break;
 		    case 'c':
-			    correction_resultat();
+                ResultCorrection();
 			    break;
 		    case 'w':
-			    if (!peut_allouer_memoire_cross_table()) {
-				    eff_ecran();
+			    if (!CanAllocateCrosstableMemory()) {
+					clearScreen();
 				    printf(MSG_CROSS_MEMORY);
 				    beep();
 				    goto touche;
 			    } else {
-				    afficher_cross_table();
-				    liberer_memoire_cross_table();
+                    DisplayCrosstable();
+					FreeCrosstableMemory();
 			    }
 			    break;
 	        case 'a':
-			    calcul_appariements();
+                compute_pairings();
 			    break;
 		    case 'm':
 				pairings_manipulate();
 			    break;
 	        case 'e':
-			    cree_fichier_elo();
+                create_ELO_file();
 			    break;
 	        case '\n':		/* Ctrl-J */
 	        case '\r':		/* Ctrl-M */
 	        case '\f':		/* Ctrl-L */
 	        case '\022':	/* Ctrl-R */
-			    break;  /* redessiner l'ecran */
+			    break;  /* redessiner l'ecran - redraw screen */
 	        default:
 			    beep();
 			    goto lire;

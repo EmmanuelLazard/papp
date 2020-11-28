@@ -164,7 +164,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 194 "pap.y"
+#line 217 "pap.y"
 {
         long integer;
         char *string;

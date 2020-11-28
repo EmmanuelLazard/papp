@@ -1,9 +1,10 @@
 /*
  * global.c: fonctions qu'on ne sait pas ou mettre
  *
+ * (EL) 19/02/2019 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change
- * (EL) 16/07/2012 : v1.34, Ajout de la variable 'generer_fichiers_XML' indiquant
+ * (EL) 16/07/2012 : v1.34, Ajout de la variable 'generate_xml_files' indiquant
                      s'il faut generer des fichiers xml en sortie.
                      Ajout du drapeau _POSIX_C_SOURCE pour permettre la compilation
                      avec les options -ansi et -pedantic sur Linux.
@@ -11,31 +12,68 @@
  * (EL) 05/05/2008 : v1.33, Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
  * (EL) 21/04/2008 : v1.32, no change
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
- * (EL) 06/04/2007 : Ecriture de 'myfopen_dans_sous_dossier()' qui essaie de creer le
+ * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
+ * (EL) 06/04/2007 : Ecriture de 'myfopen_in_subfolder()' qui essaie de creer le
                      sous-dossier avant d'ouvrir un fichier.
  * (EL) 05/04/2007 : Ecriture de la fonction 'init_fichier_intermediaire' qui initialise
                      un fichier intermediaire (en recopiant evnt un fichier a l'ancien format)
  * (EL) 05/04/2007 : Ecriture de la fonction 'backup_inter()' qui effectue une sauvegarde
                      du fichier intermediaire dans un sous-dossier si on l'utilise.
- * (EL) 05/04/2007 : Ajout de la variable 'nom_fichier_inter_backup' permettant de stocker
+ * (EL) 05/04/2007 : Ajout de la variable 'backup_workfile_filename' permettant de stocker
                      le fullname du fichier intermediaire AVEC le fullname du sous-dossier pour la
                      sauvegarde dans ce sous-dossier.
  * (EL) 30/03/2007 : Tranformation de 'COPIER()' en fonction et changement de son code
                      ainsi que des parametres.
                      Ecriture de 'CONCAT()' permettant de concatener 2 chaines.
- * (EL) 30/03/2007 : Ajout des variables 'nom_sous_dossier' et 'utiliser_sous_dossier'
+ * (EL) 30/03/2007 : Ajout des variables 'subfolder_name' et 'use_subfolder'
                      qui servent a regrouper tous les fichiers ronde/class/result...
                      dans un sous-dossier portant le fullname du tournoi.
  * (EL) 29/03/2007 : Reecriture de la fonction 'grand_dump()' pour coller avec
                      le nouveau format du fichier de configuration.
  * (EL) 06/02/2007 : Ajout de la fonction 'copier_fichier()'
- * (EL) 05/02/2007 : Ajout des variables 'nom_du_tournoi' et 'nombre_de_rondes'
+ * (EL) 05/02/2007 : Ajout des variables 'tournament_name' et 'number_of_rounds'
  * (EL) 04/02/2007 : Ajout de deux variables pour memoriser le type des fichiers
                      de config et intermediaire (ancienne ou nouvelle version)
  * (EL) 02/02/2007 : changement du type du coefficient de Brightwell en double.
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ ****
+ *
+ * global.c: functions we don't have anywhere else to put!
+ *
+ * (EL) 19/02/2019 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change
+ * (EL) 16/07/2012 : v1.34, Add variable 'generate_xml_files' indicating
+                     if xml files should be generated.
+                     Add _POSIX_C_SOURCE flag to enable compilation with
+                     -ansi and -pedantic options on Linux.
+ * (EL) 20/07/2008 : v1.33, tournament date is saved in intermediate file
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, no change
+ * (EL) 29/04/2007 : v1.31, no change
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
+ * (EL) 06/04/2007 : Function 'myfopen_in_subfolder()' tries to create
+                     subfolder before writing a file.
+ * (EL) 05/04/2007 : Function 'init_workfile' which initializes
+                     an intermediate file (and eventually copies an old format file)
+ * (EL) 05/04/2007 : Function 'backup_workfile()' which makes a backup of the intermediate
+                     file in a subfolder (if used).
+ * (EL) 05/04/2007 : Add variable 'backup_workfile_filename' to save intermediate file full name
+                     with subfolder fullname to save in that subfolder.
+ * (EL) 30/03/2007 : Change 'COPY()' into a function; change code and parameters
+                     'CONCAT()' function to concatenate two strings.
+ * (EL) 30/03/2007 : Add variables 'subfolder_name' and 'use_subfolder'
+                     which are used to save all files (rounds/results/standings...)
+                     in a subfolder named after the tournament fullname.
+ * (EL) 29/03/2007 : Rewriting of function 'big_dump()' to stick with the new format
+                     for the configuration file.
+ * (EL) 06/02/2007 : Add function 'copy_files()'
+ * (EL) 05/02/2007 : Add variables 'tournament_name' et 'number_of_rounds'
+ * (EL) 04/02/2007 : Add two variables to save configuration and intermediate file types
+ *                   (old or new version)
+ * (EL) 02/02/2007 : Change Brightwell coefficient to double.
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
 #define  _POSIX_C_SOURCE 1L
@@ -47,7 +85,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "appari.h"
+#include "pairings.h"
 #include "global.h"
 #include "couplage.h"
 #include "more.h"
@@ -69,195 +107,203 @@
     #include <signal.h>
 #endif
 
-/* Variables pour gerer les anciens fichiers
-   de configuration et intermediaire
-*/
+/* Variables pour gerer les anciens fichiers de configuration et intermediaire.
+ ****
+ * Variables to handle old config and intermediate files.
+ */
 
 long
-    type_fichier_config,
-    type_fichier_intermediaire,
-	fichier_des_nouveaux ; /* indique si c'est le fichier des nouveaux qu'on lit */
+    config_file_type,
+    workfile_type,
+	new_players_file ; /* indique si c'est le fichier des nouveaux qu'on lit - Is it new players file? */
 
 char
-    *nom_du_tournoi ="",
-    *nom_sous_dossier ="",
-	*date_tournoi = "" ;
+    *tournament_name ="",
+    *subfolder_name ="",
+	*tournament_date = "" ;
 
 long
-    nombre_de_rondes = 5 ;
+    number_of_rounds = 5 ;
 
-/* Penalites et tableaux de penalites elementaires */
+/* Penalites et tableaux de penalites elementaires - Penalties and elementary penalties array */
 
 double
-    coef_brightwell ; /* Le coeff de brightwell en flottant, 2 pts par victoire */
+    brightwell_coeff ;
+/* Le coeff de brightwell en flottant, 2 pts par victoire
+ ****
+ * Brighwell coeff as double, 2 points per victory */
 
 long
     current_round,
-    sauvegarde_immediate,
-    sauvegarde_fichier_result,
-    sauvegarde_fichier_classement,
-    sauvegarde_fichier_class_equipes,
-    sauvegarde_fichier_appariements,
-    sauvegarde_fichier_crosstable_HTML,
-    sauvegarde_fichier_elo,
-    utiliser_sous_dossier,
-    generer_fichiers_XML,
-    impression_automatique,
-    nb_copies_impression,
-    aff_diff_scores,
-    nb_chiffres_des_scores,
-    nmax_flottement,
-    nmax_couleur;
+    immediate_save,
+    result_file_save,
+    standings_file_save,
+    team_standings_file_save,
+    pairings_file_save,
+    html_crosstable_file_save,
+    elo_file_save,
+    use_subfolder,
+    generate_xml_files,
+    automatic_printing,
+    print_copies,
+    display_score_diff,
+    scores_digits_number,
+    floats_nmax,
+    colors_nmax;
 
 discs_t
-    score_bip;
+    bye_score;
 
 pen_t
-    *penalite_couleur,
-    penalite_repcoul,
-    *penalite_flottement,
-    *penalite_chauvinisme,
-    penalite_flcum,
-    minoration_fac,
+    *color_penalty,
+    repeated_color_penalty,
+    *float_penalty,
+    *country_penalty,
+    cumulative_floats_penalty,
+    opposite_float_pen,
 #ifdef ELITISM
-    *penalite_elitisme,
+    *elitism_penalty,
 #endif
-    penalite_mcoul,
-    penalite_copp,
-    penalite_desuite,
-    penalite_bipbip;
+    same_colors_replay_penalty,
+    opposite_colors_replay_penalty,
+    immediate_replay_penalty,
+    bye_replay_penalty;
 
 char
-    *pays_defaut                 = "",
-    *nom_fichier_joueurs         = "joueurs",
-    *nom_fichier_nouveaux        = "nouveaux.txt",
-    *nom_fichier_inter           = "papp-internal-workfile.txt",
-    *nom_fichier_inter_backup    = "papp-internal-workfile-BACKUP.txt", /* backup dans le sous-dossier si necessaire */
-    *nom_fichier_log             = "papp.log",
-    *nom_fichier_config          = "papp.cfg",
-    *nom_fichier_appariements    = "round###.txt",
-    *nom_fichier_result          = "stand###.txt",
-    *nom_fichier_classement      = "stand###.txt",
-    *nom_fichier_class_equipes   = "team###.txt",
-    *nom_fichier_crosstable_HTML = "cross###.htm",
-    *nom_fichier_elo             = "papp.elo",
-    *nom_programme,
+    *default_country              = "",
+    *players_filename             = "joueurs",
+    *new_players_filename         = "nouveaux.txt",
+    *workfile_filename        = "papp-internal-workfile.txt",
+    *backup_workfile_filename = "papp-internal-workfile-BACKUP.txt", /* backup dans le sous-dossier si necessaire */
+    *log_filename                 = "papp.log",
+    *config_filename              = "papp.cfg",
+    *pairings_filename            = "round###.txt",
+    *results_filename             = "stand###.txt",
+    *standings_filename           = "stand###.txt",
+    *team_standings_filename      = "team###.txt",
+    *HTML_crosstable_filename     = "cross###.htm",
+    *elo_filename                 = "papp.elo",
+    *program_name,
 #ifdef ENGLISH
-    *couleur_1                 = "Black",
-    *couleur_2                 = "White";
+    *color_1                 = "Black",
+    *color_2                 = "White";
 #else
-    *couleur_1                 = "Noir",
-    *couleur_2                 = "Blanc";
+    *color_1                 = "Noir",
+    *color_2                 = "Blanc";
 #endif
 
 
-void init_penalites_defaut (void) {
+void init_default_penalties(void) {
     long i;
 
-    /* Departage de Brightwell */
-    coef_brightwell = 3.0; /* On compte 2 points par victoire */
+    /* Departage de Brightwell - Brightwell tiebreak */
+    brightwell_coeff = 3.0; /* On compte 2 points par victoire - 2 pts per victory */
 
-        /* Ne faire les sauvegardes que si necessaire */
-    sauvegarde_immediate = 1;
-    sauvegarde_fichier_result = 0;
-    sauvegarde_fichier_classement = 0;
-    sauvegarde_fichier_class_equipes = 0;
-    sauvegarde_fichier_appariements = 0;
-    sauvegarde_fichier_crosstable_HTML = 0;
-    sauvegarde_fichier_elo = 0;
-    utiliser_sous_dossier = 1 ;
-    generer_fichiers_XML = 0 ;
-    impression_automatique = 0;
-    nb_copies_impression = 1;
+        /* Ne faire les sauvegardes que si necessaire - saves only if necessary */
+    immediate_save = 1;
+    result_file_save = 0;
+    standings_file_save = 0;
+    team_standings_file_save = 0;
+    pairings_file_save = 0;
+    html_crosstable_file_save = 0;
+    elo_file_save = 0;
+    use_subfolder = 1 ;
+    generate_xml_files = 0 ;
+    automatic_printing = 0;
+    print_copies = 1;
 
-    /* Afficher le nombre de pions, pas leur difference */
-    aff_diff_scores = 0;
+    /* Afficher le nombre de pions, pas leur difference - print number of discs, not difference */
+    display_score_diff = 0;
 
-    /* Bip fait 24 pions sur 64 */
-    score_bip   = INTEGER_TO_SCORE(24);
-    total_pions = 64;
-    nb_chiffres_des_scores = nombre_chiffres(total_pions);
-
-    /*
-     * Penalites de couleur par defaut
-     */
-    nmax_couleur = 6;
-    CALLOC(penalite_couleur, nmax_couleur, pen_t);
-    penalite_couleur[0] =     0;
-    penalite_couleur[1] =    20;
-    penalite_couleur[2] =   105;
-    penalite_couleur[3] =   225;
-    penalite_couleur[4] =   530;
-    penalite_couleur[5] =  1075;
-    penalite_repcoul    =    15;
+    /* Bip fait 24 pions sur 64 - Bye scores 24 discs of 64 */
+    bye_score   = INTEGER_TO_SCORE(24);
+    discsTotal = 64;
+    scores_digits_number = number_of_digits(discsTotal);
 
     /*
-     * Penalites de flottement par defaut
+     * Penalites de couleur par defaut - default color penalties
      */
-    nmax_flottement = 25;
-    CALLOC(penalite_flottement, nmax_flottement, pen_t);
-    penalite_flottement [0] =           0;
-    penalite_flottement [1] =       20000;
-    penalite_flottement [2] =       40588;
-    penalite_flottement [3] =       62785;
-    penalite_flottement [4] =       87119;
-    penalite_flottement [5] =      114041;
-    penalite_flottement [6] =      143998;
-    penalite_flottement [7] =      177453;
-    penalite_flottement [8] =      214908;
-    penalite_flottement [9] =      256910;
-    penalite_flottement[10] =      304062;
-    penalite_flottement[11] =      357037;
-    penalite_flottement[12] =      416582;
-    penalite_flottement[13] =      483534;
-    penalite_flottement[14] =      558828;
-    penalite_flottement[15] =      643514;
-    penalite_flottement[16] =      738767;
-    penalite_flottement[17] =      845906;
-    penalite_flottement[18] =      966413;
-    penalite_flottement[19] =     1101949;
-    penalite_flottement[20] =     1254381;
-    penalite_flottement[21] =     1425805;
-    penalite_flottement[22] =     1618578;
-    penalite_flottement[23] =     1835345;
-    penalite_flottement[24] =     2079081;
-    penalite_flcum          =          25;
-    minoration_fac          =          10;
+    colors_nmax = 6;
+    CALLOC(color_penalty, colors_nmax, pen_t);
+    color_penalty[0] =     0;
+    color_penalty[1] =    20;
+    color_penalty[2] =   105;
+    color_penalty[3] =   225;
+    color_penalty[4] =   530;
+    color_penalty[5] =  1075;
+    repeated_color_penalty    =    15;
 
     /*
-     * Les penalites de repetition par defaut sont infinies
+     * Penalites de flottement par defaut - default floats penalties
      */
-    penalite_bipbip  =  MAX_PEN;
-    penalite_copp    =  5000000;
-    penalite_mcoul   =  MAX_PEN;
-    penalite_desuite =        1;
+    floats_nmax = 25;
+    CALLOC(float_penalty, floats_nmax, pen_t);
+    float_penalty [0] =           0;
+    float_penalty [1] =       20000;
+    float_penalty [2] =       40588;
+    float_penalty [3] =       62785;
+    float_penalty [4] =       87119;
+    float_penalty [5] =      114041;
+    float_penalty [6] =      143998;
+    float_penalty [7] =      177453;
+    float_penalty [8] =      214908;
+    float_penalty [9] =      256910;
+    float_penalty[10] =      304062;
+    float_penalty[11] =      357037;
+    float_penalty[12] =      416582;
+    float_penalty[13] =      483534;
+    float_penalty[14] =      558828;
+    float_penalty[15] =      643514;
+    float_penalty[16] =      738767;
+    float_penalty[17] =      845906;
+    float_penalty[18] =      966413;
+    float_penalty[19] =     1101949;
+    float_penalty[20] =     1254381;
+    float_penalty[21] =     1425805;
+    float_penalty[22] =     1618578;
+    float_penalty[23] =     1835345;
+    float_penalty[24] =     2079081;
+    cumulative_floats_penalty          =          25;
+    opposite_float_pen          =          10;
 
     /*
-     * Penalites de chauvinisme par defaut
+     * Les penalites de repetition par defaut sont infinies - repeated games penalties are inifinite
      */
-    CALLOC(penalite_chauvinisme, NMAX_ROUNDS, pen_t);
+    bye_replay_penalty  =  MAX_PEN;
+    opposite_colors_replay_penalty    =  5000000;
+    same_colors_replay_penalty   =  MAX_PEN;
+    immediate_replay_penalty =        1;
+
+    /*
+     * Penalites de chauvinisme par defaut - default country penalties
+     */
+    CALLOC(country_penalty, NMAX_ROUNDS, pen_t);
     for (i = 0; i < NMAX_ROUNDS; i++)
-            penalite_chauvinisme[i] = 0;
-    penalite_chauvinisme[0] = 2;
+            country_penalty[i] = 0;
+    country_penalty[0] = 2;
 
     /*
-     * Penalite d'elitisme par defaut
+     * Penalite d'elitisme par defaut - default elitism penalties
      */
 #ifdef ELITISM
-    CALLOC(penalite_elitisme, NMAX_ROUNDS, pen_t);
-    penalite_elitisme[0] = 100;
-    penalite_elitisme[1] = 100;
-    penalite_elitisme[2] = 100;
-    penalite_elitisme[3] = 200;
-    penalite_elitisme[4] = 200;
-    penalite_elitisme[5] = 300;
-    penalite_elitisme[6] = 300;
-    penalite_elitisme[7] = 300;
-    penalite_elitisme[8] = 300;
+    CALLOC(elitism_penalty, NMAX_ROUNDS, pen_t);
+    elitism_penalty[0] = 100;
+    elitism_penalty[1] = 100;
+    elitism_penalty[2] = 100;
+    elitism_penalty[3] = 200;
+    elitism_penalty[4] = 200;
+    elitism_penalty[5] = 300;
+    elitism_penalty[6] = 300;
+    elitism_penalty[7] = 300;
+    elitism_penalty[8] = 300;
         /* on veut favoriser les bons appariements pour
-           le haut du classement vers la fin du tournoi */
+           le haut du classement vers la fin du tournoi
+        ***
+         Towards end of tournament, we want to favor good pairings for the
+         top of the standings
+         */
         for (i = 9; i < NMAX_ROUNDS; i++)
-                penalite_elitisme[i] = 400;
+                elitism_penalty[i] = 400;
 #endif
 
 }
@@ -278,30 +324,30 @@ void init_penalites_defaut (void) {
 # define FATAL_HAK      "Pressez une touche pour quitter."
 #endif
 
-void verification_penalites (void) {
+void check_penalties(void) {
     long i;
 
-    assert(nmax_couleur >= 0 && nmax_flottement >= 0);
-    assert(penalite_couleur[0] == 0);
-    assert(penalite_flottement[0] == 0);
+    assert(colors_nmax >= 0 && floats_nmax >= 0);
+    assert(color_penalty[0] == 0);
+    assert(float_penalty[0] == 0);
 
-    /* Monotonie des penalites de couleur */
-    for (i = 0; i < nmax_couleur-1; i++)
-        if (penalite_couleur[i] > penalite_couleur[i+1])
+    /* Monotonie des penalites de couleur - color penalties are monotonous */
+    for (i = 0; i < colors_nmax-1; i++)
+        if (color_penalty[i] > color_penalty[i+1])
             fatal_error(VPEN_COLORS);
 
-    /* Penalites de flottement */
-    if (2 * minoration_fac > penalite_flottement[1])
+    /* Penalites de flottement - floats penalties */
+    if (2 * opposite_float_pen > float_penalty[1])
         fatal_error(VPEN_MINFAC);
-    for (i = 0; i < nmax_flottement-1; i++)
-        if (penalite_flottement[i] > penalite_flottement[i+1])
+    for (i = 0; i < floats_nmax-1; i++)
+        if (float_penalty[i] > float_penalty[i+1])
             fatal_error(VPEN_FLOAT);
 }
 
 /*
- * Gestion des signaux
+ * Gestion des signaux - signals handling
  */
-static void _terminer(void) EXITING;    /* declaration forward */
+static void _ending(void) EXITING;    /* declaration forward */
 
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
 typedef void (*Signal_handler)(int);
@@ -317,7 +363,7 @@ void debloquer_signaux() {
     sigsetmask(old_sigmask);
 }
 #else
-void bloquer_signaux() {
+void block_signals() {
     sigset_t set;
 
     sigemptyset(&set);
@@ -328,7 +374,7 @@ void bloquer_signaux() {
     sigprocmask(SIG_BLOCK, &set, &old_sigmask);
 }
 
-void debloquer_signaux() {
+void unblock_signals() {
     sigprocmask(SIG_SETMASK, &old_sigmask, NULL);
 }
 #endif
@@ -345,144 +391,144 @@ void debloquer_signaux() {
     } while(0)
 #endif
 
-/* changement par Stephane Nicolet, 27/05/2000
- * je ne sais pas ou est defini winsize sur Unix,
- * tant pis on ne fera pas de changement de taille
- * de fenetre
+/* changement par Stephane Nicolet, 27/05/2000. Je ne sais pas ou est defini winsize sur Unix,
+ * tant pis on ne fera pas de changement de taille de fenetre
+ ****
+ * Change by Nicolet 27/05/2000. I don't know where winsize is on Unix.
+ * We won't handle window size changes.
  */
-static void changement_taille(void) {
+static void change_size(void) {
     /*
-     struct winsize ecran;
+     struct winsize screen;
 
-     if (ioctl(1, TIOCGWINSZ, &ecran) < 0)
+     if (ioctl(1, TIOCGWINSZ, &screen) < 0)
      return;
-     nb_lignes   = ecran.ws_row;
-     nb_colonnes = ecran.ws_col;
+     nbrOfLines   = screen.ws_row;
+     nbrOfColumns = screen.ws_col;
 # if defined(UNIX_SYSV) && !defined(SIGNAUX_POSIX)
-     handle_signal(SIGWINCH, changement_taille);
+     handle_signal(SIGWINCH, change_size);
 # endif
      */
 }
 
-void installer_signaux() {
-    handle_signal(SIGHUP, _terminer);
+void install_signals() {
+    handle_signal(SIGHUP, _ending);
     handle_signal(SIGINT, SIG_IGN);
     handle_signal(SIGQUIT, terminate);
-    handle_signal(SIGTERM, _terminer);
-    /*      handle_signal(SIGWINCH, changement_taille);    cf plus haut, SN */
+    handle_signal(SIGTERM, _ending);
+    /*      handle_signal(SIGWINCH, change_size);    cf plus haut, SN */
 }
 
 #else
 
 /* pas de signaux */
-void bloquer_signaux()          { }
-void debloquer_signaux()        { }
-void installer_signaux()        { }
+void block_signals()          { }
+void unblock_signals()        { }
+void install_signals()        { }
 
 #endif
 
 /*
- * Terminaison, normale ou anormale, de PAPP.
+ * Terminaison, normale ou anormale, de PAPP. - Papp exits, normal or not.
  */
-void fatal_error(const char *erreur) {
+void fatal_error(const char *error) {
     fprintf(stdout, "\n" FATAL_MSG,
-            nom_programme[0] ? nom_programme : "Papp", erreur);
+            program_name[0] ? program_name : "Papp", error);
 #if defined(__THINK_C__) || defined(PAPP_MAC_METROWERKS)
     /*
      * Attendre une pression de touche avant de quitter (afin de pouvoir
-     * lire les messages d'erreur)
+     * lire les messages d'erreur) - Wait key press to read error message
      */
     fprintf(stdout, FATAL_HAK);
     (void)lire_touche();
 #endif
 
-    oter_verrou();
-    reset_clavier() ;
-    reset_ecran();
+    remove_lock();
+    keyboard_reset() ;
+    screen_reset();
     exit(1);
 }
 
 void terminate() {
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
-    /* peut-etre ne pouvons-nous plus ecrire sur ce terminal */
-    handle_signal(SIGTTIN, _terminer);
-    handle_signal(SIGTTOU, _terminer);
+    /* peut-etre ne pouvons-nous plus ecrire sur ce terminal - Maybe we can't write on terminal anymore */
+    handle_signal(SIGTTIN, _ending);
+    handle_signal(SIGTTOU, _ending);
 #endif
 #ifndef PAPP_MAC_METROWERKS
-    bas_ecran();
-    eff_ligne();
+    screen_bottom();
+    clear_line();
 #endif
-    eff_ecran();
+    clearScreen();
     fflush(stdout);
-    reset_clavier();
-    reset_ecran();
+    keyboard_reset();
+    screen_reset();
     goodbye();
-    _terminer();
+    _ending();
 }
 
-static void _terminer() {
-    /* Nous devons sauvegarder l'etat */
-    sauve_inscrits();
-    sauve_appariements();
+static void _ending() {
+    /* Nous devons sauvegarder l'etat - state must be saved */
+    save_registered();
+    save_pairings();
 #ifdef atarist
     Psigreturn();
 #endif
-    oter_verrou();
+    remove_lock();
     exit(0);
 }
 
 /*
- * Les fonctions suivantes sont protegees contre les signaux
+ * Les fonctions suivantes sont protegees contre les signaux - Following functions are signals protected
  */
 
-void sauve_ronde() {
-    bloquer_signaux();
+void save_round() {
+    block_signals();
     _save_round();
-    debloquer_signaux();
+    unblock_signals();
 }
 
-void sauve_inscrits() {
-    bloquer_signaux();
+void save_registered() {
+    block_signals();
     _save_registered();
-    debloquer_signaux();
+    unblock_signals();
 }
 
-void sauve_appariements() {
-    bloquer_signaux();
+void save_pairings() {
+    block_signals();
     _save_pairings();
-    debloquer_signaux();
+    unblock_signals();
 }
 
-void recreer_fichier_intermediaire() {
-    bloquer_signaux();
+void recreate_workfile() {
+    block_signals();
     _recreate_workfile();
-    debloquer_signaux();
+    unblock_signals();
 }
-
-/*
- * grand_dump(): affichage de tous les parametres a un moment donne
- * chpen(): convertit une penalite en une chaine de sept caracteres
- */
 
 char *fscore (discs_t score) {
-    char *chaine;
+    char *string;
 
     if (!SCORE_IS_LEGAL(score))
         return NULL;
 
-    chaine = new_string();
-    if (aff_diff_scores) {
+    string = new_string();
+    if (display_score_diff) {
 
-        if (IS_VICTORY(score)) chaine[0] = '+';
-        if (IS_DEFEAT(score))  chaine[0] = '-';
-        if (IS_DRAW(score)) chaine[0] = '=';
+        if (IS_VICTORY(score)) string[0] = '+';
+        if (IS_DEFEAT(score))  string[0] = '-';
+        if (IS_DRAW(score)) string[0] = '=';
 
-        sprintf(chaine+1, "%s", pions_en_chaine(ABSOLUTE_VALUE_SCORE(RELATIVE_SCORE(score))));
+        sprintf(string+1, "%s", discs2string(ABSOLUTE_VALUE_SCORE(RELATIVE_SCORE(score))));
     } else {
-        sprintf(chaine, "%s/%s", pions_en_chaine(score), pions_en_chaine(OPPONENT_SCORE(score)));
+        sprintf(string, "%s/%s", discs2string(score), discs2string(OPPONENT_SCORE(score)));
     }
-    return chaine;
+    return string;
 }
+
+/* fpen(): convertit une penalite en une chaine de sept caracteres
+ ****
+ * fpen(): converts a penalty into a seven chars string. */
 
 static char *fpen (pen_t p) {
     static char buf[20];
@@ -493,7 +539,7 @@ static char *fpen (pen_t p) {
     return buf;
 }
 
-long nombre_chiffres (long n) {
+long number_of_digits(long n) {
     long k = 0;
 
     if (n == 0)
@@ -506,12 +552,15 @@ long nombre_chiffres (long n) {
     return k;
 }
 
-/*
- * grand_dump(): sauve les parametres courants dans le fichier pointe
- * par fp. Je laisse les choses en francais pour le moment.
+
+
+
+/* big_dump(): sauve les parametres courants dans le fichier pointe par fp.
+ ****
+ * big_dump(): save current parameters in file pointed to by fp.
  */
 
-void grand_dump (FILE *fp) {
+void big_dump(FILE *fp) {
     long i, l;
     char *buf;
 
@@ -555,23 +604,23 @@ void grand_dump (FILE *fp) {
 "## The user may want to change these parameters:\n\n"
             ) ;
 
-    fprintf(fp,"# Pays par defaut / default country\n\tPays        = \"%s\";\n\n", pays_defaut);
+    fprintf(fp,"# Pays par defaut / default country\n\tPays        = \"%s\";\n\n", default_country);
     fprintf(fp,"# Bip fait 24 pions sur 64 / BYE score and total number of discs\n"
-            "\tScore-bip   = %s/%ld;\n\n", pions_en_chaine(score_bip), total_pions);
+            "\tScore-bip   = %s/%ld;\n\n", discs2string(bye_score), discsTotal);
     fprintf(fp,"# Utilisation d'un sous-dossier / use a folder for all files (true/false)\n"
-            "\tdossier %s;\n\n", utiliser_sous_dossier ? "true" : "false") ;
+            "\tdossier %s;\n\n", use_subfolder ? "true" : "false") ;
     fprintf(fp,"# Generation des fichiers XML en sortie / generate XML output files (true/false)\n"
-            "\tXML %s;\n\n", generer_fichiers_XML ? "true" : "false") ;
+            "\tXML %s;\n\n", generate_xml_files ? "true" : "false") ;
     fprintf(fp,"# Fichiers des appariements de chaque ronde / round pairings files\n"
-            "\tFichier appariements   = \"%s\";\n\n", nom_fichier_appariements);
+            "\tFichier appariements   = \"%s\";\n\n", pairings_filename);
     fprintf(fp,"# Fichiers des resultats de chaque ronde / round results files\n"
-            "\tFichier resultats      = \"%s\";\n\n", nom_fichier_result);
+            "\tFichier resultats      = \"%s\";\n\n", results_filename);
     fprintf(fp,"# Fichiers du classement de chaque ronde / round standings files\n"
-            "\tFichier classement     = \"%s\";\n\n", nom_fichier_classement);
+            "\tFichier classement     = \"%s\";\n\n", standings_filename);
     fprintf(fp,"# Fichiers des tableaux HTML / HTML crosstables files\n"
-            "\tFichier tableau-croise = \"%s\";\n\n", nom_fichier_crosstable_HTML);
+            "\tFichier tableau-croise = \"%s\";\n\n", HTML_crosstable_filename);
     fprintf(fp,"# Fichiers resultats par equipes / team standings files\n"
-            "#\tFichier equipes        = \"%s\";\n", nom_fichier_class_equipes);
+            "#\tFichier equipes        = \"%s\";\n", team_standings_filename);
     fprintf(fp,
 "###############################################################################\n"
 "###############################################################################\n\n\n"
@@ -580,34 +629,34 @@ void grand_dump (FILE *fp) {
 "## Parameters that normally should not be changed.\n\n"
 "# Les fichiers utilises par Papp / files used by Papp\n"
             );
-    sprintf(buf, "\tFichier joueurs        = \"%s\";", nom_fichier_joueurs);
+    sprintf(buf, "\tFichier joueurs        = \"%s\";", players_filename);
     fprintf(fp, "%-42s # Fichier principal des joueurs\n", buf);
-    sprintf(buf, "\tFichier nouveaux       = \"%s\";", nom_fichier_nouveaux);
+    sprintf(buf, "\tFichier nouveaux       = \"%s\";", new_players_filename);
     fprintf(fp, "%-42s # Fichier des nouveaux joueurs\n", buf);
-    sprintf(buf, "\tFichier inter          = \"%s\";", nom_fichier_inter);
+    sprintf(buf, "\tFichier inter          = \"%s\";", workfile_filename);
     fprintf(fp, "%-42s # Fichier intermediaire\n\n", buf);
 
     fprintf(fp,"# Actuellement inutilise / currently unused\n") ;
-    sprintf(buf, "#\t Fichier elo           = \"%s\";", nom_fichier_elo);
+    sprintf(buf, "#\t Fichier elo           = \"%s\";", elo_filename);
     fprintf(fp, "%-42s # Fichiers Elo de chaque ronde\n", buf);
-    sprintf(buf, "#\t Fichier log           = \"%s\";", nom_fichier_log);
+    sprintf(buf, "#\t Fichier log           = \"%s\";", log_filename);
     fprintf(fp, "%-42s # Fichier de log\n", buf);
-    sprintf(buf, "#\t Fichier config        = \"%s\";", nom_fichier_config);
+    sprintf(buf, "#\t Fichier config        = \"%s\";", config_filename);
     fprintf(fp, "%-42s # Ce fichier meme...\n\n\n", buf);
     fprintf(fp, "# Frequence des sauvegardes / saves frequency\n\n"
-            "\tSauvegarde %s;\n\n\n", sauvegarde_immediate ? "immediate" : "differee");
+            "\tSauvegarde %s;\n\n\n", immediate_save ? "immediate" : "differee");
 
     fprintf(fp, "# Type d'impressions des fichiers de resultats et de classement.\n");
     fprintf(fp, "# Deux types d'impression possibles : automatique NN si vous voulez\n");
     fprintf(fp, "# que PAPP imprime lui-meme NN copies des fichiers, manuelle si \n");
     fprintf(fp, "# vous preferez utiliser un editeur de texte.\n\n");
-    fprintf(fp, "\tImpression %s;\n\n\n",impression_automatique ? "automatique 1" : "manuelle");
+    fprintf(fp, "\tImpression %s;\n\n\n",automatic_printing ? "automatique 1" : "manuelle");
     fprintf(fp, "# Couleurs du premier et du second joueur\n\n"
             "\tCouleurs = { \"%s\", \"%s\" };\n\n\n",
-            couleur_1, couleur_2 );
+            color_1, color_2 );
     fprintf(fp, "# Doit-on afficher les nombres de pions ou leur difference ?\n"
             "# Should we print absolute score or score difference?\n\n"
-            "\tAffichage-pions %s;\n\n", aff_diff_scores ? "relatif" : "absolu" ) ;
+            "\tAffichage-pions %s;\n\n", display_score_diff ? "relatif" : "absolu" ) ;
     fprintf(fp,
             "# Zone d'insertion pour les nouveaux joueurs\n"
             "# Number ranges for new players\n"
@@ -668,7 +717,7 @@ void grand_dump (FILE *fp) {
 			"\tzone-insertion         =   9000-9500;    # autres\n\n\n"
             );
     /*
-     * Table des penalites
+     * Table des penalites - penalties table
      */
 
     fprintf(fp,
@@ -682,50 +731,50 @@ void grand_dump (FILE *fp) {
     fprintf(fp,"Penalites {\n");
 
     /*
-     * Couleur
+     * Couleur - color
      */
 
     fprintf(fp,"\tCouleur:\n");
-    for (i = 1; i < nmax_couleur; i++) {
+    for (i = 1; i < colors_nmax; i++) {
         sprintf(buf, "%ld", i);
-        if (i == nmax_couleur - 1)
+        if (i == colors_nmax - 1)
             strcat(buf, "+");
         fprintf(fp,"\t\t%-3sfois  = %s;\n",
-                buf, fpen(penalite_couleur[i]));
+                buf, fpen(color_penalty[i]));
     }
-    fprintf(fp,"\t\tde-suite = %s;\n", fpen(penalite_repcoul));
+    fprintf(fp,"\t\tde-suite = %s;\n", fpen(repeated_color_penalty));
 
     /*
-     * Flottement
+     * Flottement - floats
      */
 
     fprintf(fp,"\n\tFlottement:\n");
-    for (i = 1; i < nmax_flottement; i++) {
+    for (i = 1; i < floats_nmax; i++) {
         sprintf(buf, "%ld", i);
-        if (i == nmax_flottement - 1)
+        if (i == floats_nmax - 1)
             strcat(buf, "+");
         fprintf(fp,"\t\t%-3sdemi-point%c  =     %s;\n",
-                buf, i==1 ? ' ':'s', fpen(penalite_flottement[i]));
+                buf, i==1 ? ' ':'s', fpen(float_penalty[i]));
     }
-    fprintf(fp,"\t\tde-suite        = %s;\n", fpen(penalite_flcum));
-    fprintf(fp,"\t\tminoration      = %s;\n", fpen(minoration_fac));
+    fprintf(fp,"\t\tde-suite        = %s;\n", fpen(cumulative_floats_penalty));
+    fprintf(fp,"\t\tminoration      = %s;\n", fpen(opposite_float_pen));
 
     /*
-     * Repetition
+     * Repetition - repeated games
      */
 
     fprintf(fp,"\n\tRepetition:\n");
-    fprintf(fp,"\t\tbip-bip           = %s;\n", fpen(penalite_bipbip));
-    fprintf(fp,"\t\tcouleurs-opposees = %s;\n", fpen(penalite_copp));
-    fprintf(fp,"\t\tmemes-couleurs    = %s;\n", fpen(penalite_mcoul));
-    fprintf(fp,"\t\tde-suite          = %s;\n", fpen(penalite_desuite));
+    fprintf(fp,"\t\tbip-bip           = %s;\n", fpen(bye_replay_penalty));
+    fprintf(fp,"\t\tcouleurs-opposees = %s;\n", fpen(opposite_colors_replay_penalty));
+    fprintf(fp,"\t\tmemes-couleurs    = %s;\n", fpen(same_colors_replay_penalty));
+    fprintf(fp,"\t\tde-suite          = %s;\n", fpen(immediate_replay_penalty));
 
     /*
-     * Chauvinisme
+     * Chauvinisme - country
      */
 
     for (l = i = NMAX_ROUNDS-1; l >= 0; l--)
-        if (penalite_chauvinisme[l] != penalite_chauvinisme[i])
+        if (country_penalty[l] != country_penalty[i])
         { ++l; break; }
 
             fprintf(fp,"\n\tChauvinisme:\n");
@@ -734,17 +783,17 @@ void grand_dump (FILE *fp) {
         if (i == l)
             strcat(buf, "+");
         fprintf(fp,"\t\tronde  %-10s = %s;\n", buf,
-                fpen(penalite_chauvinisme[i]));
+                fpen(country_penalty[i]));
     }
     fprintf(fp, "\t\tronde  12+        =  0; # Mettre INFINI pour le championnat du monde.\n"
             "                                        # INFINI should be used for the WOC.\n");
 
 #ifdef ELITISM
     /*
-     * Elitisme
+     * Elitisme - elitism
      */
     for (l = i = NMAX_ROUNDS-1; l >= 0; l--)
-        if (penalite_elitisme[l] != penalite_elitisme[i])
+        if (elitism_penalty[l] != elitism_penalty[i])
         { ++l; break; }
 
             fprintf(fp,"\n\tElitisme:\n");
@@ -753,14 +802,14 @@ void grand_dump (FILE *fp) {
         if (i == l)
             strcat(buf, "+");
         fprintf(fp,"\t\tronde  %-10s = %s;\n", buf,
-                fpen(penalite_elitisme[i]));
+                fpen(elitism_penalty[i]));
     }
 #endif
 
     fprintf(fp,"};\n");
 }
 
-/* Initialisation de l'alloc-ring */
+/* Initialisation de l'alloc-ring - alloc-ring initialization */
 static long allo_ring_initialise = 0;
 long  alloc_ring_index = 0;
 char *alloc_ring[ALLOC_RING_SLOTS];
@@ -776,12 +825,14 @@ void init_alloc_ring (void) {
 }
 
 char *new_string (void) {
-    /* faut-il initialise l'alloc-ring ? */
+    /* faut-il initialise l'alloc-ring ? - alloc-ring to be init ? */
     if (!allo_ring_initialise)
         init_alloc_ring();
     /*
      * renvoyer la premiere chaine vierge,
      * ou la plus ancienne si elles sont toutes prises
+     ****
+     * returns first empty string or most ancient one if all are taken
      */
     if (++alloc_ring_index >= ALLOC_RING_SLOTS)
         alloc_ring_index = 0;
@@ -792,6 +843,10 @@ char *new_string (void) {
  * trivialloc: allocation triviale de memoire, sans alignement particulier,
  * et cette memoire ne pourra jamais etre liberee! Tres utile cependant
  * pour allouer un grand nombre de petites chaines de caracteres.
+ ****
+ * trivialloc: trivial memory allocation, without alignment and this
+ * memory will never be freed! Very useful to allocate a big number of
+ * small strings.
  */
 
 #ifdef __BORLANDC__
@@ -801,26 +856,28 @@ char *new_string (void) {
   #define MINIMAL_BLOCK_SIZE 8192
 #endif
 
-char *trivialloc (long longueur) {
-    static char *bloc;
+char *trivialloc (long length) {
+    static char *block;
     char *allo;
-    static long libre = 0;
+    static long free_length = 0;
 
-    assert(longueur > 0);
-    if (libre < longueur)
-        CALLOC(bloc, libre = MINIMAL_BLOCK_SIZE, char);
-    allo = bloc;
-    bloc  += longueur;
-    libre -= longueur;
-    assert(libre >= 0);
+    assert(length > 0);
+    if (free_length < length)
+        CALLOC(block, free_length = MINIMAL_BLOCK_SIZE, char);
+    allo = block;
+    block  += length;
+    free_length -= length;
+    assert(free_length >= 0);
     return allo;
 }
 
 /* Fonctions pour copier deux chaines de caracteres
- * et concatener deux chaines dans une troisieme
+ * et concatener deux chaines dans une troisieme.
+ ****
+ * Functions to copy two strings and concatenate two strings into a third.
  */
 
-void COPIER(const char *source, char **dest) {
+void COPY(const char *source, char **dest) {
     char *tmp ;
 
     assert((dest != NULL) && (source != NULL)) ;
@@ -830,36 +887,39 @@ void COPIER(const char *source, char **dest) {
     *dest = tmp ;
 }
 
-void CONCAT(const char *source, const char *ajout, char **dest) {
+void CONCAT(const char *source, const char *added, char **dest) {
     char * tmp ;
 
-    assert((dest != NULL) && ((source != NULL) || (ajout != NULL))) ;
+    assert((dest != NULL) && ((source != NULL) || (added != NULL))) ;
 
     if (source == NULL) {
-        COPIER(ajout, dest) ;
-    } else if (ajout == NULL) {
-        COPIER(source, dest) ;
+        COPY(added, dest) ;
+    } else if (added == NULL) {
+        COPY(source, dest) ;
     } else {
-        tmp=trivialloc(strlen(source)+strlen(ajout)+1);
+        tmp=trivialloc(strlen(source)+strlen(added)+1);
         strcpy(tmp,source) ;
-        strcat(tmp,ajout) ;
+        strcat(tmp,added) ;
         *dest = tmp ;
     }
 }
 
 /*
- * le_max_de et le_min_de : fonctions retournant le max et le min
- * de deux entiers longs. Il vaut mieux les nommer ainsi pour eviter
- * des problemes dans les environnements definissant leurs propres
- * fonctions max et min
+ * max_of et min_of : fonctions retournant le max et le min de deux entiers longs.
+ * Il vaut mieux les nommer ainsi pour eviter des problemes dans les environnements
+ * definissant leurs propres fonctions max et min.
+ ****
+ * max_of et min_of: functions returning max and min of two long integers.
+ * they have been named that way to prevent collision with environement
+ * defining their own max and min functions.
  *
  */
 
-long le_max_de(long n1, long n2) {
+long max_of(long n1, long n2) {
     return ((n1 > n2) ? n1 : n2);
 }
 
-long le_min_de(long n1, long n2) {
+long min_of(long n1, long n2) {
     return ((n1 > n2) ? n2 : n1);
 }
 
@@ -872,40 +932,53 @@ long le_min_de(long n1, long n2) {
  *      pattern == "classement" et ID == 11   -> on renvoie classement_11
  * Cette fonction alloue de la memoire pour la chaine resultat, qui ne sera jamais
  * liberee.
+ *****
+ * Small function to generate successive filenames. If pattern contains string '###',
+ * then ### is replaced by ID; otherwise ID is added and the end of pattern.
+ * Ex : pattern == "stand###.txt" and ID == 11  -> returns stand_11.txt
+ *      pattern == "standings" and ID == 11     -> returns standings_11 
+ * This function allocates memory for the result string which will never be freed.
  */
-char *nom_fichier_numerote(char *pattern, long numero) {
-    char *nom, *occur_dieses;
+char *numbered_filename(char *pattern, long number) {
+    char *name, *hashtag_occur;
     long len;
 
-    assert( (numero >= 0) && (numero <= 999));
+    assert( (number >= 0) && (number <= 999));
 
     len = strlen(pattern);
-    nom = trivialloc( len + 4 );
-    strcpy(nom, pattern);
-    nom[len]   = '\0';
-    nom[len+1] = '\0';
-    nom[len+2] = '\0';
-    nom[len+3] = '\0';
-    occur_dieses = strstr(nom, "###");
+    name = trivialloc( len + 4 );
+    strcpy(name, pattern);
+    name[len]   = '\0';
+    name[len+1] = '\0';
+    name[len+2] = '\0';
+    name[len+3] = '\0';
+    hashtag_occur = strstr(name, "###");
 
-    if (occur_dieses == NULL)
-        occur_dieses = nom + len;
+    if (hashtag_occur == NULL)
+        hashtag_occur = name + len;
 
-    occur_dieses[0] = ((numero < 100)? '_' : '0' + ((numero/100) % 10));
-    occur_dieses[1] = ((numero < 10) ? '_' : '0' + ((numero/10) % 10));
-    occur_dieses[2] = '0' + ((numero) % 10);
+    hashtag_occur[0] = ((number < 100)? '_' : '0' + ((number/100) % 10));
+    hashtag_occur[1] = ((number < 10) ? '_' : '0' + ((number/10) % 10));
+    hashtag_occur[2] = '0' + ((number) % 10);
 
-    return nom;
+    return name;
 }
 
-/* long debuts_differents(s1,s2,n);
+/* long different_beginnings(s1,s2,n):
  *  Renvoie 0 si
  *    - la longueur de s1 est plus petite que celle de s2, et
  *    - les n premiers caracteres des 2 chaines coincident;
  *  Renvoie 1 sinon.
  *  Pas de distinction majuscules/minuscules.
+ ****
+ * long different_beginnings(s1,s2,n):
+ *  Returns 0 if
+ *   - length of s1 is smaller than length of s2 and
+ *   - n first characters of both strings are equal.
+ *  Return 1 otherwise
+ * No case distinction
  */
-long debuts_differents(const char *s1, const char *s2, long n) {
+long different_beginnings(const char *s1, const char *s2, long n) {
     long len1,len2,i;
     char c1,c2;
 
@@ -928,10 +1001,10 @@ long debuts_differents(const char *s1, const char *s2, long n) {
 }
 
  /*
-  * long compare_chaines_non_sentitif(const char *scan1, const char *scan2);
+  * int compare_strings_insensitive(const char *scan1, const char *scan2);
   * <0 for <, 0 for ==, >0 for >
   */
-long compare_chaines_non_sentitif(const char *scan1, const char *scan2) {
+long compare_strings_insensitive(const char *scan1, const char *scan2) {
     register char c1, c2;
 
     if (!scan1)
@@ -959,108 +1032,121 @@ long compare_chaines_non_sentitif(const char *scan1, const char *scan2) {
 }
 
 
-/* Recopie un fichier dans un autre */
-/* Les fichiers sont deja ouverts   */
-/* renvoie -1 si erreur             */
-/* Convertit les fins de ligne      */
-long copier_fichier(FILE *dest, FILE *source) {
+/* Recopie un fichier dans un autre. Les fichiers sont deja ouverts. 
+ * renvoie -1 si erreur. Convertit les fins de ligne 
+ ****
+ * Copy a file into another one. Files should already be opened.
+ * return -1 if error. Converts end of line.
+ */
+long copy_files(FILE *dest, FILE *source) {
     long c, cc ;
-    unsigned long i, fin_ligne ;
-    char str_ligne[256] ;
+    unsigned long i, end_of_line ;
+    char str_line[256] ;
 
     if (dest == NULL || source == NULL)
         return -1 ;
     do {
-        i=0 ; fin_ligne=0 ; /* on commence une nouvelle ligne */
+        i=0 ; end_of_line=0 ; /* on commence une nouvelle ligne - start of a new line */
         do {
             c = fgetc(source) ;
-            if (c != EOF && c != 0x0D && c != 0x0A && i<(sizeof(str_ligne)-1))
-                str_ligne[i++] = c ;
+            if (c != EOF && c != 0x0D && c != 0x0A && i<(sizeof(str_line)-1))
+                str_line[i++] = c ;
             else {
-                fin_ligne = 1 ;
+                end_of_line = 1 ;
                 if (c == 0x0D) {
                     cc = fgetc(source) ;
                     if (cc != 0x0A)
                         ungetc(cc, source) ;
                 }
             }
-        } while (!fin_ligne) ;
-        str_ligne[i] = '\0' ;
-        if (fprintf(dest,"%s\n", str_ligne) <0)
+        } while (!end_of_line) ;
+        str_line[i] = '\0' ;
+        if (fprintf(dest,"%s\n", str_line) <0)
             return -1 ;
     } while (c != EOF) ;
     return 0 ;
 }
 
-/* Effectue une sauvegarde du fichier intermediaire */
-/* dans le sous-dossier si on l'utilise */
-void backup_inter(void) {
+/* Effectue une sauvegarde du fichier intermediaire dans le sous-dossier si on l'utilise
+ ****
+ * Save workfile into subfolder (if used)
+ */
+void backup_workfile(void) {
     FILE *papp_file ;
     FILE *papp_backup_file ;
-    if (utiliser_sous_dossier != 1)
+    if (use_subfolder != 1)
         return ;
-    if ((papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "rb", "", 0, 0)) == NULL)
+    if ((papp_file = myfopen_in_subfolder(workfile_filename, "rb", "", 0, 0)) == NULL)
         return ;
-    if ((papp_backup_file = myfopen_dans_sous_dossier(nom_fichier_inter_backup, "wb", nom_sous_dossier, utiliser_sous_dossier, 0)) == NULL) {
+    if ((papp_backup_file = myfopen_in_subfolder(backup_workfile_filename, "wb", subfolder_name, use_subfolder, 0)) == NULL) {
         fclose(papp_file) ;
         return ;
     }
-    copier_fichier(papp_backup_file, papp_file) ;
+    copy_files(papp_backup_file, papp_file) ;
     fclose(papp_file) ;
     fclose(papp_backup_file) ;
 }
 
-/* Sauvegarde les infos du tournoi dans le fichier intermediaire */
-/* EN ECRASANT CE QU'IL Y A !! */
-void sauver_infos_tournoi(void) {
+/* Sauvegarde les infos du tournoi dans le fichier intermediaire EN ECRASANT CE QU'IL Y A !!
+ ****
+ * Saves tournament infos into workfile ERASING ALL THERE IS!!
+ */
+void save_tournament_infos(void) {
     FILE *papp_file ;
 
-    papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "wb", "", 0, 1) ;
-    /* Sauvegarde des informations dans "papp-internal-workfile.txt"        */
-    /* Attention, les mots-clefs doivent etre les memes                     */
-    /* que dans l'analyse lexicale (pap.l).                                 */
+    papp_file = myfopen_in_subfolder(workfile_filename, "wb", "", 0, 1) ;
+    /* Sauvegarde des informations dans "papp-internal-workfile.txt"
+     * Attention, les mots-clefs doivent etre les memes que dans l'analyse lexicale (pap.l).
+     ****
+     * Save infos in "papp-internal-workfile.txt"
+     * Beware keywords should be the same as for lexical analysis (pap.l)
+     */
     fprintf(papp_file, "#########################################\n") ;
     fprintf(papp_file, "# %s, %s\n", VERSION, __DATE__) ;
     fprintf(papp_file, "#########################################\n") ;
-    fprintf(papp_file, "#_Nom-Tournoi   = \"%s\" ;\n", nom_du_tournoi) ;
-    fprintf(papp_file, "#_Nombre-Rondes = %ld ;\n", nombre_de_rondes) ;
-    fprintf(papp_file, "#_BQ-double = %f ;\n", coef_brightwell*2) ;
-    fprintf(papp_file, "#_Date = \"%s\" ;\n", date_tournoi) ;
+    fprintf(papp_file, "#_Nom-Tournoi   = \"%s\" ;\n", tournament_name) ;
+    fprintf(papp_file, "#_Nombre-Rondes = %ld ;\n", number_of_rounds) ;
+    fprintf(papp_file, "#_BQ-double = %f ;\n", brightwell_coeff*2) ;
+    fprintf(papp_file, "#_Date = \"%s\" ;\n", tournament_date) ;
     fprintf(papp_file, "#########################################\n\n") ;
     fclose(papp_file) ;
 }
 
 
-/* Initialise un fichier intermediaire avec les infos du tournoi. */
-/* Si type_fichier = OLD, on recopie a la suite l'ancien fichier */
-void init_fichier_intermediaire(long type_fichier) {
+/* Initialise un fichier intermediaire avec les infos du tournoi.
+ * Si file_type = OLD, on recopie a la suite l'ancien fichier
+ ****
+ * Initialize a workfile with tournament infos. If file_type = OLD, the
+ * old file is copy and added ant the end.
+ */
+void init_workfile(long file_type) {
     char tmp_filename[] = "temp.XXXXXX" ;
     FILE *tmpfile ;
     FILE *papp_file ;
     long err ;
 
-    if (type_fichier == OLD) {
-        /* On sauvegarde l'ancien "papp-internal-workfile.txt" */
+    if (file_type == OLD) {
+        /* On sauvegarde l'ancien "papp-internal-workfile.txt" - old workfile is saved */
         if (mktemp(tmp_filename) == NULL)
         	return ;
-        papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "rb", "", 0, 1) ;
-        if ((tmpfile = myfopen_dans_sous_dossier(tmp_filename, "wb", "", 0, 0)) == NULL) {
+        papp_file = myfopen_in_subfolder(workfile_filename, "rb", "", 0, 1) ;
+        if ((tmpfile = myfopen_in_subfolder(tmp_filename, "wb", "", 0, 0)) == NULL) {
             fclose(papp_file) ;
             return ;
         }
-        err = copier_fichier(tmpfile, papp_file) ;
+        err = copy_files(tmpfile, papp_file) ;
         fclose(papp_file) ;
         fclose(tmpfile) ;
         if (err == -1)
             return ;
 
     }
-    sauver_infos_tournoi() ; /* recree un fichier intermediaire */
-    if (type_fichier == OLD) {
-        papp_file = myfopen_dans_sous_dossier(nom_fichier_inter, "ab", "", 0, 1) ;
-        /* On recopie l'ancien "papp-internal-workfile.txt" */
-        if ((tmpfile = myfopen_dans_sous_dossier(tmp_filename, "rb", "", 0, 0)) != NULL) {
-            copier_fichier(papp_file, tmpfile) ;
+    save_tournament_infos() ; /* recree un fichier intermediaire - workfile is recreated */
+    if (file_type == OLD) {
+        papp_file = myfopen_in_subfolder(workfile_filename, "ab", "", 0, 1) ;
+        /* On recopie l'ancien "papp-internal-workfile.txt" - old workfile is copied */
+        if ((tmpfile = myfopen_in_subfolder(tmp_filename, "rb", "", 0, 0)) != NULL) {
+            copy_files(papp_file, tmpfile) ;
             fclose(tmpfile) ;
             remove(tmp_filename) ;
         }
@@ -1069,29 +1155,38 @@ void init_fichier_intermediaire(long type_fichier) {
     }
 }
 
-/* fopen() ne sait pas ouvrir un fichier se trouvant dans un sous-dossier ("dir/truc.txt")  */
-/* si le sous-dossier n'existe pas. Il faut d'abord le creer puis ouvrir le fichier         */
-/* Cette fonction verifie
- * 1. qu'on utilise le sous-dossiers (variable 'utilise' vaut 1) ;
+/* fopen() ne sait pas ouvrir un fichier se trouvant dans un sous-dossier ("dir/truc.txt")
+ * si le sous-dossier n'existe pas. Il faut d'abord le creer puis ouvrir le fichier
+ * Cette fonction verifie
+ * 1. qu'on utilise le sous-dossier (variable 'used' vaut 1) ;
  * 2. que le sous-dossier de fullname indique existe ou peut etre creer
- * puis ouvre le fichier indique avec son mode d'ouverture                                  */
-/* -> Affiche une erreur fatale si le fichier ne s'ouvre pas et que le param 'err' est a 1  */
+ * puis ouvre le fichier indique avec son mode d'ouverture
+ * -> Affiche une erreur fatale si le fichier ne s'ouvre pas et que le param 'err' est a 1
+ ****
+ * fopen() doesn't know how to open a file into a subfolder ("dir/truc.txt") if the subfolder
+ * doesn't exist. It must first be created then the file opened. This function checks that:
+ * 1. subfolder is used ('used' variable is set to 1),
+ * 2. that subfolder in fullname exists or can be created.
+ * then opens the file with the given opening mode.
+ * -> Displays a fatal error if the file doesn't open and 'err' parameter is set to 1.
+ */
 
-FILE *myfopen_dans_sous_dossier(const char *filename, const char *mode, const char *folder, long utilise, long err) {
+FILE *myfopen_in_subfolder(const char *filename, const char *mode, const char *folder, long used, long err) {
     FILE *fp ;
-    char ligne[512] ;
+    char line[512] ;
 
     assert(filename && folder) ;
     assert(filename[0] != '\0') ;
-    if (utilise == 1) {
-        /* On essaie de creer le sous-dossier */
-        /* S'il existe, tant mieux !          */
+    if (used == 1) {
+        /* On essaie de creer le sous-dossier ; s'il existe, tant mieux !
+         ****
+         * We try to create subfolder; if it exists, that's good! */
         mkdir(folder, 0777) ;
     }
     fp = fopen(filename, mode) ;
 	if ((fp == NULL) && (err == 1)) {
-        sprintf(ligne, "%s " FATAL_OPEN "%s", filename, strerror(errno)) ;
-        fatal_error(ligne);
+        sprintf(line, "%s " FATAL_OPEN "%s", filename, strerror(errno)) ;
+        fatal_error(line);
     }
     return fp ;
 }

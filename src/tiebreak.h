@@ -19,7 +19,7 @@
 
 
 #include "global.h"
-#include "pions.h"
+#include "discs.h"
 
 
 typedef struct {
@@ -30,7 +30,7 @@ typedef struct {
 } BQ_results ;
 
 
-void DepartageJoueur(BQ_results *TabJ, long BQ_ronde, double *Dep, discs_t *Total, long *SO) ;
+void PlayerTiebreak(BQ_results *PArray, long BQ_round, double *tiebreak, discs_t *TotalDiscsCount, long *SO) ;
 
 
 #endif  /*  #ifndef __Tiebreak_h__ */

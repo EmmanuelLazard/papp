@@ -2,6 +2,7 @@
  * crosstable.c: pour afficher et sauvegarder un tableau avec tous les resulats
  * ainsi qu'une page web avec un tableau complet des resultats
  *
+ * (EL) 02/07/2018 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change
  * (EL) 16/07/2012 : v1.34, no change
@@ -11,12 +12,31 @@
                      ainsi que l'emplacement de la crosstable. Nouvelles fonction 'RecordCell()',
                      'ChercherFichierCellTMPL()' et 'void OutputCrosstable()'.
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
+ * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
  * (EL) 12/02/2007 : Modification de 'sortie_tableau_croise_HTML()', 'sortie_tableau_croise_texte()'
  *                   pour qu'ils affichent le fullname du tournoi au debut.
  * (EL) 02/02/2007 : changement du type de 'Departage' en double
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ ****
+ * crosstable.c: to display and save an array with all results; saves a html page with
+ * a full crosstable.
+ *
+ * (EL) 02/07/2018 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change.
+ * (EL) 16/07/2012 : v1.34, no change.
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, HTML output uses a template file that defines all html page.
+ *                    The individual cell definition is there and the crosstable place.
+ *                    New functions: 'RecordCell()', 'LookForTMPLFile()' and
+ *                    'void OutputCrosstable()'.
+ * (EL) 29/04/2007 : v1.31, no change
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
+ * (EL) 12/02/2007 : Modify 'HTMLCrosstableOutput()', 'TextCrosstableOutput()'
+ *                    so that it displays tournament fullname at the start.
+ * (EL) 02/02/2007 : tieBreak[] is changed to 'double' type
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
 #include <stdio.h>
@@ -27,11 +47,11 @@
 #include <time.h>
 #include "changes.h"
 #include "global.h"
-#include "joueur.h"
+#include "player.h"
 #include "couplage.h"
 #include "version.h"
 #include "more.h"
-#include "pions.h"
+#include "discs.h"
 #include "tiebreak.h"
 #include "crosstable.h"
 
@@ -66,123 +86,139 @@
 #endif
 
 
-/* Variables globales pour stocker tous les resultats */
+/*
+ * Variables globales pour stocker tous les resultats
+ ****
+ * Global variables used to store all results
+ */
 
 typedef struct {
-    long      ronde;           /* ID de la ronde */
-    long      table;           /* ID de la table ou a eu lieu la partie */
-    long      present ;        /* 1 si le joueur etait present a cette ronde, 0 sinon */
-    long      bip ;            /* 1 si le joueur a joue contre bip, 0 sinon */
-    long      adv ;            /* ID FFO (Elo) de l'adversaire */
-    discs_t  pions ;          /* score de la partie, du point de vue du joueur */
-    char     couleur ;        /* couleur dans la partie */
-    long      points ;         /* 2=victoire, 1=nulle, 0=defaite */
-    long      cumul_points ;   /* depuis le debut du tournoi */
-    long      rang;            /* rang dans le classement : 1=premier, 2=deuxieme, etc. */
-} structure_ronde ;
+    long      round;           /* ID de la ronde - round ID */
+    long      table;           /* ID de la table ou a eu lieu la partie - table ID */
+    long      present ;        /* 1 si le joueur etait present a cette ronde, 0 sinon
+                                * 1 if player was present, 0 otherwise */
+    long      bip ;            /* 1 si le joueur a joue contre bip, 0 sinon
+                                * 1 if player played BYE, 0 otherwise */
+    long      oppID ;          /* ID FFO (Elo) de l'adversaire - FFO ID of opponent */
+    discs_t  discs ;           /* score de la partie, du point de vue du joueur
+                                * score of game from the player's side */
+    char     color ;           /* couleur dans la partie - color in game */
+    long      points ;         /* 2=victoire, 1=nulle, 0=defaite  - 2=victory, 1=draw, 0=loss */
+    long      total_points ;   /* depuis le debut du tournoi - total points from beginning of tournament */
+    long      stand;           /* rang dans le classement : 1=premier, 2=deuxieme, etc.
+                                * tournament standing: 1=first, 2=second... */
+} round_structure ;
 
-#define NOIR couleur_1[0]
-#define BLANC couleur_2[0]
-#define JOUEUR_INCONNU -1
+#define BLACK color_1[0]
+#define WHITE color_2[0]
+#define UNKNOWN_PLAYER -1
 
-#define TAILLE_MAX_CELLULE 10000   /* Taille maximum de la cellule utilise pour chaque case du tableau HTML */
-#define TAILLE_MAX_LIGNE    2500   /* Longueur max d'une ligne du fichier HTML */
+#define CELL_MAX_SIZE  10000   /* Taille maximum de la cellule utilise pour chaque case du tableau HTML
+                                * maximum size of cell used for each result of the crosstable */
+#define LINE_MAX_LENGTH 2500   /* Longueur max d'une ligne du fichier HTML
+                                * maximum length of lines in the html file */
 
-/* Les mots-clefs du fichier de template pour la crosstable */
+/* Les mots-clefs du fichier de template pour la crosstable
+ ****
+ * template file keywords for the crosstable */
+
 #define MC_CROSSTABLE "$PAPP_CROSSTABLE"
 #define CELLBEGIN "<!-- CELL-BEGIN -->\n"
 #define CELLEND   "<!-- CELL-END -->\n"
 
 typedef struct {
-    long                 Num_FFO ;
-    structure_ronde     TabRondes[NMAX_ROUNDS] ;
-    long                 Total_Points ;
-    discs_t             Total_Pions ;
-    long                 Bucholtz ;
-    double              Departage ;
-} structure_joueur;
+    long                FFO_ID ;
+    round_structure     roundsArray[NMAX_ROUNDS] ;
+    long                Total_Points ;
+    discs_t             Total_Discs ;
+    long                Bucholtz ;
+    double              Tiebreak ;
+} player_structure;
 
 
-structure_joueur *TabJoueurs; /* tableau des joueurs du tournoi */
-long partial_ronde;            /* utilisee pour trier les joueurs dans compar() */
+player_structure *PlayersArray; /* tableau des joueurs du tournoi - Players array */
+long partial_round;             /* utilisee pour trier les joueurs dans compar()
+                                 * used to sort players in compar() */
 
 
-/* prototypes des fonctions locales */
+/* prototypes des fonctions locales - local functions prototypes */
 
-long local_trouver_joueur(long num_FFO);
-long PresentToutTournoi(long num_FFO);
-long Point_Par_Partie(discs_t v);
-void local_calcul_departage(long rr);
-void recuperation_resultats(void);
+long find_player_localID(long FFO_ID);
+long PresentAllTournament(long FFO_ID);
+long Point_per_game(discs_t v);
+void local_compute_tiebreak(long rr);
+void get_results(void);
 int  compar (const void *p, const void *q);
-long score_de_machin_contre_bidule(long num_ffo_1, long num_ffo_2);
-void calculer_classements_jusque(long quelle_ronde);
-void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
-                 char *mon_nom, char *score_partie, char *score_partie_relatif,
-                 char *my_score, char *opp_score, long pts, long cumul_pts,
-                 char *ronde, char *table,char *rang);
-void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, structure_joueur *pj);
+long score_player1_vs_player2(long FFO_ID_1, long FFO_ID_2);
+void computeStandingsUntil(long whichRound);
+void ReplaceStr(char *str, char *coupon, char color, char *oppon, char *oppon_name,
+        char *my_name, char *game_score, char *relative_game_score,
+        char *my_score, char *opp_score, long pts, long cumul_pts,
+        char *round, char *table, char *rank);
+void ReplaceCell(char *the_template, char *cell, round_structure *pr, player_structure *pj);
 FILE *GenerateCellFile(void);
 void RecordCell(char [],  long, FILE *) ;
-short ChercherFichierCellTMPL(char [], long) ;
+short LookForTMPLFile(char *, long) ;
 void OutputCrosstable(char [], FILE *) ;
-void TraiterLigneHTML(char []) ;
-void sortie_tableau_croise_HTML(FILE *out);
-void sortie_tableau_croise_texte(long ronde_aff, FILE *fp);
+void ProcessHTMLLine(char *) ;
+void HTMLCrosstableOutput(FILE *out);
+void TextCrosstableOutput(long round, FILE *fp);
 
 
 
 
 
-/* long local_trouver_joueur(long num_FFO)
+/* long find_player_localID(long FFO_ID)
  *
- * Trouve le ID d'un joueur dans le tableau local de tous les resultats
- * a partir de son ID FFO. Renvoie le ID ou JOUEUR_INCONNU si on ne le
- * trouve pas.
- *
+ * Trouve le ID d'un joueur dans le tableau local de tous les resultats a partir
+ * de son ID FFO. Renvoie le ID ou UNKNOWN_PLAYER si on ne le trouve pas.
+ ****
+ * Finds local ID (in all results array) for a player from his FFO ID.
+ * Returns local ID or UNKNOWN_PLAYER if player is not found.
  */
-long local_trouver_joueur(long num_FFO) {
+long find_player_localID(long FFO_ID) {
     long i ;
 
-    assert(num_FFO >= 0) ;
-    if (!registered_players->n || !num_FFO)
-        return JOUEUR_INCONNU ;
+    assert(FFO_ID >= 0) ;
+    if (!registered_players->n || !FFO_ID)
+        return UNKNOWN_PLAYER ;
     for (i = 0 ; i < registered_players->n  ; i++)
-        if (TabJoueurs[i].Num_FFO == num_FFO) return i ;
-    return JOUEUR_INCONNU ;
+        if (PlayersArray[i].FFO_ID == FFO_ID) return i ;
+    return UNKNOWN_PLAYER ;
 }
 
 
-/* long PresentToutTournoi(long num_FFO)
+/* long PresentAllTournament(long FFO_ID)
  *
  * Indique si un joueur a fait tout le tournoi : 1 si vrai, 0 sinon.
- *
+ ****
+ * Returns 1 if the player is present during all the tournament, 0 otherwise
  */
-long PresentToutTournoi(long num_FFO) {
+long PresentAllTournament(long FFO_ID) {
     long i, n ;
-    structure_joueur *pj ;
+    player_structure *pj ;
 
-    assert(num_FFO >= 0) ;
-    if (!num_FFO)
+    assert(FFO_ID >= 0) ;
+    if (!FFO_ID)
         return 0 ;
-    n = local_trouver_joueur(num_FFO) ;
-    if (n == JOUEUR_INCONNU)
+    n = find_player_localID(FFO_ID) ;
+    if (n == UNKNOWN_PLAYER)
         return 0 ;
-    pj = &TabJoueurs[n] ;
+    pj = &PlayersArray[n] ;
     for (i = 0 ; i < current_round ; i++)
-        if (!pj->TabRondes[i].present)
+        if (!pj->roundsArray[i].present)
             return 0 ;
     return 1 ;
 }
 
 
-/* long Point_Par_Partie(long num_FFO)
+/* long Point_per_game(discs_t v)
  *
- * Renvie le nombre de point par partie :
- * victoire = 2, nulle = 1, defaite = 0
- *
+ * Renvoie le nombre de point par partie : victoire = 2, nulle = 1, defaite = 0
+ ****
+ * Returns number of points per game: victory=2, draw=1, loss=0
  */
-long Point_Par_Partie(discs_t v) {
+long Point_per_game(discs_t v) {
     assert(SCORE_IS_LEGAL(v)) ;
     if (IS_VICTORY(v))
         return 2 ;
@@ -193,167 +229,167 @@ long Point_Par_Partie(discs_t v) {
 }
 
 
-/* long score_de_machin_contre_bidule(long num_ffo_1, long num_ffo_2)
+/* long score_player1_vs_player2(long FFO_ID_1, long FFO_ID_2)
  *
- * Renvoie le score, en demi-points, du joueur num_ffo_1 contre
- * le joueur num_ffo_2, pendant tout le tournoi.
- *
- * Si les deux joueurs n'ont pas joue ensemble, on renvoie -1.
- *
+ * Renvoie le score, en demi-points, du joueur FFO_ID_1 contre le joueur FFO_ID_2,
+ * pendant tout le tournoi. Si les deux joueurs n'ont pas joue ensemble, on renvoie -1.
+ ****
+ * Returns score (in half-points) of player FFO_ID_1 against FFO_ID_2, during
+ * the tournament. If players didn't play together, returns -1.
  */
-long score_de_machin_contre_bidule(long num_ffo_1, long num_ffo_2) {
-    long n1, n2, i, somme;
-    long ont_joue_ensemble = 0;
-    structure_joueur *pj ;
-    structure_ronde *pr ;
+long score_player1_vs_player2(long FFO_ID_1, long FFO_ID_2) {
+    long n1, n2, i, sum;
+    long did_play_together = 0;
+    player_structure *pj ;
+    round_structure *pr ;
 
-    assert(num_ffo_1 >= 0);
-    assert(num_ffo_2 >= 0);
+    assert(FFO_ID_1 >= 0);
+    assert(FFO_ID_2 >= 0);
 
-    n1 = local_trouver_joueur(num_ffo_1);
-    n2 = local_trouver_joueur(num_ffo_2);
+    n1 = find_player_localID(FFO_ID_1);
+    n2 = find_player_localID(FFO_ID_2);
 
-    if ((n1 == JOUEUR_INCONNU) || (n2 == JOUEUR_INCONNU))
+    if ((n1 == UNKNOWN_PLAYER) || (n2 == UNKNOWN_PLAYER))
         return -1;
 
-    somme = 0;
-    pj = &TabJoueurs[n1] ;
+    sum = 0;
+    pj = &PlayersArray[n1] ;
     for (i = 0 ; i < current_round ; i++) {
-        pr = &pj->TabRondes[i] ;
-        if ((pr->adv == num_ffo_2) && !COUPON_IS_EMPTY(pr->pions)) {
-            ont_joue_ensemble = 1;
-            somme += Point_Par_Partie(pr->pions);
+        pr = &pj->roundsArray[i] ;
+        if ((pr->oppID == FFO_ID_2) && !COUPON_IS_EMPTY(pr->discs)) {
+            did_play_together = 1;
+            sum += Point_per_game(pr->discs);
         }
     }
 
-    if (!ont_joue_ensemble)
+    if (!did_play_together)
         return -1;
     else
-        return somme;
+        return sum;
 }
 
-
-
-/* void local_calcul_departage(long rr)
+/* void local_compute_tiebreak(long rr)
  *
- * Calcul du departage apres la ronde rr (>=0)
- * Appelle la fonction DepartageJoueur() (tiebreak.c)
- * pour tous les joueurs.
+ * Calcul du departage apres la ronde rr (>=0).
+ * Appelle la fonction DepartageJoueur() (tiebreak.c) pour tous les joueurs.
+ ****
+ * Compute tiebreak after round rr (>=0)
+ * Calls function PlayerTiebreak() (tiebreak.c) for all players.
  */
-void local_calcul_departage(long rr) {
+void local_compute_tiebreak(long rr) {
     long i, j, n;
-    BQ_results TabJ ;
-    structure_joueur *pj ;
-    structure_ronde *pr ;
+    BQ_results PlArray ;
+    player_structure *pj ;
+    round_structure *pr ;
 
     assert ((rr >= 0) && (rr < current_round));
     for (i = 0 ; i < registered_players->n ; i++) {
-        pj = &TabJoueurs[i] ;
-        TabJ.player_points = pj->TabRondes[rr].cumul_points ;
+        pj = &PlayersArray[i] ;
+        PlArray.player_points = pj->roundsArray[rr].total_points ;
         for (j = 0 ; j <= rr ; j++) {
-            pr = &pj->TabRondes[j] ;
-            TabJ.score[j] = pr->pions ;
+            pr = &pj->roundsArray[j] ;
+            PlArray.score[j] = pr->discs ;
             if ((!pr->present) || (pr->bip)) {
-                TabJ.opp[j] = 0 ;
-                TabJ.opp_points[j] = 0 ;
+                PlArray.opp[j] = 0 ;
+                PlArray.opp_points[j] = 0 ;
             } else {
-                TabJ.opp[j] = pr->adv ;
-                n = local_trouver_joueur(pr->adv) ;
-                TabJ.opp_points[j] = TabJoueurs[n].TabRondes[rr].cumul_points ;
+                PlArray.opp[j] = pr->oppID ;
+                n = find_player_localID(pr->oppID) ;
+                PlArray.opp_points[j] = PlayersArray[n].roundsArray[rr].total_points ;
             }
         }
-        DepartageJoueur(&TabJ, rr, &pj->Departage, &pj->Total_Pions, &pj->Bucholtz) ;
+        PlayerTiebreak(&PlArray, rr, &pj->Tiebreak, &pj->Total_Discs, &pj->Bucholtz) ;
     }
 }
 
 
 
-/* void recuperation_resultats(void)
+/* void get_results(void)
  *
- * Recuperation de tous les resultats deja connus
- * et remplissage des structures pour l'affichage
- * du tableau complet et de la page html.
- *
+ * Recuperation de tous les resultats deja connus et remplissage des structures
+ * pour l'affichage du tableau complet et de la page html.
+ ****
+ * Get all known results and fill in structures to display crosstable and html page
  */
-void recuperation_resultats(void) {
-    long i,j, Num_n1, Num_n2, n1, n2, num_elo, nro_table;
+void get_results(void) {
+    long i,j, Num_n1, Num_n2, n1, n2, elo_nbr, table_number;
     discs_t v ;
-    structure_joueur *pj ;
-    structure_ronde *pr ;
+    player_structure *pj ;
+    round_structure *pr ;
 
-/* Initialisation des variables */
+/* Initialisation des variables - variables initializations */
     for (i = 0 ; i < registered_players->n ; i++) {
-        pj = &TabJoueurs[i] ;
-        pj->Num_FFO = registered_players->list[i]->ID ;
+        pj = &PlayersArray[i] ;
+        pj->FFO_ID = registered_players->list[i]->ID ;
         pj->Total_Points = pj->Bucholtz = 0 ;
-        pj->Total_Pions = ZERO_DISC ;
-        pj->Departage = 0.0 ;
+        pj->Total_Discs = ZERO_DISC ;
+        pj->Tiebreak = 0.0 ;
         for (j = 0 ; j < current_round ; j++) {
-            pr = &(pj->TabRondes[j]) ;
-            pr->ronde = j;
+            pr = &(pj->roundsArray[j]) ;
+            pr->round = j;
             pr->table = 0;
-            pr->present = player_was_present(pj->Num_FFO, j) ;
-            pr->bip = pr->adv = pr->points = pr->cumul_points = 0 ;
-            pr->couleur = '\0' ;
-            pr->pions = UNKNOWN_SCORE ;
-            pr->rang = 0;
+            pr->present = player_was_present(pj->FFO_ID, j) ;
+            pr->bip = pr->oppID = pr->points = pr->total_points = 0 ;
+            pr->color = '\0' ;
+            pr->discs = UNKNOWN_SCORE ;
+            pr->stand = 0;
         }
     }
-/* Recuperation des resultats ronde par ronde */
+/* Recuperation des resultats ronde par ronde - get results round by round */
     for (i = 0 ; i < current_round ; i++) {
         round_iterate(i);
         while (next_couple(&n1, &n2, &v)) {
             assert(SCORE_IS_LEGAL(v)) ;
-            Num_n1 = local_trouver_joueur(n1) ;
-            Num_n2 = local_trouver_joueur(n2) ;
-            nro_table = numero_de_table(i, n1, n2);
-            /* Donnees pour Noir */
-            pj = &TabJoueurs[Num_n1] ;
-            pr = &(pj->TabRondes[i]) ;
-            pr->ronde = i;
-            pr->table = nro_table;
-            pr->adv = n2 ;
-            pr->pions = v ;
-            pr->couleur = NOIR ;
-            pr->points = Point_Par_Partie(v) ;
-            pr->cumul_points = (i == 0 ? pr->points : pr->points + pj->TabRondes[i-1].cumul_points) ;
+            Num_n1 = find_player_localID(n1) ;
+            Num_n2 = find_player_localID(n2) ;
+            table_number = find_table_number(i, n1, n2);
+            /* Donnees pour Noir - Black data */
+            pj = &PlayersArray[Num_n1] ;
+            pr = &(pj->roundsArray[i]) ;
+            pr->round = i;
+            pr->table = table_number;
+            pr->oppID = n2 ;
+            pr->discs = v ;
+            pr->color = BLACK ;
+            pr->points = Point_per_game(v) ;
+            pr->total_points = (i == 0 ? pr->points : pr->points + pj->roundsArray[i-1].total_points) ;
             pj->Total_Points += pr->points ;
-            ADD_SCORE(pj->Total_Pions, (v));
-            /* Donnees pour Blanc */
-            pj = &TabJoueurs[Num_n2] ;
-            pr = &(pj->TabRondes[i]) ;
-            pr->ronde = i;
-            pr->table = nro_table;
-            pr->adv = n1 ;
-            pr->pions = OPPONENT_SCORE(v) ;
-            pr->couleur = BLANC ;
-            pr->points = Point_Par_Partie(OPPONENT_SCORE(v)) ;
-            pr->cumul_points = (i == 0 ? pr->points : pr->points + pj->TabRondes[i-1].cumul_points) ;
+            ADD_SCORE(pj->Total_Discs, (v));
+            /* Donnees pour Blanc - White data */
+            pj = &PlayersArray[Num_n2] ;
+            pr = &(pj->roundsArray[i]) ;
+            pr->round = i;
+            pr->table = table_number;
+            pr->oppID = n1 ;
+            pr->discs = OPPONENT_SCORE(v) ;
+            pr->color = WHITE ;
+            pr->points = Point_per_game(OPPONENT_SCORE(v)) ;
+            pr->total_points = (i == 0 ? pr->points : pr->points + pj->roundsArray[i-1].total_points) ;
             pj->Total_Points += pr->points ;
-            ADD_SCORE(pj->Total_Pions, OPPONENT_SCORE(v));
+            ADD_SCORE(pj->Total_Discs, OPPONENT_SCORE(v));
         }
-        /* Qui a joue contre Bip ? */
+        /* Qui a joue contre Bip ? - Who played BYE? */
         for (j = 0 ; j < registered_players->n; j++) {
-            pj=&TabJoueurs[j] ;
-            num_elo = pj->Num_FFO ;
-            pr = &TabJoueurs[j].TabRondes[i] ;
+            pj=&PlayersArray[j] ;
+            elo_nbr = pj->FFO_ID ;
+            pr = &PlayersArray[j].roundsArray[i] ;
             if (!pr->present) {
-                pr->cumul_points = (i == 0 ? 0 : pj->TabRondes[i-1].cumul_points) ;
-                pr->couleur = '-' ;
+                pr->total_points = (i == 0 ? 0 : pj->roundsArray[i-1].total_points) ;
+                pr->color = '-' ;
             }
-            if (pr->present && (polar2(num_elo, i) == 0)) {
+            if (pr->present && (polar2(elo_nbr, i) == 0)) {
                 pr->bip = 1 ;
-                pr->pions = OPPONENT_SCORE(score_bip) ;
-                pr->couleur = '-' ;
-                if (IS_DEFEAT(score_bip))
+                pr->discs = OPPONENT_SCORE(bye_score) ;
+                pr->color = '-' ;
+                if (IS_DEFEAT(bye_score))
                     pr->points = 2 ;
-                else if (IS_VICTORY(score_bip))
+                else if (IS_VICTORY(bye_score))
                     pr->points = 0 ;
                 else
                     pr->points = 1 ;
-                pr->cumul_points = (i == 0 ? pr->points : pr->points+pj->TabRondes[i-1].cumul_points) ;
+                pr->total_points = (i == 0 ? pr->points : pr->points+pj->roundsArray[i-1].total_points) ;
                 pj->Total_Points += pr->points ;
-                ADD_SCORE(TabJoueurs[j].Total_Pions, OPPONENT_SCORE(score_bip));
+                ADD_SCORE(PlayersArray[j].Total_Discs, OPPONENT_SCORE(bye_score));
             }
         }
     }
@@ -362,32 +398,35 @@ void recuperation_resultats(void) {
 
 /* int compar (const void *p, const void *q)
  *
- * Fonction utilisee par qsort pour trier les joueurs pour le classement.
- * La variable globale 'partial_ronde' donne le ID de la ronde dont
- * on veut le classement trie.
+ * Fonction utilisee par qsort pour trier les joueurs pour le classement. La variable globale
+ * 'partial_round' donne le ID de la ronde dont on veut le classement trie.
  *
  * IMPORTANT : cet ordre de tri doit etre le meme que celui implemente
  *             dans la fonction tri_joueurs() de entrejou.c.
- *
+ ****
+ * Function used by qsort to sort the players for tthe standings. Global variable 'partial_round'
+ * gives round ID for which the standings are asked.
+ * IMPORTANT: this sort order should be the same as the one in function
+ *  sort_players() of entrejou.c
  */
-int compar (const void *p, const void *q) {
-    structure_joueur *pj = (structure_joueur *) p ;
-    structure_joueur *pq = (structure_joueur *) q ;
+int compar(const void *p, const void *q) {
+    player_structure *pj = (player_structure *) p ;
+    player_structure *pq = (player_structure *) q ;
 
-    if (pj->TabRondes[partial_ronde].cumul_points > pq->TabRondes[partial_ronde].cumul_points) return -1 ;
-    if (pj->TabRondes[partial_ronde].cumul_points < pq->TabRondes[partial_ronde].cumul_points) return 1 ;
+    if (pj->roundsArray[partial_round].total_points > pq->roundsArray[partial_round].total_points) return -1 ;
+    if (pj->roundsArray[partial_round].total_points < pq->roundsArray[partial_round].total_points) return 1 ;
 /*  if (SCORE_STRICTLY_LARGER(pj->Departage, pq->Departage)) return -1 ;
     if (SCORE_STRICTLY_LARGER(pq->Departage, pj->Departage)) return  1 ;
 */
-    if (pj->Departage > pq->Departage) return -1 ;
-    if (pq->Departage > pj->Departage) return  1 ;
-    if (SCORE_STRICTLY_LARGER(pj->Total_Pions, pq->Total_Pions)) return -1 ;
-    if (SCORE_STRICTLY_LARGER(pq->Total_Pions, pj->Total_Pions)) return  1 ;
+    if (pj->Tiebreak > pq->Tiebreak) return -1 ;
+    if (pq->Tiebreak > pj->Tiebreak) return  1 ;
+    if (SCORE_STRICTLY_LARGER(pj->Total_Discs, pq->Total_Discs)) return -1 ;
+    if (SCORE_STRICTLY_LARGER(pq->Total_Discs, pj->Total_Discs)) return  1 ;
 
-    return compare_chaines_non_sentitif(trouver_joueur(pj->Num_FFO)->fullname,
-                                        trouver_joueur(pq->Num_FFO)->fullname);
+    return (int) compare_strings_insensitive(findPlayer(pj->FFO_ID)->fullname,
+            findPlayer(pq->FFO_ID)->fullname);
 
-    /*if (trouver_joueur(pj->Num_FFO)->fullname < trouver_joueur(pq->Num_FFO)->fullname)
+    /*if (trouver_joueur(pj->FFO_ID)->fullname < findPlayer(pq->FFO_ID)->fullname)
         return -1 ;
     else
         return 1 ;
@@ -396,63 +435,86 @@ int compar (const void *p, const void *q) {
 
 
 
-/* void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
- *               char *mon_nom, char *score_partie, char *score_partie_relatif,
+/* void ReplaceStr(char *str, char *coupon, char color, char *oppon, char *nom_adv,
+ *               char *my_name, char *game_score, char *relative_game_score,
  *               char *my_score, char *opp_score, long pts, long cumul_pts,
- *               char *ronde, char *table, char *rang)
+ *               char *round, char *table, char *rank)
  *
  * Remplace dans la chaine *str les codes speciaux par les valeurs passees
  * en parametre pour l'affichage d'une cellule dans le tableau HTML.
- * Les codes sont : PAPP_COLOR         = couleur
- *                  PAPP_OPP           = ID de l'adversaire dans le tableau
- *                  PAPP_OPP_NAME[n]   = n premiers caracteres du fullname de l'adversaire
- *                  PAPP_MY_NAME[n]    = n premiers caracteres de mon fullname
- *                  PAPP_BLACK_NAME[n] = n premiers caracteres du fullname de Noir
- *                  PAPP_WHITE_NAME[n] = n premiers caracteres du fullname de Blanc
- *                  PAPP_COUPON        = coupon de la partie (eg SEELEY Ben 12/52 SHAMAN David)
- *                  PAPP_SCORE         = score de la partie, vue de joueur (eg 52/12)
- *                  PAPP_SCORE_RELATIF = score de la partie en relatif (eg +40)
- *                  PAPP_MY_SCORE      = mon nombre de pions (eg 52)
- *                  PAPP_OPP_SCORE     = pions de l'adversaire (eg 12)
- *                  PAPP_PTS           = points gagnes dans la partie (0, 0.5 ou 1)
- *                  PAPP_TOTAL         = total de points
- *                  PAPP_RONDE         = ronde de la partie
- *                  PAPP_TABLE         = table de la partie
- *                  PAPP_RANG          = classement du joueur apres cette partie.
+ ****
+ * Replaces, in string *str, special codes by values passed as parameters.
+ * Used to display a cell in the html table.
+ *
+ *
+ * Les codes sont : PAPP_COLOR         = couleur - color
+ * Codes are:       PAPP_OPP           = ID de l'adversaire dans le tableau -
+ *                                        opponent ID in table
+ *                  PAPP_OPP_NAME[n]   = n premiers caracteres du fullname de l'adversaire -
+ *                                       first n characters of opponent fullname
+ *                  PAPP_MY_NAME[n]    = n premiers caracteres de mon fullname -
+ *                                       first n characters of my fullname
+ *                  PAPP_BLACK_NAME[n] = n premiers caracteres du fullname de Noir -
+ *                                        first n characters of black fullname
+ *                  PAPP_WHITE_NAME[n] = n premiers caracteres du fullname de Blanc -
+ *                                        first n characters of whitefullname
+ *                  PAPP_COUPON        = coupon de la partie (eg: SEELEY Ben 12/52 SHAMAN David) -
+ *                                        game result ["coupon"]
+ *                  PAPP_SCORE         = score de la partie, vue de joueur (eg 52/12) -
+ *                                        game score seen from player's perspective
+ *                  PAPP_SCORE_RELATIF = score de la partie en relatif (eg +40) -
+ *                                        relative game score
+ *                  PAPP_MY_SCORE      = mon nombre de pions (eg 52) -
+ *                                        my number of discs
+ *                  PAPP_OPP_SCORE     = pions de l'adversaire (eg 12) -
+ *                                        opponent number of discs
+ *                  PAPP_PTS           = points gagnes dans la partie (0, 0.5 ou 1) -
+ *                                        won points for game
+ *                  PAPP_TOTAL         = total de points -
+ *                                        total number of points
+ *                  PAPP_RONDE         = ronde de la partie -
+ *                                        game round
+ *                  PAPP_TABLE         = table de la partie -
+ *                                        game table
+ *                  PAPP_RANG          = classement du joueur apres cette partie -
+ *                                        player's ranking after this game
  *
  * Attention, on doit avoir strlen(adv)<=3, et la chaine *str
- * doit faire moins de TAILLE_MAX_CELLULE octets.
- *
+ * doit faire moins de CELL_MAX_SIZE octets.
+ ****
+ * Beware, we must have strlen(adv)<=3 and *str string must be at most
+ * CELL_MAX_SIZE bytes.
  */
-void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
-                 char *mon_nom, char *score_partie, char *score_partie_relatif,
-                 char *my_score, char *opp_score, long pts, long cumul_pts,
-                 char *ronde, char *table,char *rang) {
+void ReplaceStr(char *str, char *coupon, char color, char *oppon, char *oppon_name,
+        char *my_name, char *game_score, char *relative_game_score,
+        char *my_score, char *opp_score, long pts, long cumul_pts,
+        char *round, char *table, char *rank) {
     char *p ;
-    char buf[200], chaine_cherchee[50];
+    char buf[200], lookedUpStr[50];
     long i, n, len;
-    char buffer2[TAILLE_MAX_CELLULE + 300];
+    char buffer2[CELL_MAX_SIZE + 300];
 
 
     p = strstr(str, "PAPP_COLOR");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_COLOR"));
             *p = *(p+2) = ' ' ;
-            *(p+1) = coul ;
+            *(p+1) = color ;
             strcpy(p+3, buffer2);
     }
 
     p = strstr(str, "PAPP_SCORE_RELATIF");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_SCORE_RELATIF"));
-            strcpy(buf, score_partie_relatif) ;
-		/* On aimerait supprimer le 0 en tete des nombres inferieurs a 10. */
+            strcpy(buf, relative_game_score) ;
+		/* On aimerait supprimer le 0 en tete des nombres inferieurs a 10. -
+		 * remove leading 0 in front of <10 numbers */
 			if ((buf[1] == '0') && strlen(buf)>2) {
 				memmove(&buf[1], &buf[2], strlen(buf)-1) ;
 			}
             for (i = strlen(buf); i < 12 ; i++)
                buf[i] = ' ' ;
-            len = le_max_de(strlen(score_partie_relatif), 3);
+            len = max_of(strlen(relative_game_score), 3);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -460,10 +522,10 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
     p = strstr(str, "PAPP_SCORE");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_SCORE"));
-            strcpy(buf, score_partie) ;
+            strcpy(buf, game_score) ;
             for (i = strlen(buf); i < 12 ; i++)
                buf[i] = ' ' ;
-            len = le_max_de(strlen(score_partie), 3);
+            len = max_of(strlen(game_score), 3);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -474,7 +536,7 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
             strcpy(buf, my_score) ;
             for (i = strlen(buf); i < 12 ; i++)
                buf[i] = ' ' ;
-            len = le_max_de(strlen(my_score), 2);
+            len = max_of(strlen(my_score), 2);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -485,7 +547,7 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
             strcpy(buf, opp_score) ;
             for (i = strlen(buf); i < 12 ; i++)
                buf[i] = ' ' ;
-            len = le_max_de(strlen(opp_score), 2);
+            len = max_of(strlen(opp_score), 2);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -526,78 +588,80 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
             strcpy(p+len, buffer2);
     }
 
-    /* on cherche les mots clefs "PAPP_MY_NAME[1]", "PAPP_MY_NAME[2]", etc. */
+    /* on cherche les mots clefs - looking for keywords:
+     * "PAPP_MY_NAME[1]", "PAPP_MY_NAME[2]", etc. */
     for (n = 1; n < 50; n++) {
-        sprintf(chaine_cherchee, "PAPP_MY_NAME[%ld]", n);
-        p = strstr(str, chaine_cherchee);
+        sprintf(lookedUpStr, "PAPP_MY_NAME[%ld]", n);
+        p = strstr(str, lookedUpStr);
         if (p) {
-            strcpy(buffer2, p+(long)strlen(chaine_cherchee));
-            strcpy(buf, mon_nom) ;
+            strcpy(buffer2, p+(long)strlen(lookedUpStr));
+            strcpy(buf, my_name) ;
             for (i = strlen(buf); i < 50 ; i++)
                buf[i] = ' ' ;
-            len = le_min_de(strlen(mon_nom), n);
+            len = min_of(strlen(my_name), n);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
         }
     }
 
-    /* on cherche les mots clefs "PAPP_OPP_NAME[1]", "PAPP_OPP_NAME[2]", etc. */
+    /* on cherche les mots clefs - looking for keywords:
+     * "PAPP_OPP_NAME[1]", "PAPP_OPP_NAME[2]", etc. */
     for (n = 1; n < 50; n++) {
-        sprintf(chaine_cherchee, "PAPP_OPP_NAME[%ld]", n);
-        p = strstr(str, chaine_cherchee);
+        sprintf(lookedUpStr, "PAPP_OPP_NAME[%ld]", n);
+        p = strstr(str, lookedUpStr);
         if (p) {
-            strcpy(buffer2, p+(long)strlen(chaine_cherchee));
-            strcpy(buf, nom_adv) ;
+            strcpy(buffer2, p+(long)strlen(lookedUpStr));
+            strcpy(buf, oppon_name) ;
             for (i = strlen(buf); i < 50 ; i++)
                buf[i] = ' ' ;
-            len = le_min_de(strlen(nom_adv), n);
+            len = min_of(strlen(oppon_name), n);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
         }
     }
 
-
-
-    /* on cherche les mots clefs "PAPP_BLACK_NAME[1]", "PAPP_BLACK_NAME[2]", etc. */
+    /* on cherche les mots clefs - looking for keywords:
+     * "PAPP_BLACK_NAME[1]", "PAPP_BLACK_NAME[2]", etc. */
     for (n = 1; n < 50; n++) {
-        sprintf(chaine_cherchee, "PAPP_BLACK_NAME[%ld]", n);
-        p = strstr(str, chaine_cherchee);
+        sprintf(lookedUpStr, "PAPP_BLACK_NAME[%ld]", n);
+        p = strstr(str, lookedUpStr);
         if (p) {
-            strcpy(buffer2, p+(long)strlen(chaine_cherchee));
-            if (coul == NOIR) {
-                strcpy(buf, mon_nom) ;
+            strcpy(buffer2, p+(long)strlen(lookedUpStr));
+            if (color == BLACK) {
+                strcpy(buf, my_name) ;
                 for (i = strlen(buf); i < 50 ; i++)
                     buf[i] = ' ' ;
-                len = le_min_de(strlen(mon_nom), n);
+                len = min_of(strlen(my_name), n);
             }
             else {
-                strcpy(buf, nom_adv) ;
+                strcpy(buf, oppon_name) ;
                 for (i = strlen(buf); i < 50 ; i++)
                     buf[i] = ' ' ;
-                len = le_min_de(strlen(nom_adv), n);
+                len = min_of(strlen(oppon_name), n);
             }
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
         }
     }
 
-    /* on cherche les mots clefs "PAPP_WHITE_NAME[1]", "PAPP_WHITE_NAME[2]", etc. */
+    /* on cherche les mots clefs - looking for keywords:
+     * "PAPP_WHITE_NAME[1]", "PAPP_WHITE_NAME[2]", etc. */
     for (n = 1; n < 50; n++) {
-        sprintf(chaine_cherchee, "PAPP_WHITE_NAME[%ld]", n);
-        p = strstr(str, chaine_cherchee);
+        sprintf(lookedUpStr, "PAPP_WHITE_NAME[%ld]", n);
+        p = strstr(str, lookedUpStr);
         if (p) {
-            strcpy(buffer2, p+(long)strlen(chaine_cherchee));
-            if (coul == BLANC) {
-                strcpy(buf, mon_nom) ;
+            strcpy(buffer2, p+(long)strlen(lookedUpStr));
+            if (color == WHITE) {
+                strcpy(buf, my_name) ;
                 for (i = strlen(buf); i < 50 ; i++)
                     buf[i] = ' ' ;
-                len = le_min_de(strlen(mon_nom), n);
+                len = min_of(strlen(my_name), n);
             }
             else {
-                strcpy(buf, nom_adv) ;
+                strcpy(buf, oppon_name) ;
                 for (i = strlen(buf); i < 50 ; i++)
                     buf[i] = ' ' ;
-                len = le_min_de(strlen(nom_adv), n);
+                len = min_of(strlen(oppon_name), n);
             }
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
@@ -607,15 +671,15 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
     p = strstr(str, "PAPP_OPP");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_OPP"));
-            *p = adv[0] ;
-            if (strlen(adv) == 1)
+            *p = oppon[0] ;
+            if (strlen(oppon) == 1)
                     *(p+1) = ' ' ;
             else
-                    *(p+1) = adv[1] ;
-            if (strlen(adv) < 3)
+                    *(p+1) = oppon[1] ;
+            if (strlen(oppon) < 3)
                     *(p+2) = ' ' ;
             else
-                    *(p+2) = adv[2] ;
+                    *(p+2) = oppon[2] ;
             strcpy(p+3, buffer2);
     }
 
@@ -623,8 +687,8 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
     p = strstr(str, "PAPP_RONDE");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_RONDE"));
-            strcpy(buf, ronde) ;
-            len = strlen(ronde);
+            strcpy(buf, round) ;
+            len = strlen(round);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -641,8 +705,8 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
     p = strstr(str, "PAPP_RANG");
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_RANG"));
-            strcpy(buf, rang);
-            len = strlen(rang);
+            strcpy(buf, rank);
+            len = strlen(rank);
             strncpy(p, buf, len);
             strcpy(p+len, buffer2);
     }
@@ -650,74 +714,80 @@ void RemplaceStr(char *str, char *coupon, char coul, char *adv, char *nom_adv,
 
 
 
-/* void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, structure_joueur *pj)
+/* void ReplaceCell (char *the_template, char *cell, round_structure *pr, player_structure *pj)
  *
- * Inscrit les infos du joueur (pour une ronde donnee) dans
- * une copie de la cellule 'the_template'.
+ * Inscrit les infos du joueur (pour une ronde donnee) dans une copie de la cellule 'the_template'.
+ ****
+ * Writes player info (for a given round) in a copy of cell 'the_template'.
  *
  */
-void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, structure_joueur *pj) {
+void ReplaceCell(char *the_template, char *cell, round_structure *pr, player_structure *pj) {
 
-    char score_partie[10], score_partie_relatif[10], my_score[10], opp_score[10];
-    char num_adv[5], nom_adv[50], mon_nom[50], nro_ronde[5], nro_table[5], rang[5];
+    char game_score[10], relative_game_score[10], my_score[10], opp_score[10];
+    char opp_nbr[5], opp_name[50], my_name[50], round_num[5], table_num[5], rank[5];
     char coupon[200];
-    long nb_chiffres_des_rondes, nb_chiffres_des_tables;
+    long nbr_digits_for_rounds, nbr_digits_for_tables;
     long n , temp;
 
 
-    strcpy(cellule, the_template) ;
+    strcpy(cell, the_template) ;
 
-    /* creation des infos generales de la partie */
-    n = local_trouver_joueur(pr->adv) ;
-    sprintf(rang, "%ld", pr->rang);
-    sprintf(mon_nom,"%s", trouver_joueur(pj->Num_FFO)->fullname);
-    nb_chiffres_des_rondes = 2;
-    sprintf(nro_ronde, "%0*ld", (int)nb_chiffres_des_rondes, pr->ronde + 1);
+    /* creation des infos generales de la partie - creating general infos on the game */
+    n = find_player_localID(pr->oppID) ;
+    sprintf(rank, "%ld", pr->stand);
+    sprintf(my_name,"%s", findPlayer(pj->FFO_ID)->fullname);
+    nbr_digits_for_rounds = 2;
+    sprintf(round_num, "%0*ld", (int)nbr_digits_for_rounds, pr->round + 1);
 
-    /* deux cas particuliers : si le joueur n'a pas joue,
-     * ou s'il a joue contre Bip */
-    if (n == JOUEUR_INCONNU)
+    /* deux cas particuliers : si le joueur n'a pas joue, ou s'il a joue contre Bip
+     ****
+     * two special cases: the player didn't play or played bye */
+    if (n == UNKNOWN_PLAYER)
         n = -1 ;
     if (pr->bip) {
-        RemplaceStr(cellule, BIP, '-', "-", BIP, mon_nom,
-                    BIP, BIP, BIP, BIP,
-                    pr->points, pr->cumul_points, "-", "-", rang) ;
+        ReplaceStr(cell, BIP, '-', "-", BIP, my_name,
+                BIP, BIP, BIP, BIP,
+                pr->points, pr->total_points, "-", "-", rank) ;
     } else if (!pr->present) {
-        RemplaceStr(cellule, " --- ", '-', "-", "-", mon_nom,
-                    "---", "---", "--", "--",
-                    pr->points, pr->cumul_points, "-", "-", rang) ;
-    } else { /* cas normal */
+        ReplaceStr(cell, " --- ", '-', "-", "-", my_name,
+                "---", "---", "--", "--",
+                pr->points, pr->total_points, "-", "-", rank) ;
+    } else { /* cas normal - normal case */
 
-        /* creation du ID de l'aversaire et de son fullname */
-        sprintf(num_adv, "%ld", n+1) ;
-        sprintf(nom_adv,"%s", trouver_joueur(pr->adv)->fullname);
+        /* creation du ID de l'aversaire et de son fullname
+         ****
+         * creation of opponent ID and his fullname */
+        sprintf(opp_nbr, "%ld", n+1) ;
+        sprintf(opp_name,"%s", findPlayer(pr->oppID)->fullname);
 
-        /* creation des numeros de table */
-        nb_chiffres_des_tables = (registered_players->n < 20 ? 1 :
+        /* creation des numeros de table - creation of tables numbers */
+        nbr_digits_for_tables = (registered_players->n < 20 ? 1 :
                                  (registered_players->n < 200 ? 2 : 3));
-        sprintf(nro_table, "%0*ld", (int)nb_chiffres_des_tables, pr->table);
+        sprintf(table_num, "%0*ld", (int)nbr_digits_for_tables, pr->table);
 
-        /* creation des scores (tjrs du point de vue du joueur) */
-        temp = aff_diff_scores;
-        aff_diff_scores = 0; sprintf(score_partie, "%s", fscore(pr->pions));
-        aff_diff_scores = 1; sprintf(score_partie_relatif, "%s", fscore(pr->pions));
-        sprintf(my_score, "%s", pions_en_chaine(pr->pions));
-        sprintf(opp_score, "%s", pions_en_chaine(OPPONENT_SCORE(pr->pions)));
-        aff_diff_scores = temp;
+        /* creation des scores (tjrs du point de vue du joueur)
+         ****
+         * creation of scores (always from the player's view */
+        temp = display_score_diff;
+        display_score_diff = 0; sprintf(game_score, "%s", fscore(pr->discs));
+        display_score_diff = 1; sprintf(relative_game_score, "%s", fscore(pr->discs));
+        sprintf(my_score, "%s", discs2string(pr->discs));
+        sprintf(opp_score, "%s", discs2string(OPPONENT_SCORE(pr->discs)));
+        display_score_diff = temp;
 
-        /* creation du coupon */
-        temp = aff_diff_scores;
-        aff_diff_scores = 0;
-        if (pr->couleur == NOIR)
-            sprintf(coupon, "%s  %s  %s", mon_nom, fscore(pr->pions), nom_adv);
+        /* creation du coupon - creation of coupon */
+        temp = display_score_diff;
+        display_score_diff = 0;
+        if (pr->color == BLACK)
+            sprintf(coupon, "%s  %s  %s", my_name, fscore(pr->discs), opp_name);
         else
-            sprintf(coupon, "%s  %s  %s", nom_adv, fscore(OPPONENT_SCORE(pr->pions)), mon_nom);
-        aff_diff_scores = temp;
+            sprintf(coupon, "%s  %s  %s", opp_name, fscore(OPPONENT_SCORE(pr->discs)), my_name);
+        display_score_diff = temp;
 
 
-        RemplaceStr(cellule, coupon, pr->couleur, num_adv, nom_adv, mon_nom,
-                    score_partie, score_partie_relatif, my_score, opp_score,
-                    pr->points, pr->cumul_points, nro_ronde, nro_table, rang) ;
+        ReplaceStr(cell, coupon, pr->color, opp_nbr, opp_name, my_name,
+                game_score, relative_game_score, my_score, opp_score,
+                pr->points, pr->total_points, round_num, table_num, rank) ;
     }
 }
 
@@ -726,12 +796,15 @@ void RemplaceCellule (char *the_template, char *cellule, structure_ronde *pr, st
  *
  * Cree un fichier Cell.tmpl pour l'affichage d'un fichier de crosstable HTML
  * ce fichier est cree s'il n'existe pas dans le repertoire.
+ ****
+ * Create a file called Cell.tmpl to display an html crosstable file.
+ * This file is created if it doesn't exist in folder
  *
  */
 FILE *GenerateCellFile(void) {
     FILE *fp ;
 
-    if (!(fp = myfopen_dans_sous_dossier("cell.tmpl", "w", "", 0, 0)))
+    if (!(fp = myfopen_in_subfolder("cell.tmpl", "w", "", 0, 0)))
         return NULL ;
 	printf("FICHIER TEMPLATE GENERE\n") ;
 
@@ -824,10 +897,10 @@ FILE *GenerateCellFile(void) {
 				"</div>\n" MC_CROSSTABLE "\n") ;
 	fprintf(fp, "</body>\n</html>\n") ;
     fclose(fp) ;
-    return myfopen_dans_sous_dossier("cell.tmpl","r", "", 0, 0) ;
+    return myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0) ;
 }
 
-/* Enregistre les lignes definissant une cellule du tableau  */
+/* Enregistre les lignes definissant une cellule du tableau - record lines defining a table cell */
 void RecordCell(char cellule[],  long taille, FILE *file) {
 	short begin=0 ;
 	char *buf = malloc(taille+1) ;
@@ -835,84 +908,90 @@ void RecordCell(char cellule[],  long taille, FILE *file) {
 	printf("RECORD CELL DANS TEMPLATE\n") ;
 	while ( fgets(buf, taille, file) ) {
 		if (!begin) {
-			if (strstr(buf, CELLBEGIN)) /* le debut de la def. */
+			if (strstr(buf, CELLBEGIN)) /* le debut de la def. - start of def. */
 				begin = 1 ;
 			continue ;
-		} else { /* on est dans la definition */
-			if (strstr(buf, CELLEND)) { /* fin de la def . */
+		} else { /* on est dans la definition - we're in definition */
+			if (strstr(buf, CELLEND)) { /* fin de la def. - end of def. */
 				begin = 0 ;
 				break ;
 			}
-			/* On recorde */
+			/* On recorde - recording */
 			strncat(cellule, buf, taille-strlen(cellule)) ;
 		}
 	}
 	cellule[taille-1] = '\0' ;
 }
 
-/* Essaie de lire le fichier de template pour la crosstable  */
-/* Si non trouve, genere un fichier cell.tmpl par defaut.    */
-/* Ensuite, lit le fichier pour remplir le champ cellule     */
-/* (dont la taille max est donnee)                           */
-/* avec la definition de la cellule                          */
-/* renvoie 0 si erreur                                       */
-short ChercherFichierCellTMPL( char cellule[], long taille_cellule ) {
-	FILE *cellulefile ;
+/* Essaie de lire le fichier de template pour la crosstable. Si non trouve,
+ * genere un fichier cell.tmpl par defaut. Ensuite, lit le fichier pour
+ * remplir le champ cellule (dont la taille max est donnee) avec la definition de la cellule.
+ * renvoie 0 si erreur.
+ ****
+ * Tries to read the template file for the crosstable. If it isn't found, generate
+ * a default cell.tmpl file. Then read the file to fill in the cell field
+ * (which max size is given) with the cell definition.
+ * Returns 0 in case of error.
+ */
+short LookForTMPLFile(char *cell, long cellSize) {
+	FILE *cellFile ;
 	short begin, end ;
-	char buf[TAILLE_MAX_LIGNE] ;
+	char buf[LINE_MAX_LENGTH] ;
 
-	if ( (cellulefile = myfopen_dans_sous_dossier("cell.tmpl","r", "", 0, 0)) != 0 ) {
+	if ( (cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0 ) {
 		printf("TEMPLATE TROUVE\n") ;
 		begin = end = 0 ;
-		while ( fgets(buf, TAILLE_MAX_LIGNE, cellulefile) ) {
+		while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
 			if ( strstr(buf, CELLBEGIN) )
-				 begin = 1; /* Debut de la definition de la cellule */
+				 begin = 1; /* Debut de la definition de la cellule - start of cell def. */
 			if ( (strstr(buf, CELLEND)) && begin ) {
-				end = 1 ; /* Fin de la definition de la cellule */
+				end = 1 ; /* Fin de la definition de la cellule - end of cell def. */
 				break ;
 			}
 		}
-		if (begin && end) { /* Il y avait une def. de cellule */
+		if (begin && end) { /* Il y avait une def. de cellule - There was a cell def. */
 			printf("DEF. CELL TROUVEE\n") ;
-			fseek(cellulefile, 0, SEEK_SET) ;
-			RecordCell(cellule, taille_cellule, cellulefile) ;
-			fclose(cellulefile) ;
+			fseek(cellFile, 0, SEEK_SET) ;
+			RecordCell(cell, cellSize, cellFile) ;
+			fclose(cellFile) ;
 			return 1 ;
 		}
 		printf(BAD_TMPL_FILE) ;
 		return 0 ;
-	} else if ( (cellulefile = GenerateCellFile()) != 0) {
-		RecordCell(cellule, taille_cellule, cellulefile) ;
-		fclose(cellulefile) ;
+	} else if ( (cellFile = GenerateCellFile()) != 0) {
+		RecordCell(cell, cellSize, cellFile) ;
+		fclose(cellFile) ;
 		return 1 ;
 	} else
 		return 0 ;
 }
 
-/* Generation du code pour la crosstable */
-/* A inserer dans un fichier HTML         */
-void OutputCrosstable(char cellule[], FILE *out) {
-    char cellule2[TAILLE_MAX_CELLULE + 100] ;
-    structure_joueur *pj ;
-    structure_ronde *pr;
+/* Generation du code pour la crosstable, a inserer dans un fichier HTML
+ ****
+ * Generation of crosstable code, to be inserted in html file.
+ */
+void OutputCrosstable(char cell[], FILE *out) {
+    char cell2[CELL_MAX_SIZE + 100] ;
+    player_structure *pj ;
+    round_structure *pr;
 	long i, j ;
 
 #ifdef ENGLISH
     fprintf(out, "<table id=\"crosstable\">\n") ;
-/*    fprintf(out, "<caption>%s<br>Standings after %ld round%c<br>&nbsp</caption>\n",nom_du_tournoi, ronde, (ronde==1?' ':'s')); */
+/*    fprintf(out, "<caption>%s<br>Standings after %ld round%c<br>&nbsp</caption>\n",tournament_name, ronde, (ronde==1?' ':'s')); */
 
     fprintf(out, "<tr>\n"
 				 "<td class=\"crosstable_title\">No.</td>\n"
 			     "<td class=\"crosstable_title\" align=\"left\">Name</td>\n"
 				 "<td class=\"crosstable_title\">Country</td>\n") ;
-    for (j = 0 ; j < ronde ; j++)
+    for (j = 0 ; j < current_round ; j++)
         fprintf(out, "<td class=\"crosstable_title\">r. %ld</td>\n", j+1) ;
     fprintf(out, "<td class=\"crosstable_title\">Points</td>\n"
 			     "<td class=\"crosstable_title\">Tie-break</td>\n</tr>\n") ;
     fflush(out) ;
 #else
     fprintf(out, "<table id=\"crosstable\">\n") ;
-/*    fprintf(out, "<caption><%s<br>Classement apr&egrave;s %ld ronde%c<br>&nbsp</caption>\n", nom_du_tournoi,ronde, (ronde==1?' ':'s'));*/
+/*    fprintf(out, "<caption><%s<br>Classement apr&egrave;s %ld ronde%c<br>&nbsp</caption>\n", tournament_name,ronde, (ronde==1?' ':'s'));*/
 
     fprintf(out, "<tr>\n"
 			"<td class=\"crosstable_title\">No.</td>\n"
@@ -925,32 +1004,34 @@ void OutputCrosstable(char cellule[], FILE *out) {
     fflush(out) ;
 #endif
     for (i = 0 ; i < registered_players->n ; i++) {
-        pj = &TabJoueurs[i] ;
+        pj = &PlayersArray[i] ;
         fprintf(out, "<tr><td align=\"center\">%ld</td><td class=\"crosstable_name\">%s</td><td class=\"crosstable_country\">%s</td>\n", i+1,
-				trouver_joueur(pj->Num_FFO)->fullname, trouver_joueur(pj->Num_FFO)->country);
+                findPlayer(pj->FFO_ID)->fullname, findPlayer(pj->FFO_ID)->country);
         for (j = 0 ; j < current_round ; j++) {
             fprintf(out, "<td class=\"crosstable_cell\">\n") ;
-            pr = &pj->TabRondes[j] ;
-            RemplaceCellule(cellule, cellule2, pr, pj) ;
-            fprintf(out, "%s\n</td>\n", cellule2) ;
+            pr = &pj->roundsArray[j] ;
+            ReplaceCell(cell, cell2, pr, pj) ;
+            fprintf(out, "%s\n</td>\n", cell2) ;
         }
         fprintf(out, "<td class=\"crosstable_points\">%ld%s</td>", pj->Total_Points/2, (pj->Total_Points%2 ? ".5" : "" ) ) ;
-        fprintf(out, "<td class=\"crosstable_tiebreak\">[%s]</td>\n</tr>\n\n", departage_en_chaine(pj->Departage)) ;
+        fprintf(out, "<td class=\"crosstable_tiebreak\">[%s]</td>\n</tr>\n\n", tieBreak2string(pj->Tiebreak)) ;
     }
     fprintf(out, "</table>\n") ;
 }
 
-/* void TraiterLigneHTML(char str[])
+/* void ProcessHTMLLine(char str[])
  *
- * Remplace, dans une ligne du code HTML de cell.tmpl, les mots-clefs
- * par leur valeur.
- * PAPP_TOURNAMENT_NAME : fullname du tournoi
- * PAPP_RONDE : ID de la ronde
+ * Remplace, dans une ligne du code HTML de cell.tmpl, les mots-clefs par leur valeur.
+ ****
+ * Replaces, in a HTML line of cell template, keywords by theur value.
+ ***
+ * PAPP_TOURNAMENT_NAME : fullname du tournoi - tournament fullname
+ * PAPP_RONDE : ID de la ronde - round ID
  */
-void TraiterLigneHTML(char str[]) {
+void ProcessHTMLLine(char *str) {
 	char *p ;
-	char buf_tmp[TAILLE_MAX_LIGNE] ;
-	char buf2[TAILLE_MAX_LIGNE] ;
+	char buf_tmp[LINE_MAX_LENGTH] ;
+	char buf2[LINE_MAX_LENGTH] ;
 	long len ;
 
 	p = strstr(str, "PAPP_RONDE");
@@ -964,47 +1045,47 @@ void TraiterLigneHTML(char str[]) {
 	p = strstr(str, "PAPP_TOURNAMENT_NAME");
     if (p) {
 		strcpy(buf_tmp, p+(long)strlen("PAPP_TOURNAMENT_NAME"));
-		len = strlen(nom_du_tournoi);
-		strncpy(p, nom_du_tournoi, len);
+		len = strlen(tournament_name);
+		strncpy(p, tournament_name, len);
 		strcpy(p+len, buf_tmp);
     }
 }
 
 
-/* void sortie_tableau_croise_HTML(FILE *out)
+/* void HTMLCrosstableOutput(FILE *out)
  *
- * Generation d'une page HTML contenant le tableau
- * de tous les resultats connus.
+ * Generation d'une page HTML contenant le tableau de tous les resultats connus.
+ ****
+ * Creation of a HTML page containing a table of all known results.
  *
  */
-void sortie_tableau_croise_HTML(FILE *out) {
-    char cellule[TAILLE_MAX_CELLULE + 100] ;
+void HTMLCrosstableOutput(FILE *out) {
+    char cell[CELL_MAX_SIZE + 100] ;
 	short begin=0 ;
-	char buf[TAILLE_MAX_LIGNE] ;
-    FILE *cellulefile ;
+	char buf[LINE_MAX_LENGTH] ;
+    FILE *cellFile ;
 
-
-	if (!ChercherFichierCellTMPL(cellule, TAILLE_MAX_CELLULE+100)) { /* on n'a pas trouve un fichier */
+	if (!LookForTMPLFile(cell, CELL_MAX_SIZE + 100)) { /* on n'a pas trouve un fichier - File wasn't found */
 		printf(CANT_OPEN ": cell.tmpl file\n");
         return ;
     }
-	/* On a donc enregistre une cellule */
-	if ((cellulefile = myfopen_dans_sous_dossier("cell.tmpl","r", "", 0, 0)) != 0) {
-		while ( fgets(buf, TAILLE_MAX_LIGNE, cellulefile) ) {
+	/* On a donc enregistre une cellule - So a cell was recorded */
+	if ((cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0) {
+		while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
 			if (begin) {
-				if (strstr(buf, CELLEND)) /* la fin de la def. */
+				if (strstr(buf, CELLEND)) /* la fin de la def. - end of def. */
 					begin = 0 ;
 				continue ;
-			} else { /* on n'est pas dans la definition */
-			if (strstr(buf, CELLBEGIN)) { /* debut de la def . */
+			} else { /* on n'est pas dans la definition - Not in def. */
+			if (strstr(buf, CELLBEGIN)) { /* debut de la def. - start of def. */
 				begin = 1 ;
 				continue ;
 			}
-			/* On recopie */
+			/* On recopie - copy */
 				if (strstr(buf, MC_CROSSTABLE))
-					OutputCrosstable(cellule, out) ;
+					OutputCrosstable(cell, out) ;
 				else {
-					TraiterLigneHTML(buf) ; /* remplacement des mots-clefs */
+                    ProcessHTMLLine(buf) ; /* remplacement des mots-clefs - keywords replacement */
 					fputs(buf, out) ;
 				}
 
@@ -1015,14 +1096,14 @@ void sortie_tableau_croise_HTML(FILE *out) {
 	}
 }
 
-/* void sortie_tableau_croise_texte(long ronde_aff, FILE *fp)
+/* void TextCrosstableOutput(long ronde_aff, FILE *fp)
  *
- * Affiche a l'ecran le tableau complet apres la ronde
- * 'ronde_aff' (>=0) et eventuellement le sauvegarde
- * dans le fichier de pointeur fp (si fp !=NULL).
+ * Affiche a l'ecran le tableau complet apres la ronde 'ronde_aff' (>=0)
+ * et eventuellement le sauvegarde dans le fichier de pointeur fp (si fp !=NULL).
+ ****
  *
  */
-void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
+void TextCrosstableOutput(long round, FILE *fp) {
 #ifdef ENGLISH
  #define STR_ROUND_1  "round "
  #define STR_ROUND_2  "rounds"
@@ -1036,36 +1117,36 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
 
 #define LIM 10
     long i, j, n, m, diff_col, line1, reste ;
-    structure_ronde *pr ;
-    char PlusMoins[]  = "-=+" ;
-    char ZeroEgalUn[] = "0=1" ;
-    char Chiffres[]   = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" ;
+    round_structure *pr ;
+    char PlusMinus[]  = "-=+" ;
+    char ZeroEqualOne[] = "0=1" ;
+    char Digits[]   = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" ;
     char buf[400] ;
     char buf2[400] ;
-    char virgule[4] ;
+    char comma[4] ;
     char col[3] ;
     char c, last_float ;
-    char titre[] = "No                                                                                      " ;
-    long  v, suisse_simple;
-    char *nomTrn ;
+    char title[] = "No                                                                                      " ;
+    long  v, simple_swiss;
+    char *TrnName ;
 
 
-    assert ((ronde_aff >= 0) && (ronde_aff < current_round)) ;
+    assert ((round >= 0) && (round < current_round)) ;
     more_init(NULL) ;
-    eff_ecran() ;
+    clearScreen() ;
 
-    /* Pour afficher le fullname du tournoi en tete */
-    nomTrn = malloc(strlen(nom_du_tournoi)+15) ;
-    if (nomTrn != NULL) {
-        sprintf(nomTrn, "*** %s ***\n", nom_du_tournoi) ;
-        more_line(nomTrn) ;
+    /* Pour afficher le fullname du tournoi en tete - to display tournament fullname as header */
+    TrnName = malloc(strlen(tournament_name)+15) ;
+    if (TrnName != NULL) {
+        sprintf(TrnName, "*** %s ***\n", tournament_name) ;
+        more_line(TrnName) ;
         if (fp)
-            fprintf(fp, "*** %s ***\n", nom_du_tournoi) ;
-        free(nomTrn) ;
+            fprintf(fp, "*** %s ***\n", tournament_name) ;
+        free(TrnName) ;
     }
 
     for (i = 0; i < registered_players->n ; i++) {
-        sprintf(buf , "%3ld. %s", i+1, trouver_joueur(TabJoueurs[i].Num_FFO)->fullname) ;
+        sprintf(buf , "%3ld. %s", i+1, findPlayer(PlayersArray[i].FFO_ID)->fullname) ;
         more_line(buf) ;
         if (fp)
             fprintf(fp, "%s\n", buf) ;
@@ -1074,55 +1155,55 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
     if (fp)
         fprintf(fp,"\n") ;
 
-    if ((registered_players->n < 99) && (ronde_aff < 13)) {
-        n = (5*ronde_aff-1)/2+3 ;
-        m = 5*ronde_aff+9 ;
-        strncpy(&titre[n], (ronde_aff == 0 ? STR_ROUND_1 : STR_ROUND_2), 6) ;
-        strcpy(&titre[m], "Pts    TB") ;
-        more_line(titre) ;
+    if ((registered_players->n < 99) && (round < 13)) {
+        n = (5*round-1)/2+3 ;
+        m = 5*round+9 ;
+        strncpy(&title[n], (round == 0 ? STR_ROUND_1 : STR_ROUND_2), 6) ;
+        strcpy(&title[m], "Pts    TB") ;
+        more_line(title) ;
         if (fp)
-            fprintf(fp, "%s   " STR_DISCS, titre) ;
+            fprintf(fp, "%s   " STR_DISCS, title) ;
         for (i = 0; i < registered_players->n ; i++) {
             sprintf(buf, "%2ld ", i+1) ;
-            for (j = 0 ; j <= ronde_aff ; j++) {
-                pr = &TabJoueurs[i].TabRondes[j] ;
+            for (j = 0 ; j <= round ; j++) {
+                pr = &PlayersArray[i].roundsArray[j] ;
                 if (pr->bip)
                     sprintf(buf2, BIP5) ;
                 else if (!pr->present)
                     sprintf(buf2, " --- ") ;
                 else
-                    sprintf(buf2, "%c%c%2ld ", pr->couleur, PlusMoins[pr->points], local_trouver_joueur(pr->adv)+1) ;
+                    sprintf(buf2, "%c%c%2ld ", pr->color, PlusMinus[pr->points], find_player_localID(pr->oppID)+1) ;
                 strcat(buf, buf2) ;
             }
-            strcpy(virgule, (TabJoueurs[i].TabRondes[ronde_aff].cumul_points%2 ? ".5" : "  ")) ;
-            sprintf(buf2, ":%2ld%s [%4s]", TabJoueurs[i].TabRondes[ronde_aff].cumul_points/2, virgule,
-                          departage_en_chaine(TabJoueurs[i].Departage)) ;
+            strcpy(comma, (PlayersArray[i].roundsArray[round].total_points%2 ? ".5" : "  ")) ;
+            sprintf(buf2, ":%2ld%s [%4s]", PlayersArray[i].roundsArray[round].total_points/2, comma,
+                tieBreak2string(PlayersArray[i].Tiebreak)) ;
             strcat(buf, buf2) ;
             more_line(buf) ;
             if (fp) {
                 diff_col = 0 ;
                 fprintf(fp, "%s ", buf) ;
                 strcpy(buf2,"") ;
-                for (j = 0 ; j <= ronde_aff ; j++) {
-                    c = TabJoueurs[i].TabRondes[j].couleur ;
+                for (j = 0 ; j <= round ; j++) {
+                    c = PlayersArray[i].roundsArray[j].color ;
                     sprintf(col, "%c", c) ;
                     strcat(buf2, col) ;
-                    if (c == NOIR)
+                    if (c == BLACK)
                         diff_col-- ;
-                    else if (c == BLANC)
+                    else if (c == WHITE)
                         diff_col++ ;
                 }
-                pr = &TabJoueurs[i].TabRondes[ronde_aff] ;
+                pr = &PlayersArray[i].roundsArray[round] ;
 
-                if (ronde_aff == 0)
+                if (round == 0)
                     last_float = ' ' ;
                 else if (!pr->present)
                     last_float = ' ' ;
                 else if (pr->bip)
                     last_float = 'd' ;
                 else {
-                    n = local_trouver_joueur(pr->adv) ;
-                    m = TabJoueurs[i].TabRondes[ronde_aff-1].cumul_points - TabJoueurs[n].TabRondes[ronde_aff-1].cumul_points ;
+                    n = find_player_localID(pr->oppID) ;
+                    m = PlayersArray[i].roundsArray[round-1].total_points - PlayersArray[n].roundsArray[round-1].total_points ;
                     if (m>0)
                         last_float = 'd' ;
                     else if (m < 0)
@@ -1130,66 +1211,66 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
                     else
                         last_float = ' ' ;
                 }
-                fprintf(fp, "(%3s/%3ld - %s %2ld * %c)\n", pions_en_chaine(TabJoueurs[i].Total_Pions),
-                        TabJoueurs[i].Bucholtz, buf2, diff_col, last_float) ;
+                fprintf(fp, "(%3s/%3ld - %s %2ld * %c)\n", discs2string(PlayersArray[i].Total_Discs),
+                        PlayersArray[i].Bucholtz, buf2, diff_col, last_float) ;
             }
         }
     } else {
-        line1 = le_min_de(LIM-1, ronde_aff) ;
+        line1 = min_of(LIM - 1, round) ;
         n = (3*line1)+4 ;
         m = 6*line1+11 ;
-        strncpy(&titre[n], (ronde_aff == 0 ? STR_ROUND_1 : STR_ROUND_2), 6) ;
-        strcpy(&titre[m], "Pts    TB") ;
-        more_line(titre) ;
+        strncpy(&title[n], (round == 0 ? STR_ROUND_1 : STR_ROUND_2), 6) ;
+        strcpy(&title[m], "Pts    TB") ;
+        more_line(title) ;
         if (fp)
-            fprintf(fp, "%s   " STR_DISCS, titre) ;
+            fprintf(fp, "%s   " STR_DISCS, title) ;
         for (i = 0; i < registered_players->n ; i++) {
             sprintf(buf, "%3ld ", i+1) ;
-            line1 = le_min_de(LIM-1, ronde_aff) ;
+            line1 = min_of(LIM - 1, round) ;
             for (j = 0 ; j <= line1 ; j++) {
-                pr = &TabJoueurs[i].TabRondes[j] ;
+                pr = &PlayersArray[i].roundsArray[j] ;
                 if (pr->bip)
                     sprintf(buf2, " " BIP5) ;
                 else if (!pr->present)
                     sprintf(buf2, "  --- ") ;
                 else
                     sprintf(buf2, ((registered_players->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
-                            pr->couleur, PlusMoins[pr->points], local_trouver_joueur(pr->adv)+1) ;
+                            pr->color, PlusMinus[pr->points], find_player_localID(pr->oppID)+1) ;
                 strcat(buf, buf2) ;
             }
-            strcpy(virgule, (TabJoueurs[i].TabRondes[ronde_aff].cumul_points%2 ? ".5" : "  ")) ;
-            sprintf(buf2, ":%2ld%s [%4s]", TabJoueurs[i].TabRondes[ronde_aff].cumul_points/2, virgule,
-                          departage_en_chaine(TabJoueurs[i].Departage)) ;
+            strcpy(comma, (PlayersArray[i].roundsArray[round].total_points%2 ? ".5" : "  ")) ;
+            sprintf(buf2, ":%2ld%s [%4s]", PlayersArray[i].roundsArray[round].total_points/2, comma,
+                tieBreak2string(PlayersArray[i].Tiebreak)) ;
             strcat(buf, buf2) ;
             more_line(buf) ;
             if (fp) {
                 diff_col = 0 ;
                 fprintf(fp, "%s ", buf) ;
                 strcpy(buf2,"") ;
-                for (j = 0 ; j <= ronde_aff ; j++) {
-                    c = TabJoueurs[i].TabRondes[j].couleur ;
+                for (j = 0 ; j <= round ; j++) {
+                    c = PlayersArray[i].roundsArray[j].color ;
                     sprintf(col, "%c", c) ;
                     strcat(buf2, col) ;
-                    if (c == NOIR)
+                    if (c == BLACK)
                         diff_col-- ;
-                    else if (c == BLANC)
+                    else if (c == WHITE)
                         diff_col++ ;
                 }
-                fprintf(fp, "(%3s/%3ld - %s %2ld)\n", pions_en_chaine(TabJoueurs[i].Total_Pions),
-                        TabJoueurs[i].Bucholtz, buf2, diff_col) ;
+                fprintf(fp, "(%3s/%3ld - %s %2ld)\n", discs2string(PlayersArray[i].Total_Discs),
+                        PlayersArray[i].Bucholtz, buf2, diff_col) ;
             }
-            while (line1 < ronde_aff) {
-                reste = le_min_de (LIM, ronde_aff-line1) ;
+            while (line1 < round) {
+                reste = min_of(LIM, round - line1) ;
                 sprintf(buf, "    ") ;
                 for (j = (line1+1) ; j <= (line1+reste) ; j++) {
-                    pr = &TabJoueurs[i].TabRondes[j] ;
+                    pr = &PlayersArray[i].roundsArray[j] ;
                     if (pr->bip)
                         sprintf(buf2, " " BIP5) ;
                     else if (!pr->present)
                         sprintf(buf2, "  --- ") ;
                     else
                         sprintf(buf2, ((registered_players->n < 99) ? " %c%c%2ld ": "%c%c%3ld"),
-                                pr->couleur, PlusMoins[pr->points], local_trouver_joueur(pr->adv)+1) ;
+                                pr->color, PlusMinus[pr->points], find_player_localID(pr->oppID)+1) ;
                     strcat(buf, buf2) ;
                 }
                 more_line(buf) ;
@@ -1205,32 +1286,36 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
     if (fp) fprintf(fp, "\n") ;
 
 
-    /* Affichage de la matrice des victoires. Notez que l'on
-     * determine d'abord si chaque joueur a gagne au plus une fois
-     * contre chacun de ses adversaires, auquel cas on pourra
-     * afficher la matrice avec des 0,=,1 plutot qu'avec les
-     * scores en demi-points */
+    /* Affichage de la matrice des victoires. Notez que l'on determine d'abord
+     * si chaque joueur a gagne au plus une fois contre chacun de ses adversaires,
+     * auquel cas on pourra afficher la matrice avec des 0,=,1 plutot qu'avec
+     * les scores en demi-points
+     ****
+     * Display victories matrix. First check if each player has won at most once
+     * against each of his opponents in which case matrix can be displayed with
+     * 0,=,1 instead of half-points.
+     */
 
-    suisse_simple = 1;
+    simple_swiss = 1;
     for (i = 0; i < registered_players->n ; i++)
         for (j = 0; j < registered_players->n ; j++)
-            if (score_de_machin_contre_bidule(TabJoueurs[i].Num_FFO, TabJoueurs[j].Num_FFO) > 2)
-                suisse_simple = 0;
+            if (score_player1_vs_player2(PlayersArray[i].FFO_ID, PlayersArray[j].FFO_ID) > 2)
+                simple_swiss = 0;
 
     sprintf(buf, "%ld  ", 1 + registered_players->n);
     m = strlen(buf);
 
-    /* Ecriture de la ligne en haut de la matrice */
+    /* Ecriture de la ligne en haut de la matrice - top matrix line writing */
     for (j = 0; j < m ; j++)
         buf[j] = ' ';
     for (j = 0; j < registered_players->n ; j++)
-        buf[m + j] = Chiffres[ (j+1) % 10 ];
+        buf[m + j] = Digits[ (j+1) % 10 ];
     buf[m + registered_players->n] = '\0';
     more_line(buf);
     more_line("");
     if (fp) fprintf(fp, "%s\n\n", buf) ;
 
-    /* Ecriture de la matrice */
+    /* Ecriture de la matrice - matrix writing */
     for (i = 0; i < registered_players->n ; i++) {
         sprintf(buf, "%ld     ", i+1);
         for (j = 0; j < registered_players->n ; j++)  {
@@ -1238,11 +1323,11 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
             if (i == j)
                 buf[m + j] = 'X';
             else {
-                v = score_de_machin_contre_bidule(TabJoueurs[i].Num_FFO, TabJoueurs[j].Num_FFO);
+                v = score_player1_vs_player2(PlayersArray[i].FFO_ID, PlayersArray[j].FFO_ID);
                 if (v < 0)
                     buf[m + j] = ' ';
                 else
-                    buf[m + j] = (suisse_simple ? ZeroEgalUn[v] : Chiffres[v]);
+                    buf[m + j] = (simple_swiss ? ZeroEqualOne[v] : Digits[v]);
             }
         }
 
@@ -1258,216 +1343,230 @@ void sortie_tableau_croise_texte(long ronde_aff, FILE *fp) {
 
 
 
-/* long sauvegarder_tableau_croise_HTML(char *nom_fichier_html)
+/* long HTMLCrosstableSave(char *nom_fichier_html)
  *
  * Renvoie 1 si on arrive a sauvegarder le tableau croise dans le fichier
- * HTML de fullname *nom_fichier_html, et 0 sinon.
+ * HTML de nom donne en parametre, et 0 sinon.
+ ****
+ * Returns 1 if we manage to save the crosstable in the HTML file with
+ * filename given in parameter, and 0 otherwise.
  */
-long sauvegarder_tableau_croise_HTML(char *nom_fichier_html) {
+long HTMLCrosstableSave(char *htmlFilename) {
     FILE *fp;
     long result;
 
-    assert(TabJoueurs != NULL);
+    assert(PlayersArray != NULL);
 
-    /* on veut une sortie HTML */
+    /* on veut une sortie HTML - An HTML output is desired */
     result = 0;
-    if (nom_fichier_html[0]) {
-        bloquer_signaux();
-        fp = myfopen_dans_sous_dossier(nom_fichier_html, "w", nom_sous_dossier, 1, 0);
+    if (htmlFilename[0]) {
+        block_signals();
+        fp = myfopen_in_subfolder(htmlFilename, "w", subfolder_name, 1, 0);
         if (fp == NULL) {
-            printf(CANT_OPEN " `%s'\n", nom_fichier_html);
+            printf(CANT_OPEN " `%s'\n", htmlFilename);
             result = 0;
         }
         else {
             printf(HTML_PROMPT_2) ;
-            /* Appeler la fonction HTML */
-            sortie_tableau_croise_HTML(fp) ;
+            /* Appeler la fonction HTML - Call HTML function */
+            HTMLCrosstableOutput(fp) ;
             fclose(fp) ;
             result = 1;
         }
-        debloquer_signaux();
+        unblock_signals();
     }
     return result;
 }
 
 
-/* long sauvegarder_tableau_croise_texte(long quelle_ronde, char *nom_fichier_texte, char *mode_ouverture)
+/* long TextCrosstableSave(long whichRound, char *textFilename, char *openingMode)
  *
  * Affiche a l'ecran une version texte du tableau croise apres la ronde "quelle_ronde".
  * On peut optionnellement demander de sauvegarder ce tableau dans le fichier texte
- * de fullname *nom_fichier_texte, avec le mode d'ecriture *mode_ouverture ("a"=append, "w"=write, etc.)
- * Passer NULL dans *nom_fichier_texte pour ne pas sauvegarder dans un fichier.
+ * de nom donne (ainsi que le mode d'ouverture : "a"=append, "w"=write, etc.).
+ * Passer NULL dans le nom de fichier pour ne pas sauvegarder dans un fichier.
  *
  * Cette fonction n'echoue jamais, sauf si on n'arrive pas a ouvrir le fichier
  * demande avec les droits d'ecriture demandes.
- *
+ ****
+ * Display a text version of the crosstable after round "whichRound".
+ * It can be saved in the text file of given name and opening mode ('a', 'w',...).
+ * If filename is NULL, no save is done.
+ * This function never fails except if the file cannot be opened with the given opening mode
  */
-long sauvegarder_tableau_croise_texte(long quelle_ronde, char *nom_fichier_texte, char *mode_ouverture) {
+long TextCrosstableSave(long whichRound, char *textFilename, char *openingMode) {
     FILE *fp;
     long result;
 
-    assert(TabJoueurs != NULL);
+    assert(PlayersArray != NULL);
 
-    /* On veut une sortie du tableau croise en texte */
+    /* On veut une sortie du tableau croise en texte - text crosstable output is desired */
     result = 1;
     fp = NULL ;
-    bloquer_signaux();
-    if (nom_fichier_texte[0]) {
-        fp = myfopen_dans_sous_dossier(nom_fichier_texte, mode_ouverture, nom_sous_dossier, 1, 0);
+    block_signals();
+    if (textFilename[0]) {
+        fp = myfopen_in_subfolder(textFilename, openingMode, subfolder_name, 1, 0);
         if (fp == NULL) {
-            printf(CANT_OPEN " `%s'\n", nom_fichier_texte);
+            printf(CANT_OPEN " `%s'\n", textFilename);
             result = 0;
         }
     }
-    /* Affichage (et eventuellement sauvegarde) du tableau */
-    sortie_tableau_croise_texte(quelle_ronde, fp) ;
+    /* Affichage (et eventuellement sauvegarde) du tableau - Display (and eventually save) of table */
+    TextCrosstableOutput(whichRound, fp) ;
     if (fp)
         fclose(fp) ;
-    debloquer_signaux();
+    unblock_signals();
 
     return result;
 }
 
-/* void calculer_classements_jusque(long quelle_ronde)
+/* void computeStandingsUntil(long quelle_ronde)
  *
  * On calcule les rangs de chaque joueur (ses classements
- * successifs dans le tournoi) jusqu'a la ronde "quelle_ronde".
- * NOTE : puisque l'on utilise quicksort a chaque ronde pour
- * trier les N joueurs du tournoi, le temps de cette fonction
- * est en O(quelle_ronde*N*log(N)). Cela ne semble pas un probleme
- * en pratique.
+ * successifs dans le tournoi) jusqu'a la ronde "whichRound".
+ ****
+ * Players standings are calculated after each round until round 'whichRound'.
  */
-void calculer_classements_jusque(long quelle_ronde) {
+void computeStandingsUntil(long whichRound) {
     long rr, i;
-    structure_joueur *pj ;
-    structure_ronde *pr;
+    player_structure *pj ;
+    round_structure *pr;
 
-    assert(TabJoueurs != NULL);
+    assert(PlayersArray != NULL);
 
 
-    for (rr = 0; rr <= quelle_ronde; rr++)  {
+    for (rr = 0; rr <= whichRound; rr++)  {
 
-        /* Trier les joueurs apres la ronde rr */
-        partial_ronde = rr ;
-        local_calcul_departage(partial_ronde) ;
-        SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
+        /* Trier les joueurs apres la ronde rr - sort players after round rr */
+        partial_round = rr ;
+        local_compute_tiebreak(partial_round) ;
+        SORT(PlayersArray, registered_players->n, sizeof(player_structure), compar);
 
-        /* Mettre dans le grand tableau le rang de chaque joueur a la ronde rr */
+        /* Mettre dans le grand tableau le rang de chaque joueur a la ronde rr
+         ****
+         * Put in big array player standing at round rr */
         for (i = 0 ; i < registered_players->n ; i++) {
-            pj = &TabJoueurs[i] ;
-            pr = &pj->TabRondes[rr] ;
-            pr->rang = i+1;
+            pj = &PlayersArray[i] ;
+            pr = &pj->roundsArray[rr] ;
+            pr->stand = i+1;
         }
     }
 }
 
 
-/* void preparer_calculs_tableau_croise(long quelle_ronde)
+/* void PrepareCrosstableCalculations(long whichRound)
  *
  * Recupere tous les resultats et calcule les departages,
- * les totaux de pions, etc. jusqu'a la ronde "quelle_ronde".
+ * les totaux de pions, etc. jusqu'a la ronde "whichRound".
+ ****
+ * Gather all results and compute tie-breaks, discs total, etc.
+ * until round 'whichRound'
  */
-void preparer_calculs_tableau_croise(long quelle_ronde) {
-    assert(TabJoueurs != NULL);
+void PrepareCrosstableCalculations(long whichRound) {
+    assert(PlayersArray != NULL);
 
+    get_results() ;
+    computeStandingsUntil(whichRound);
 
-    recuperation_resultats() ;
-    calculer_classements_jusque(quelle_ronde);
-
-    partial_ronde = quelle_ronde ;
-    local_calcul_departage(partial_ronde) ;
-    SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
+    partial_round = whichRound ;
+    local_compute_tiebreak(partial_round) ;
+    SORT(PlayersArray, registered_players->n, sizeof(player_structure), compar);
 }
 
 
-
-/* void afficher_cross_table(void)
+/* void DisplayCrosstable(void)
  *
- * La fonction principale du module crosstable.c : propose
- * a l'utilisateur de choisir les noms des fichiers HTML
- * et texte pour enregistrer un tableau croise complet
- * contenant tous les resultats du tournoi.
- *
+ * La fonction principale du module crosstable.c : propose a l'utilisateur
+ * de choisir les noms des fichiers HTML et texte pour enregistrer
+ * un tableau croise complet contenant tous les resultats du tournoi.
+ ****
+ * Main crosstable.c module function: offer the user to chose HTML and text
+ * filename to save a complete crosstable with all results.
  */
-void afficher_cross_table(void) {
-    char nom_fichier_html[256], nom_fichier_texte[256], mode_ouverture[2];
+void DisplayCrosstable(void) {
+    char htmlFilename[256], textFilename[256], openingMode[2];
     long append ;
-    long ronde_affichee ;
+    long roundDisplayed ;
 
 
     if (current_round < 1)
         return;
 
-    assert(TabJoueurs != NULL);
-    preparer_calculs_tableau_croise(current_round-1);
+    assert(PlayersArray != NULL);
+    PrepareCrosstableCalculations(current_round - 1);
 
-    eff_ecran();
-    /* Veut-on une sortie HTML ? */
+    clearScreen();
+    /* Veut-on une sortie HTML ? - HTML output wanted? */
     printf(HTML_PROMPT_1) ;
-    strcpy(nom_fichier_html, lire_ligne());
+    strcpy(htmlFilename, read_Line());
     putchar('\n');
 
-    if (nom_fichier_html[0])
-        sauvegarder_tableau_croise_HTML(nom_fichier_html);
+    if (htmlFilename[0])
+        HTMLCrosstableSave(htmlFilename);
     else
-        eff_ecran();
+        clearScreen();
 
-
-    /* A quelle ronde faudra-t-il fabriquer le tableau croise texte ? */
+    /* A quelle ronde faudra-t-il fabriquer le tableau croise texte ?
+     ****
+     * For which round should we compute text crosstable? */
     printf(CROSS_PROMPT_1, current_round) ;
-    if (sscanf(lire_ligne(), "%ld", &ronde_affichee) != 1)
+    if (sscanf(read_Line(), "%ld", &roundDisplayed) != 1)
         return ;
     putchar('\n');
-    if ((ronde_affichee < 1) || (ronde_affichee>current_round))
+    if ((roundDisplayed < 1) || (roundDisplayed>current_round))
         return ;
-    assert( ronde_affichee >= 1 && ronde_affichee <= current_round);
+    assert( roundDisplayed >= 1 && roundDisplayed <= current_round);
 
 
-    ronde_affichee-- ;
-    partial_ronde = ronde_affichee;
-    local_calcul_departage(partial_ronde);
-    SORT(TabJoueurs, registered_players->n, sizeof(structure_joueur), compar);
+    roundDisplayed-- ;
+    partial_round = roundDisplayed;
+    local_compute_tiebreak(partial_round);
+    SORT(PlayersArray, registered_players->n, sizeof(player_structure), compar);
 
 
-    /* Veut-on une sortie dans un fichier texte ? */
+    /* Veut-on une sortie dans un fichier texte ? - text output wanted? */
     printf(CROSS_PROMPT_2) ;
-    strcpy(nom_fichier_texte, lire_ligne());
+    strcpy(textFilename, read_Line());
     putchar('\n');
 
     /* Si oui, veut-on ajouter a la fin du fichier
-       ou ecraser le contenu actuel du fichier ? */
-    if (nom_fichier_texte[0]) {
-        append = oui_non(CROSS_APPEND) ;
+     * ou ecraser le contenu actuel du fichier ?
+     ****
+     * If so, do we want to append or erase actual content?
+     */
+    if (textFilename[0]) {
+        append = yes_no(CROSS_APPEND) ;
         if (append)
-            sprintf(mode_ouverture, "a");
+            sprintf(openingMode, "a");
         else
-            sprintf(mode_ouverture, "w");
+            sprintf(openingMode, "w");
     }
 
-    sauvegarder_tableau_croise_texte(ronde_affichee, nom_fichier_texte, mode_ouverture);
+    TextCrosstableSave(roundDisplayed, textFilename, openingMode);
 }
 
-
-
-/* Les deux fonctions ci-dessous permettent la gestion
- * en memoire dynamique du (gros) tableau TabJoueurs, qui
- * est utilise pour stocker les infos du module crosstable.
- * On evite ainsi de bloquer Papp dans les environnements
- * a memoire limitee.
+/* Les deux fonctions ci-dessous permettent la gestion en memoire dynamique
+ * du (gros) tableau PlayersArray, qui est utilise pour stocker
+ * les infos du module crosstable. On evite ainsi de bloquer Papp
+ * dans les environnements a memoire limitee.
+ ****
+ * These two functions enable dynamic memory management for the PlayersArray array,
+ * used to save crosstable information. Papp isn't therefore blocked in limited memory
+ * environement.
  */
 
-long peut_allouer_memoire_cross_table(void) {
-    TabJoueurs = NULL;
-    TabJoueurs = (structure_joueur*)malloc((MAX_REGISTERED+1)*sizeof(structure_joueur));
+long CanAllocateCrosstableMemory(void) {
+    PlayersArray = NULL;
+    PlayersArray = malloc((MAX_REGISTERED+1)*sizeof(player_structure));
 
-    if (!TabJoueurs)
+    if (!PlayersArray)
         return 0;
     else
         return 1;
 }
 
-void liberer_memoire_cross_table(void) {
-    if (TabJoueurs)
-        free(TabJoueurs);
-    TabJoueurs = NULL;
+void FreeCrosstableMemory(void) {
+    if (PlayersArray)
+        free(PlayersArray);
+    PlayersArray = NULL;
 }

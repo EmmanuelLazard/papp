@@ -21,40 +21,38 @@
 #include "changes.h"
 
 
-extern long  nb_lignes, nb_colonnes;
+extern long  nbrOfLines, nbrOfColumns;
 
-long oui_non(const char *prompt);
+long yes_no(const char *prompt);
 
 void more_init(const char *filename);   /* prepare l'ecran pour more - prepare screen for more     */
-void more_line(const char *ligne);      /* affiche une ligne avec more - display a line with more  */
+void more_line(const char *line);       /* affiche une ligne avec more - display a line with more  */
 void more_close(void);                  /* termine avec more  - end with more                      */
-void more_set_mode(const char *mode);   /* change le mode d'ouverture du prochain fichier */
-                                        /* avec more - change next file opening mode      */
-                                        /* with more                                      */
-char *more_get_mode(void);              /* recupere le mode d'ouverture du prochain fichier */
-                                        /* avec more - retreive next file opening mode      */
-                                        /* with more.                                       */
+void more_set_mode(const char *mode);   /* change le mode d'ouverture du prochain fichier avec more -
+                                         *  change next file opening mode with more                 */
+char *more_get_mode(void);              /* recupere le mode d'ouverture du prochain fichier avec more -
+                                         *  retreive next file opening mode  with more              */
 
 /* Gestion de la console - console management */
 
-long lire_touche(void);
-char *lire_ligne(void);
-long lire_ligne_init(char *buffer, long len, long compl_flag);
-void eff_ecran(void), eff_ligne(void), bas_ecran(void);
-void inv_video(const char *);
+long read_key(void);
+char *read_Line(void);
+long read_Line_init(char *buffer, long len, long compl_flag);
+void clearScreen(void), clear_line(void), screen_bottom(void);
+void reverse_video(const char *);
 
 void beep(void);
 void goodbye(void);
 
-/* Divers */
+/* Divers  - miscellaneous */
 
-long hasard(long n);
-long poser_verrou(void);
-void oter_verrou(void);
-void init_ecran(void), reset_ecran(void);
-void init_clavier(void), reset_clavier(void);
-long imprime_fichier(char *filename);
-long fichier_existe(char *filename);
+long getRandom(long n);
+long put_lock(void);
+void remove_lock(void);
+void init_screen(void), screen_reset(void);
+void init_keyboard(void), keyboard_reset(void);
+long print_file(char *filename);
+long isFIleExist(char *filename);
 
 #if defined(PAPP_MAC_METROWERKS)
     void init_mac_SIOUX_console(void);

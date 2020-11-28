@@ -1,4 +1,4 @@
-/* appari.h
+/* pairings.h
  *
  * - entete pour l'algorithme d'appariement
  * - header for the pairing algorithm
@@ -13,8 +13,8 @@
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
-#ifndef __Appari_h__
-#define __Appari_h__
+#ifndef __Pairings_h__
+#define __Pairings_h__
 
 /* #if defined(UNIX_BSD) || defined(UNIX_SYSV) added */
 /* change by Stephane Nicolet , 17 march 2000 */
@@ -27,6 +27,6 @@
 typedef signed long pen_t;
 #define MAX_PEN         10000000L
 
-pen_t apparie (long n, pen_t **penalites, long *solution);
+pen_t doPairings(long n, pen_t **penalites, long *solution);
 
-#endif  /* #ifndef __Appari_h__ */
+#endif  /* #ifndef __Pairings_h__ */

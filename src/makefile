@@ -144,11 +144,11 @@ EXTRA  = #-DENGLISH
 CFLAGS = -DMACOSX -DUNIX_BSD \
 		 -DSIGNAUX_POSIX -DP_OPEN -DTERMCAP -DTERMCAP_H \
          -DMELANGE  $(EXTRA) \
-         -O2 -pipe -arch i386 -mmacosx-version-min=10.4 \
+         -O2 -pipe -arch x86_64 -mmacosx-version-min=10.10 \
          -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
          -pedantic -ansi
-LDFLAGS = -mmacosx-version-min=10.4
-LIBS = -lm -ltermcap -arch i386
+LDFLAGS = -mmacosx-version-min=10.10
+LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
@@ -254,12 +254,12 @@ LIBS = -lm -ltermcap -arch i386
 # Voici la liste de tous les fichiers sources. Ces fichiers peuvent
 # etre sauvegardes avec `make archive'
 #
-HEADERS = appari.h changes.h global.h joueur.h more.h couplage.h \
-          version.h pions.h tiebreak.h crosstable.h
+HEADERS = changes.h couplage.h crosstable.h pairings.h discs.h global.h \
+          more.h pairings.h player.h tiebreak.h version.h
 
-CFILES  = couplage.c crosstable.c tiebreak.c edmonds.c elo.c \
-    entrejou.c global.c joueur.c main.c more.c penalite.c \
-    pions.c resultat.c ttrondes.c XML.c
+CFILES  = couplage.c crosstable.c discs.c edmonds.c elo.c \
+    enterPlayer.c global.c main.c more.c penalties.c player.c \
+    results.c roundrobin.c tiebreak.c XML.c
 
 SFILES  = Makefile pap.l pap.y
 DOCUS   = papp_doc.tex Bugs A_faire Changes
@@ -274,15 +274,15 @@ SOURCES = $(RCSFILES) $(AUTRES)
 
 OBJETS  = \
     lexyy.o pap_tab.o \
-    couplage.o crosstable.o departage.o edmonds.o elo.o \
-    entrejou.o global.o joueur.o main.o more.o  penalite.o \
-    pions.o resultat.o ttrondes.o XML.o
+    couplage.o crosstable.o tiebreak.o edmonds.o elo.o \
+    enterPlayer.o global.o player.o main.o more.o  penalties.o \
+    discs.o results.o roundrobin.o XML.o
 
 OBJETS_DOS = \
     lexyy.oms pap_tab.oms \
-    edmonds.oms global.oms joueur.oms main.oms elo.oms more.oms \
-    entrejou.oms ttrondes.oms couplage.oms resultat.oms penalite.oms \
-    pions.oms crosstable.oms departage.oms XML.oms
+    edmonds.oms global.oms player.oms main.oms elo.oms more.oms \
+    enterPlayer.oms roundrobin.oms couplage.oms results.oms penalties.oms \
+    discs.oms crosstable.oms tiebreak.oms XML.oms
 
 #
 # Les programmes `exemple' et `geom' produisent des matrices
@@ -334,20 +334,20 @@ BINAIRES_TEST = testp geom exemple edtest contest papp
 
 msdos: edtest.exe papp.exe
 
-testp: pions.o edmonds.o test.o
+testp: discs.o edmonds.o test.o
 	$(CC) $(LDFLAGS) -o testp $^ $(LIBS)
 
-edtest: pions.o edmonds.o edtest.o
+edtest: discs.o edmonds.o edtest.o
 	$(CC) $(LDFLAGS) -o edtest $^ $(LIBS)
 
-contest: pions.o edmonds.o contest.o
+contest: discs.o edmonds.o contest.o
 	$(CC) $(LDFLAGS) -o contest $^ $(LIBS)
 
 papp.exe: $(OBJETS_DOS)
 	$(GO32_CC) $(GO32_LDFLAGS) -o papp.go32 $(OBJETS_DOS) $(GO32_LIBS)
 	cat $(GO32_STUB) papp.go32 >papp.exe
 
-edtest.exe: pions.oms edmonds.oms edtest.oms
+edtest.exe: discs.oms edmonds.oms edtest.oms
 	$(GO32_CC) $(GO32_LDFLAGS) -o edtest.go32 $^ $(GO32_LIBS)
 	cat $(GO32_STUB) edtest.go32 >edtest.exe
 
@@ -406,5 +406,5 @@ pap_tab.h: pap.y
 # Autres dependances (on n'est jamais trop prudent):
 #
 $(OBJETS) $(OBJETS_DOS): $(HEADERS)
-test.o edtest.o contest.o: appari.h pions.h $(HEADERS)
-test.oms edtest.oms contest.oms: appari.h pions.h $(HEADERS)
+test.o edtest.o contest.o: pairings.h discs.h $(HEADERS)
+test.oms edtest.oms contest.oms: pairings.h discs.h $(HEADERS)

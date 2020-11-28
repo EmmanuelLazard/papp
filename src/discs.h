@@ -1,4 +1,4 @@
-/* pions.h
+/* discs.h
  *
  *  - macros pour abstraire le type des pions dans Papp
  *  - macros to define an abstraction for discs management in Papp
@@ -18,23 +18,24 @@
  * (EL) 13/01/2007 : v1.30 E. Lazard, no change
  */
 
-#ifndef __Pions_h__
-#define __Pions_h__
+#ifndef __Discs_h__
+#define __Discs_h__
 
 #include <stdlib.h>
 #include "changes.h"
 
 
-extern long total_pions;
+extern long discsTotal;
 
 /*
  * Les macros et fonctions generales suivantes sont abstraites
  * de la representation interne du type "discs_t"
+ ****
  * Following macros and functions are abstractions of the
  * internal representation of 'discs_t' type.
  */
 
-#define TOTAL_DISCS					(INTEGER_TO_SCORE(total_pions))
+#define TOTAL_DISCS					(INTEGER_TO_SCORE(discsTotal))
 #define UNKNOWN_SCORE				(INTEGER_TO_SCORE(-1))
 #define ZERO_DISC					(INTEGER_TO_SCORE(0))
 
@@ -64,11 +65,10 @@ extern long total_pions;
 #ifndef USE_HALF_DISCS
 
 /*
- * On utilise la definition normale de PAPP des pions
- * par des entiers, et on implemente les operations par
- * des macros.
- * Normal definition of Papp is used: discs are integer
- * and operations are implemented by macros.
+ * On utilise la definition normale de PAPP des pions par des entiers,
+ * et on implemente les operations par des macros.
+ ****
+ * Normal definition of Papp is used: discs are integer and operations are implemented by macros.
  */
 	typedef long discs_t;
 
@@ -78,7 +78,7 @@ extern long total_pions;
 	#define	SCORE_IS_SMALLER(v1,v2)		((v1) <= (v2))
 	#define SCORE_STRICTLY_SMALLER(v1,v2)	((v1) <  (v2))
 
-	#define RELATIVE_SCORE_TO_ABSOLUTE(v)  (((v) + total_pions) / 2)
+	#define RELATIVE_SCORE_TO_ABSOLUTE(v)  (((v) + discsTotal) / 2)
 	#define INTEGER_TO_SCORE(v)          (v)
 	#define FLOAT_TO_SCORE(v)        ((long)((v) + 0.49999999)) /* entier le plus proche */
 	#define ADD_SCORE(v,x)			(v) += (x)
@@ -92,8 +92,9 @@ extern long total_pions;
 
 /*
  * Definition speciale pour pouvoir gerer dans Papp des scores en demi-pions:
- * on stoque les demi-pions dans une structure pour les cacher, et certaines
+ * on stocke les demi-pions dans une structure pour les cacher, et certaines
  * operations sont implementees par des fonctions.
+ *****
  * Special definition in Papp to handle scores using half-discs.
  * They are stored in a structure to hide them and some operations
  * are implemented with functions.
@@ -119,7 +120,7 @@ extern long total_pions;
 
 	static discs_t RELATIVE_SCORE_TO_ABSOLUTE(discs_t v)
 		{	discs_t aux;
-			aux.half_discs = (v.half_discs + INTEGER_TO_SCORE(total_pions).half_discs) / 2 ;
+			aux.half_discs = (v.half_discs + INTEGER_TO_SCORE(discsTotal).half_discs) / 2 ;
 			return aux; }
 
 	static discs_t SCORES_SUM(discs_t v1, discs_t v2)
@@ -139,7 +140,7 @@ extern long total_pions;
 
 	static discs_t ABSOLUTE_VALUE_SCORE(discs_t v)
 		{	discs_t aux;
-			aux.half_discs = abs(v.half_discs);
+			aux.half_discs = labs(v.half_discs);
 			return aux; }
 
 	static double  SCORE_TO_FLOAT(discs_t v)
@@ -159,15 +160,15 @@ extern long total_pions;
  * fonctions pour l'affichage - Display functions
  */
 
-char *pions_en_chaine(discs_t v);
-char *departage_en_chaine(double v);
+char *discs2string(discs_t v);
+char *tieBreak2string(double v);
 
 /*
- * conversion d'une chaine en pions pour l'entree des resultats
+ * conversion d'une string en pions pour l'entree des resultats
  * conversion of a string into discs for results entry
  */
 
-long comprend_score(const char *chaine, discs_t *valeur, long *relatif);
+long understandScore(const char *string, discs_t *value, long *relative);
 
 
-#endif  /*  #ifndef __Pions_h__ */
+#endif  /*  #ifndef __Discs_h__ */

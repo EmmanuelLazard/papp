@@ -3,15 +3,30 @@
  * dans sa deuxieme moitie, bon nombre de fonctions tres dependantes de
  * la machine (affichage, lecture du clavier, impression).
  *
+ * (EL) 16/10/2019 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change
  * (EL) 16/07/2012 : v1.34, no change
  * (EL) 05/05/2008 : v1.33, Tous les 'int' deviennent 'long' pour etre sur d'etre sur 4 octets.
  * (EL) 21/04/2008 : v1.32, no change
  * (EL) 29/04/2007 : v1.31, no change
- * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_dans_sous_dossier()'
+ * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  *
+ *****
+ *
+ * more.c: page display of a text. This file contains, in his second half,
+ * a lot of machine-dependent functions (display, keyboard reading, printing)
+ *
+ * (EL) 16/10/2019 : v1.37, English version for code.
+ * (EL) 22/09/2012 : v1.36, no change.
+ * (EL) 12/09/2012 : v1.35, no change
+ * (EL) 16/07/2012 : v1.34, no change
+ * (EL) 05/05/2008 : v1.33, All 'int' become 'long' to force 4 bytes storage.
+ * (EL) 21/04/2008 : v1.32, no change
+ * (EL) 29/04/2007 : v1.31, no change
+ * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
+ * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
 #include <stdio.h>
@@ -71,14 +86,20 @@ static long nbld, nble, do_print, is_pipe;
 static FILE *more_fp;
 static char more_opening_mode[10] = "w";
 
-long nb_lignes=0, nb_colonnes=0, auto_wrap=-1;
+long nbrOfLines=0, nbrOfColumns=0, auto_wrap=-1;
 
 /*
- * long oui_non(const char *chaine); affiche "chaine" a l'ecran et attend
- * que l'utilisateur reponde 'O' ou 'N'. La fonction renvoie 1 pour oui
- * et 0 pour non.
+ * long yes_no(const char *prompt); affiche "prompt" a l'ecran et attend que l'utilisateur
+ * reponde 'O' ou 'N'. La fonction renvoie 1 pour oui et 0 pour non.
  *
  * Evidemment, en anglais ce sera different (y/n).
+ *
+ *****
+ *
+ * long yes_no(const char *prompt); displays "prompt" on screen and wait for the user to answer
+ * 'Y' or 'N'. Function returns 1 for Yes and 0 for No.
+ *
+ * Of course, it will be different in French (o/n)
  */
 
 #ifdef ENGLISH
@@ -89,13 +110,13 @@ long nb_lignes=0, nb_colonnes=0, auto_wrap=-1;
 # define ANSWER_NO  "Non"
 #endif
 
-long oui_non (const char *prompt) {
+long yes_no (const char *prompt) {
     char c;
 
     assert(prompt && *prompt);
     printf("%s ", prompt);
     while(1) {
-        c = lire_touche();
+        c = read_key();
         if (tolower(c) == tolower(*ANSWER_YES)) {
             puts(ANSWER_YES);
             return 1;
@@ -108,14 +129,20 @@ long oui_non (const char *prompt) {
 }
 
 /*
- * La fonction gets() ne fait decidement pas ce que je veux! En voici
- * une autre, tres semblable a celle utilisee pour l'entree des joueurs.
- * On peut sortir par ^J,^M ou ^D. Les touches ^[ et ^X vident le buffer,
- * ^H et Del detruisent le dernier caractere; ^W detruit le dernier mot,
- * ^T permute les deux derniers caracteres, tandis que ^C vide le buffer
- * et quitte.
- * La chaine fera au plus 127 caracteres (+un caractere nul) et doit
+ * La fonction gets() ne fait decidement pas ce que je veux! En voici une autre,
+ * tres semblable a celle utilisee pour l'entree des joueurs. On peut sortir par ^J,^M ou ^D.
+ * Les touches ^[ et ^X vident le buffer, ^H et Del detruisent le dernier caractere;
+ * ^W detruit le dernier mot, ^T permute les deux derniers caracteres, tandis que ^C vide le buffer
+ * et quitte. La chaine fera au plus 127 caracteres (+un caractere nul) et doit
  * si necessaire etre copiee dans un endroit sur.
+ *
+ *****
+ *
+ * Function gets() doesn't do what I want. Here is another one, very close to the one used
+ * to enter the players. ^J, ^M and ^D exit, ^[ and ^X empty the buffer, ^H and Del destroy
+ * the last character, ^W destroys the last word, ^T swaps the two last characters, and ^C
+ * empties the buffer and quits. String will be at most 127 character long (+ empty byte) and
+ * must, if necessary, be copied in a safe place.
  */
 
 #define  CCTL(x)    (x-'@')
@@ -126,62 +153,62 @@ long oui_non (const char *prompt) {
 #define  ESCAPE     CCTL('[')
 #define  DELETE     127
 
-char *lire_ligne (void) {
-#define  LONGUEUR_MAX   127
-    static char tampon[LONGUEUR_MAX+1];
+char *read_Line (void) {
+#define  MAX_LENGTH   127
+    static char buffer[MAX_LENGTH+1];
 
-    *tampon = '\0';
-    if (lire_ligne_init(tampon, LONGUEUR_MAX, 0) < 0)
-        *tampon = '\0';
-    return tampon;
+    *buffer = '\0';
+    if (read_Line_init(buffer, MAX_LENGTH, 0) < 0)
+        *buffer = '\0';
+    return buffer;
 }
 
-long lire_ligne_init (char *tampon, long maxlen, long complete) {
+long read_Line_init (char *buffer, long maxlen, long complete) {
     char *p, c;
 
-    p = tampon + strlen(tampon);
-    printf("%s", tampon);
+    p = buffer + strlen(buffer);
+    printf("%s", buffer);
     while (1) {
 #ifdef CURSEUR
 
     #ifdef PAPP_MAC_METROWERKS
         inv_video(" ");
         c = lire_touche();
-        /* 2 backspaces car inv_video a rajoute un espace */
+        /* 2 backspaces car inv_video a rajoute un espace - 2 backspaces because reverse_video added a space */
         printf("\b\b");
     #else
         printf("~\b");
-        c = lire_touche();
+        c = read_key();
         printf(" \b");
     #endif
 
 #else
-        c = lire_touche();
+        c = read_key();
 #endif
         if (c == CARR_RETURN || c == LINE_FEED || c == CCTL('C')) {
-            /* Fin de la ligne */
+            /* Fin de la ligne - end of line */
             return (c == CCTL('C') ? -1 : 0);
         }
         else if (complete && (c == CCTL('D') || c == TABULATION)) {
-            /* Demande de completion */
+            /* Demande de completion - asking for completion */
             return 1;
         }
         else if (c == BACKSPACE || c == DELETE) {
-            /* Effacer le dernier caractere du tampon */
-            if (p == tampon)
+            /* Effacer le dernier caractere du tampon - removes last character in buffer */
+            if (p == buffer)
                 beep();
             else
                 *--p=0,printf("\b \b");
         }
         else if (c == CCTL('U') || c == CCTL('X') || c == ESCAPE) {
-            /* Effacer tout le tampon */
-            while (p > tampon)
+            /* Effacer tout le tampon - clears all buffer */
+            while (p > buffer)
                 --p,printf("\b \b");
             *p = 0;
         }
         else if (c == CCTL('T')) {
-            /* Transposer les deux derniers caracteres */
-            if (p-tampon < 2)
+            /* Transposer les deux derniers caracteres - swaps two last characters */
+            if (p-buffer < 2)
                 beep();
             else {
                 char d;
@@ -190,31 +217,31 @@ long lire_ligne_init (char *tampon, long maxlen, long complete) {
             }
         }
         else if (c == CCTL('W')) {
-            /* Effacer le dernier mot */
-            if (p == tampon)
+            /* Effacer le dernier mot - clears last word */
+            if (p == buffer)
                 beep();
-            while (p > tampon && p[-1] == ' ')
+            while (p > buffer && p[-1] == ' ')
                 --p,printf("\b \b");
-            while (p > tampon && p[-1] != ' ')
+            while (p > buffer && p[-1] != ' ')
                 --p,printf("\b \b");
             *p = 0;
         }
         else if ((unsigned)c < 32) {
-            /* Caractere de controle non reconnu */
+            /* Caractere de controle non reconnu - unknown control character */
             beep();
         }
 #ifndef HUIT_BITS
         else if ((unsigned)c > 127) {
-            /* les caracteres >= 128 sont interdits */
+            /* les caracteres >= 128 sont interdits - chracters >= 128 are forbidden */
             beep();
         }
 #endif
-        else if (p-tampon >= maxlen) {
-            /* Tampon plein */
+        else if (p-buffer >= maxlen) {
+            /* Tampon plein - buffer full */
             beep();
         }
         else {
-            /* Caractere ordinaire */
+            /* Caractere ordinaire - ordinary character */
             *p++ = c; *p = 0;
             putchar(c);
         }
@@ -223,8 +250,8 @@ long lire_ligne_init (char *tampon, long maxlen, long complete) {
 
 #ifdef TERMCAP
 	static char term_buffer[2048];
-	static char *term_eff_ecran,
-            *term_eff_ligne,
+	static char *term_clear_screen,
+            *term_clear_line,
             *term_inv_video_on,
             *term_inv_video_off,
             *term_goto;
@@ -241,10 +268,10 @@ long lire_ligne_init (char *tampon, long maxlen, long complete) {
 
 void more_init (const char *filename) {
     /*
-     * On essaie d'ouvrir le fichier indique par `filename'
+     * On essaie d'ouvrir le fichier indique par `filename' - we try to open file named 'filename'
      */
     more_fp = NULL;
-    do_print = 1;           /* affichage actif */
+    do_print = 1;           /* affichage actif - active display */
 
     if (filename && filename[0]) {
 #ifdef P_OPEN
@@ -255,7 +282,7 @@ void more_init (const char *filename) {
 #endif
         {
             is_pipe = 0;
-            more_fp = myfopen_dans_sous_dossier(filename, more_opening_mode, nom_sous_dossier, utiliser_sous_dossier, 0);
+            more_fp = myfopen_in_subfolder(filename, more_opening_mode, subfolder_name, use_subfolder, 0);
         }
     }
     if (more_fp)  return; /* ok! */
@@ -263,39 +290,43 @@ void more_init (const char *filename) {
     /*
      * Ca n'a pas reussi, il faut donc afficher sur l'ecran.
      * Nous supposons que init_ecran() a deja ete appele.
+     *****
+     * It didn't work, we must therefore display on screen.
+     * We suppose init_screen() has already been called.
      */
-    assert(nb_lignes>0 && nb_colonnes>0 && auto_wrap>=0);
-    eff_ecran();
-    nbld = nb_lignes-1;     /* nb de lignes disponibles */
+    assert(nbrOfLines>0 && nbrOfColumns>0 && auto_wrap>=0);
+    clearScreen();
+    nbld = nbrOfLines-1;     /* nb de lignes disponibles - number of available lines */
     nble = 0;
 }
 
-void more_line (const char *ligne) {
+void more_line (const char *line) {
     char c;
-    long len, reste;
+    long len, rest;
 
-    if (ligne == NULL || do_print == 0)
+    if (line == NULL || do_print == 0)
         return;
 
-    /* Ecriture dans un fichier ou un pipe */
+    /* Ecriture dans un fichier ou un pipe - writing in a file or a pipe */
     if (more_fp) {
-        fprintf(more_fp,"%s\n",ligne);
+        fprintf(more_fp,"%s\n",line);
         return;
     }
 
     /*
-     * Cas particulier: more_line("") equivaut a more_line(" ")
-     * quand il s'agit d'afficher sur l'ecran.
+     * Cas particulier: more_line("") equivaut a more_line(" ") quand il s'agit d'afficher sur l'ecran.
+     *****
+     * Special case: more_line("") is equivalent to more_line(" ") when displays on screen
      */
-    if (ligne[0] == 0)
-        ligne = " ";
+    if (line[0] == 0)
+        line = " ";
 
-    reste = strlen(ligne);
-    while (reste > 0) {
+    rest = strlen(line);
+    while (rest > 0) {
         while (nbld <= 0) {
-            inv_video(MORE_MSG1);
-            c = lire_touche();
-            eff_ligne();
+            reverse_video(MORE_MSG1);
+            c = read_key();
+            clear_line();
             switch(c) {
                 case CCTL('C'):
                 case 'q':
@@ -304,10 +335,10 @@ void more_line (const char *ligne) {
                     return;
                 case 'd':
                 case 'D':
-                    nbld += (nb_lignes-1)/2;
+                    nbld += (nbrOfLines-1)/2;
                     break;
                 case ' ':
-                    nbld += (nb_lignes-1);
+                    nbld += (nbrOfLines-1);
                     break;
                 case '\r':
                 case '\n':
@@ -317,12 +348,12 @@ void more_line (const char *ligne) {
                     beep();
             }
         }
-        len = (reste < nb_colonnes) ? reste : nb_colonnes;
-        fwrite(ligne, sizeof(char), len, stdout);
-        if (!auto_wrap || len < nb_colonnes)
+        len = (rest < nbrOfColumns) ? rest : nbrOfColumns;
+        fwrite(line, sizeof(char), len, stdout);
+        if (!auto_wrap || len < nbrOfColumns)
             putchar('\n');
-        ligne += len;
-        reste -= len;
+        line += len;
+        rest -= len;
         --nbld;
         ++nble;
     }
@@ -343,19 +374,19 @@ void more_close (void) {
     }
 
     if (do_print) {
-        /* Aller en bas de l'ecran si on n'y est pas deja */
-        bas_ecran();
-        inv_video(MORE_MSG2);
+        /* Aller en bas de l'ecran si on n'y est pas deja - go to bottom of screen if we're not there already */
+        screen_bottom();
+        reverse_video(MORE_MSG2);
         do {
-            c = lire_touche();
+            c = read_key();
         } while (c != 'q' && c != 'Q' && c != 3);
     }
-    eff_ecran();
+    clearScreen();
 }
 
 /*
  * Change le mode d'ouverture du prochain fichier avec more.
- * A utiliser en paire avec more_get_mode. Usage typique :
+ * A utiliser en paire avec more_get_mode(). Usage typique :
  *
  *    strcpy(old_mode,more_get_mode());
  *    more_set_mode(new_mode);
@@ -368,32 +399,54 @@ void more_close (void) {
  *
  * Cette pratique assure que more_opening_mode est laisse par defaut
  * a sa valeur standard "w".
+ *
+ *****
+ *
+ * Changes opening mode of more for next file.
+ * To be used in pair with more_get_mode(). Typical usage:
+ *
+ *    strcpy(old_mode,more_get_mode());
+ *    more_set_mode(new_mode);
+ *    more_init(filename);
+ *    ...
+ *    more_line("blah blah");
+ *    ...
+ *    more_close();
+ *    more_set_mode(old_mode);
+ *
+ * This way, we are sure that more_opening_mode is left by default to its
+ * standard value 'w'.
  */
 void more_set_mode(const char *mode) {
     strcpy(more_opening_mode, mode);
 }
 
  /* Recupere le mode d'ouverture du prochain fichier avec more
-  * Voir la discussion de more_set_mode.
+  * Voir la discussion de more_set_mode().
+  ****
+  * Get opening mode of more for next file. See discussion in more_set_mode().
   */
 char *more_get_mode(void) {
     return more_opening_mode;
 }
 
 
-/**************************************************************************+
-|                                                                          |
-|   Les fonctions suivantes definissent l'interface avec le systeme        |
-|   d'exploitation. Elles sont _tres_ dependantes de la machine!!!         |
-|                                                                          |
-|   Si vous voulez porter PAPP sur une autre machine, il est probable que  |
-|   c'est la seule partie du programme qui necessitera des modifications   |
-|   importantes.                                                           |
-|                                                                          |
-+**************************************************************************/
+/************************************************************************************+
+|                                                                                    |
+|   Les fonctions suivantes definissent l'interface avec le systeme d'exploitation.  |
+|    Elles sont _tres_ dependantes de la machine!!!                                  |
+|   Si vous voulez porter PAPP sur une autre machine, il est probable que c'est      |
+|    la seule partie du programme qui necessitera des modifications importantes.     |
+| *****                                                                              |
+|   The following functions define interface with operation system.                  |
+|    They are extremely machine-dependent                                            |
+|   If you wish to port PAPP to another machine, this is probably the only part      |
+|    of the program that will need major modifications                               |
+|                                                                                    |
++************************************************************************************/
 
 /*
- * void beep() : provoque un "beep"
+ * void beep() : provoque un "beep" - plays a 'beep'
  */
 
 void beep (void) {
@@ -402,31 +455,39 @@ void beep (void) {
 }
 
 /*
- * void goodbye() : fait dire "goodbye" a l'ordinateur; sans effet si
- * vous ne voulez pas utiliser d'echantillons.
+ * void goodbye() : fait dire "goodbye" a l'ordinateur; sans effet si  vous ne voulez pas utiliser d'echantillons.
+ *****
+ * void goodbye(): make the computer say 'goodbye'
  */
 
 void goodbye (void) {
 }
 
 /*
- * long poser_verrou(): verifier que PAPP n'est pas deja en train de
- * s'executer dans le meme repertoire. Renvoie 0 en cas de succes, 1 si
- * le verrou est deja present, et -1 en cas d'erreur.
+ * long put_lock(): verifier que PAPP n'est pas deja en train de s'executer dans le meme repertoire.
+ * Renvoie 0 en cas de succes, 1 si le verrou est deja present, et -1 en cas d'erreur.
  *
- * void oter_verrou(): enleve ce verrou. Attention, cette fonction sera
- * appelee meme si poser_verrou() a echoue!
+ * void remove_lock(): enleve ce verrou. Attention, cette fonction sera
+ * appelee meme si put_lock() a echoue!
  *
- * Changement par Stephane Nicolet le 28/03/2001 : meme sous UNIX,
- * on implemente les verrous "a la main". Ceci explique le "if 0 && .."
- * qui suit.
+ ****
+ *
+ * long put_lock(): check if PAPP isn't already running in the same directory.
+ * Returns 0 if success, 1 if lock is already present and -1 if error.
+ *
+ * void remove_lock(): remove lock. This function will be called even if put_lock() has failed!
+ *
+ ****
+ * Changement par/Change by Stephane Nicolet le/the 28/03/2001 :
+ * - meme sous UNIX, on implemente les verrous "a la main". Ceci explique le "if 0 && ..." qui suit.
+ * - even under Unix, locks are hand implemented. that explains the "if 0 && ..." that follows
  */
 
 #ifdef LOCK
 
 # if 0 && (defined(UNIX_BSD) || defined(UNIX_SYSV))
 
-long poser_verrou (void) {
+long put_lock (void) {
     static char *lockfile = ".papp-lock";
     long fd, ret;
 
@@ -446,7 +507,7 @@ long poser_verrou (void) {
     }
 #  endif
     if (ret < 0) {
-        /* Fichier deja verrouille */
+        /* Fichier deja verrouille - file already locked */
         close(fd);
         return 1;
     }
@@ -455,37 +516,43 @@ long poser_verrou (void) {
     return 0;
 }
 
-void oter_verrou (void) {
+void remove_lock (void) {
     /*
-     * Le verrou sera automatiquement libere par le systeme
-     * d'exploitation lorsque le programme se terminera.
+     * Le verrou sera automatiquement libere par le systeme d'exploitation lorsque le programme se terminera.
+     ****
+     * Lock will automaticaly be removed by OS when the program finishes.
      */
 }
 
 # else
 
 /*
- * Verrouillage sur un systeme non-Unix, utilisant un fichier-verrou.
- * Ce n'est pas totalement fiable (il y a une race-condition evidente)
- * et en cas de plantage grave, il se peut que le verrou ne soit pas
+ * Verrouillage sur un systeme non-Unix, utilisant un fichier-verrou. Ce n'est pas totalement fiable
+ * (il y a une race-condition evidente) et en cas de plantage grave, il se peut que le verrou ne soit pas
  * libere. Je pense que c'est tout de meme mieux que rien...
  *
- * Changement par Stephane Nicolet le 28/03/2001 : cette methode est
- * utilisee meme sur les systemes Unix.
+ ****
+ *
+ * Non-Unix (see note underneath) locking mechanism, using a lockfile. It is not completely reliable
+ * (obvious race condition) and in case of crash, lockfile may not be freed. Better than nothing...
+ *
+ ****
+ * Changement par/Change by Stephane Nicolet le/the 28/03/2001 :
+ * cette methode est utilisee meme sur les systemes Unix - this method is used even on Unix systems
  */
 static char *lockfile = "lockfile";
 static long has_lock = 0;
 
-long poser_verrou (void) {
+long put_lock (void) {
     FILE *fp;
 
-    if ((fp = myfopen_dans_sous_dossier(lockfile, "r", "", 0, 0)) != NULL) {
-        /* verrou deja present */
+    if ((fp = myfopen_in_subfolder(lockfile, "r", "", 0, 0)) != NULL) {
+        /* verrou deja present - lock already present */
         fclose(fp);
         return 1;
     }
-    if ((fp = myfopen_dans_sous_dossier(lockfile, "w", "", 0, 0)) == NULL) {
-        /* impossible de creer le verrou */
+    if ((fp = myfopen_in_subfolder(lockfile, "w", "", 0, 0)) == NULL) {
+        /* impossible de creer le verrou - impossible to create lock */
         return -1;
     }
     fclose(fp);
@@ -493,7 +560,7 @@ long poser_verrou (void) {
     return 0;
 }
 
-void oter_verrou (void) {
+void remove_lock (void) {
     if (has_lock) {
         remove(lockfile);
         has_lock = 0;
@@ -503,26 +570,33 @@ void oter_verrou (void) {
 # endif
 #else
 
-/* Pas de verrouillage du tout */
-long poser_verrou(void)  { return 0; }
-void oter_verrou(void)  { }
+/* Pas de verrouillage du tout - no lock at all */
+long put_lock(void)  { return 0; }
+void remove_lock(void)  { }
 
 #endif
 
 /*
- * void init_ecran() : initialise les variables nb_lignes et nb_colonnes,
- * et le drapeau auto-wrap (si le curseur passe automatiquement a la
- * ligne suivante quand on depasse la derniere colonne, ce drapeau doit
- * valoir un; et sinon, zero).
+ * void init_screen() : initialise les variables nbrOfLines et nbrOfColumns, et le drapeau auto-wrap
+ * (si le curseur passe automatiquement a la ligne suivante quand on depasse la derniere colonne,
+ * ce drapeau doit valoir un; et sinon, zero).
  *
- * NOTE: sous Unix cette fonction peut etre appelee plusieurs fois, si
- * vous suspendez puis relancez le programme.
+ * NOTE: sous Unix cette fonction peut etre appelee plusieurs fois,
+ * si vous suspendez puis relancez le programme.
+ *
+ ****
+ *
+ * void init_screen(): nbrOfLines and nbrOfColumns variables are initialized. and auto-wrap flag
+ * (if cursor automatically wraps to next line when last column is exceeded, value of this flag must
+ * be 1, 0 otherwise).
+ *
+ * NOTE: this function may be called several times under Unix, if program is suspended and awaken.
  */
 
-void init_ecran() {
+void init_screen() {
 #ifdef TERMCAP
     /*
-     * Terminfo n'est pas supporte, desole...
+     * Terminfo n'est pas supporte, desole... - Sorry Terminfo isn't supported...
      */
 # ifdef ENGLISH
 #  define TCAP_ERR1 "can't open termcap file"
@@ -534,16 +608,18 @@ void init_ecran() {
 #  define TCAP_ERR3 "terminal trop bete"
 # endif
     char *el, *ec;
-    struct winsize ecran;
+    struct winsize screen;
     char *term_name, *tbuf2;
 
     /*
-     * Le type de terminal est-il deja connu? C'est tout a fait possible,
-     * si le programme a ete suspendu puis relance; dans ce cas, nous
-     * avons juste a verifier les dimensions de l'ecran.
+     * Le type de terminal est-il deja connu? C'est tout a fait possible, si le programme a ete suspendu
+     * puis relance ; dans ce cas, nous avons juste a verifier les dimensions de l'ecran.
+     ****
+     * Is terminal type already known? It may be possible if program has been suspended and awaken;
+     * in that case, only screen size has to be checked.
      */
     if (term_ok)
-        goto taille_ecran;
+        goto screen_size;
 
     if ((term_name = getenv("TERM")) == NULL)
         term_name = "dialup";
@@ -555,61 +631,61 @@ void init_ecran() {
     CALLOC(tbuf2, sizeof(term_buffer), char);
 
     /*
-     * On recupere les differentes sequences d'echappement:
+     * On recupere les differentes sequences d'echappement - escape sequences are gathered
      */
 
-    /* Effacement de l'ecran */
-    term_eff_ecran = tgetstr("cl", &tbuf2);
+    /* Effacement de l'ecran - screen clearing */
+    term_clear_screen = tgetstr("cl", &tbuf2);
 
-    /* Effacement du reste de la ligne */
-    term_eff_ligne = tgetstr("ce", &tbuf2);
+    /* Effacement du reste de la ligne - rest of line clearing */
+    term_clear_line = tgetstr("ce", &tbuf2);
 
-    /* Passage en video inverse, retour en video normale */
+    /* Passage en video inverse, retour en video normale - inverse video and back to normal */
     term_inv_video_on  = tgetstr("so", &tbuf2);
     term_inv_video_off = tgetstr("se", &tbuf2);
 
-    /* Chaine de positionnement */
+    /* Chaine de positionnement - string for positionning */
     term_goto = tgetstr("cm", &tbuf2);
 
-    if (!term_eff_ecran || !term_eff_ligne || !term_goto)
+    if (!term_clear_screen || !term_clear_line || !term_goto)
         fatal_error(TCAP_ERR3);
 
-    /* Le terminal est-il auto-wrap? */
+    /* Le terminal est-il auto-wrap? - is terminal auto-wrap? */
     auto_wrap = tgetflag("am");
 
-taille_ecran:
-    /* Combien l'ecran a-t-il de lignes et de colonnes? */
-    if (ioctl(1, TIOCGWINSZ, &ecran) == 0) {
-        nb_lignes   = ecran.ws_row;
-        nb_colonnes = ecran.ws_col;
-/*      printf(" ** %ld lignes, %ld colonnes **\n", nb_lignes, nb_colonnes) ;
+screen_size:
+    /* Combien l'ecran a-t-il de lignes et de colonnes? - how many lines and columns? */
+    if (ioctl(1, TIOCGWINSZ, &screen) == 0) {
+        nbrOfLines   = screen.ws_row;
+        nbrOfColumns = screen.ws_col;
+/*      printf(" ** %ld lignes, %ld colonnes **\n", nbrOfLines, nbrOfColumns) ;
         getchar() ;*/
     } else {
-        nb_lignes = nb_colonnes = 0;
+        nbrOfLines = nbrOfColumns = 0;
     }
 
-    /* Les variables d'environnement ont priorite */
+    /* Les variables d'environnement ont priorite - environment variables have priority */
     if ((el = getenv("LINES")) != NULL)
-        nb_lignes = atoi(el);
+        nbrOfLines = atoi(el);
     if ((ec = getenv("COLUMNS")) != NULL)
-        nb_colonnes = atoi(ec);
+        nbrOfColumns = atoi(ec);
 
-    /* Dernier recours: les valeurs donnees par termcap */
-    if (nb_lignes == 0)
-        nb_lignes = tgetnum("li");
-    if (nb_colonnes == 0)
-        nb_colonnes = tgetnum("co");
+    /* Dernier recours: les valeurs donnees par termcap - last resort, values given by termcap */
+    if (nbrOfLines == 0)
+        nbrOfLines = tgetnum("li");
+    if (nbrOfColumns == 0)
+        nbrOfColumns = tgetnum("co");
 
 #elif defined(atarist)
 
-    struct winsize ecran;
+    struct winsize screen;
 
     printf("\033v\033e\033q");
     fflush(stdout);
     auto_wrap = 1;
-    ioctl(1, TIOCGWINSZ, &ecran);   /* Utilise la ligne-A */
-    nb_lignes   = ecran.ws_row;
-    nb_colonnes = ecran.ws_col;
+    ioctl(1, TIOCGWINSZ, &ecran);   /* Utilise la ligne-A - use line-A */
+    nbrOfLines   = screen.ws_row;
+    nbrOfColumns = screen.ws_col;
 
 #elif defined(__MSDOS__)
 
@@ -623,32 +699,32 @@ taille_ecran:
    #endif
 
     auto_wrap   =  1;
-    nb_lignes   = 25;
-    nb_colonnes = 80;
+    nbrOfLines   = 25;
+    nbrOfColumns = 80;
 
 #elif defined(__THINK_C__)
 
-    cinverse(TRUE,stdout);  /* Autorise la video inverse */
+    cinverse(TRUE,stdout);  /* Autorise la video inverse - enables reverse video */
     auto_wrap   =  1;
-    nb_lignes   = 25;
-    nb_colonnes = 80;
+    nbrOfLines   = 25;
+    nbrOfColumns = 80;
 
 #elif defined(PAPP_MAC_METROWERKS)
 
     auto_wrap   =  1;
-    nb_colonnes  = SIOUXSettings.columns    ;
-    nb_lignes    = SIOUXSettings.rows       ;
+    nbrOfColumns  = SIOUXSettings.columns    ;
+    nbrOfLines    = SIOUXSettings.rows       ;
 
 #elif defined(CYGWIN)
 {
-	struct winsize ecran;
-    if (ioctl(1, TIOCGWINSZ, &ecran) == 0) {
-        nb_lignes   = ecran.ws_row;
-        nb_colonnes = ecran.ws_col;
-/*      printf(" ** %ld lignes, %ld colonnes **\n", nb_lignes, nb_colonnes) ;
+	struct winsize screen;
+    if (ioctl(1, TIOCGWINSZ, &screen) == 0) {
+        nbrOfLines   = screen.ws_row;
+        nbrOfColumns = screen.ws_col;
+/*      printf(" ** %ld lignes, %ld colonnes **\n", nbrOfLines, nbrOfColumns) ;
         getchar() ; */
     } else {
-        nb_lignes = nb_colonnes = 0;
+        nbrOfLines = nbrOfColumns = 0;
     }
 }
 
@@ -656,35 +732,40 @@ taille_ecran:
 #else
 
     auto_wrap   =  1;
-    nb_lignes   = 25;
-    nb_colonnes = 80;
+    nbrOfLines   = 25;
+    nbrOfColumns = 80;
 
 #endif
 
-    assert(nb_lignes>0 && nb_colonnes>0 && auto_wrap>=0);
+    assert(nbrOfLines>0 && nbrOfColumns>0 && auto_wrap>=0);
 }
 
 /*
- * void reset_ecran() : retablit l'etat initial du terminal
+ * void screen_reset() : retablit l'etat initial du terminal - reset terminal to initial state
  */
 
-void reset_ecran() {
-    /* Rien pour l'instant */
+void screen_reset() {
+    /* Rien pour l'instant - nothing here for the moment */
     fflush(stdout);
 }
 
 /*
- * void init_clavier() : initialise le clavier. Si le programme est
+ * void init_keyboard() : initialise le clavier. Si le programme est
  * suspendu puis relance, cette fonction sera appelee plusieurs fois.
  *
- * void reset_clavier(): retablit l'etat initial du clavier.
+ * void keyboard_reset(): retablit l'etat initial du clavier.
+ ****
+ * void init_keyboard(): initialize keyboard. This function may be called several times,
+ * if program is suspended and awaken.
+ *
+ * void keyboard_reset(): reset keyboard initial state.
  */
 
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
 
 static struct termios otty;
 
-void init_clavier() {
+void init_keyboard() {
     struct termios ntty;
 
     tcgetattr(0, &otty);
@@ -697,36 +778,38 @@ void init_clavier() {
     tcsetattr(0, TCSANOW, &ntty);
 }
 
-void reset_clavier() {
+void keyboard_reset() {
     tcsetattr(0, TCSANOW, &otty);
 }
 
 #elif defined(__THINK_C__)
 
-void init_clavier() { csetmode(C_RAW,stdin); }
-void reset_clavier()    { }
+void init_keyboard() { csetmode(C_RAW,stdin); }
+void keyboard_reset()    { }
 
 #elif defined(PAPP_MAC_METROWERKS)
 
-void init_clavier() { FlushEvents(everyEvent,0); }
-void reset_clavier()    { }
+void init_keyboard() { FlushEvents(everyEvent,0); }
+void keyboard_reset()    { }
 
 #else
 
-void init_clavier() { }
-void reset_clavier()    { }
+void init_keyboard() { }
+void keyboard_reset()    { }
 
 #endif
 
 /*
- * long lire_touche() : attend un caractere au clavier, et renvoie son code
- * Ascii. Cette fonction ne doit pas envoyer d'echo a l'ecran. Les caracteres
- * comme ^C ne doivent pas etre consideres comme speciaux.
- *
+ * long read_key() : attend un caractere au clavier, et renvoie son code Ascii. Cette fonction ne doit pas
+ * envoyer d'echo a l'ecran. Les caracteres comme ^C ne doivent pas etre consideres comme speciaux.
  * Cette fonction doit auparavant vider le buffer de stdout.
+ ****
+ * long read_key(): waits for a keyboard character and returns its ascii code. This function must not
+ * send echo on screen. Characters as ^C must not be considered special.
+ * This function must first empty stdout buffer.
  */
 
-long lire_touche() {
+long read_key() {
 #if defined(UNIX_SYSV) || defined(UNIX_BSD)
 
     long c;
@@ -801,7 +884,7 @@ long lire_touche() {
     }
     fflush(stdout);
 
-    /* on bouge un peu le curseur de la souris */
+    /* on bouge un peu le curseur de la souris - let's move mouse cursor */
     if (NGetTrapAddress(0xAADB, ToolTrap) != NGetTrapAddress(_Unimplemented, ToolTrap)) {
         do {CursorDeviceNextDevice(&theCursorDevice);}
         while ((theCursorDevice != nil) && (*theCursorDevice).cntButtons < 1);
@@ -812,41 +895,53 @@ long lire_touche() {
     return (unsigned char)c;
 
 #endif
+    return EOF;
 }
 
 /*
- * long hasard(long n); renvoie un entier aleatoire entre 0 et n-1.
+ * long getRandom(long n) : renvoie un entier aleatoire entre 0 et n-1.
+ ****
+ * long getRandom(long n): returns random number between 0 and n-1.
  */
 
-long hasard (long n) {
-    static long initialized = 0; /* drapeau de premiere fois */
+long getRandom (long n) {
+    static long initialized = 0; /* drapeau de premiere fois - first call flag */
 
     assert(n > 0);          /* precondition */
 
     if (!initialized) {
-        /* Initialisation du generateur de nombres aleatoires */
-        srand(time(NULL));
+        /* Initialisation du generateur de nombres aleatoires - random seed initialization */
+        srandom(time(NULL));
         initialized = 1;
     }
-    return (rand() / 5) % n;
+    return (random() / 5) % n;
 }
 
 /*
  * Les fonctions suivantes concernent la gestion du terminal :
  *
- * void eff_ecran(): efface l'ecran et se place au coin superieur gauche
- * void bas_ecran(): place le curseur au coin inferieur gauche
- * void eff_ligne(): efface la ligne courante et se place au debut de celle-ci
- * void inv_video(const char *): affiche une chaine en video inverse
+ * void clear_screen(): efface l'ecran et se place au coin superieur gauche
+ * void clear_line(): efface la ligne courante et se place au debut de celle-ci
+ * void screen_bottom(): place le curseur au coin inferieur gauche
+ * void reverse_video(const char *): affiche une chaine en video inverse
  *
  * Remarque: si ces fonctions ne passent pas par <stdio.h>, elles doivent
  * d'abord vider le tampon de stdout, pour eviter (par exemple) qu'apres un
  * effacement d'ecran il reste des caracteres en attente...
+ *
+ * ***
+ *
+ * The following functions are about terminal management
+ *
+ * void clearScreen(): clear screen and go to upper left corner
+ * void clear_line(): clear current line and go to the start of it
+ * void screen_bottom(): put cursor in lower left corner
+ * void reverse_video(const char *): display a string with reverse video (white on black)
  */
 
-void eff_ecran () {
+void clearScreen(void) {
 #ifdef MACOSX
-    putp(term_eff_ecran) ;
+    putp(term_clear_screen) ;
 
 #elif defined CYGWIN
 
@@ -854,7 +949,7 @@ void eff_ecran () {
 
 #elif defined(TERMCAP)
 
-    printf("%s", term_eff_ecran);
+    printf("%s", term_clear_screen);
 
 #elif defined(atarist)
 
@@ -879,9 +974,11 @@ void eff_ecran () {
 
 #elif defined(PAPP_MAC_METROWERKS)
 
-   /*  La ligne suivante est necessaire pour pouvoir appeler
-    *  eff_ecran sur une console vide a cause d'un BUG dans
-    *  la librairie SIOUX de Metrowerks.
+   /*  La ligne suivante est necessaire pour pouvoir appeler clear_screen() sur une console vide
+    *  a cause d'un BUG dans la bibliotheque SIOUX de Metrowerks.
+    ****
+    * Following line is necessary to be able to call clearScreen() on an empty console
+    * because of a bug in Metrowerks SIOUX library
     */
    printf(" ");
    fflush(stdout);
@@ -895,11 +992,11 @@ void eff_ecran () {
 #endif
 }
 
-void eff_ligne () {
+void clear_line(void) {
 #ifdef MACOSX
 
     printf("\r");
-    putp(term_eff_ligne) ;
+    putp(term_clear_line) ;
 
 #elif defined CYGWIN
 
@@ -907,7 +1004,7 @@ void eff_ligne () {
 
 #elif defined(TERMCAP)
 
-    printf("\r%s", term_eff_ligne);
+    printf("\r%s", term_clear_line);
 
 #elif defined(atarist)
 
@@ -939,13 +1036,13 @@ void eff_ligne () {
 #elif defined(PAPP_MAC_METROWERKS)
 
     long i;
-    char ligne_blanche[500];
+    char white_line[500];
 
-    for (i = 0; i<nb_colonnes; i++)
-       ligne_blanche[i] = ' ';
-    ligne_blanche[nb_colonnes] = '\0';
+    for (i = 0; i<nbrOfColumns; i++)
+       white_line[i] = ' ';
+    white_line[nbrOfColumns] = '\0';
 
-    /* on se place a la fin du texte */
+    /* on se place a la fin du texte - go to end of texte */
 #if SIOUX_USE_WASTE
     WESetSelection(LONG_MAX, LONG_MAX, SIOUXTextWindow->edit);
 #else
@@ -953,126 +1050,129 @@ void eff_ligne () {
 #endif /* SIOUX_USE_WASTE */
 
     putchar('\r');
-    printf("%s",ligne_blanche);
+    printf("%s",white_line);
     putchar('\r');
 
 #endif
 }
 
-void bas_ecran () {
+void screen_bottom(void) {
 #ifdef MACOSX
 
-    putp(tgoto(term_goto, 0, nb_lignes-1)) ;
+    putp(tgoto(term_goto, 0, nbrOfLines-1)) ;
 
 #elif defined CYGWIN
 
-	printf("\E[%ld;%dH", nb_lignes , 1);
+	printf("\E[%ld;%dH", nbrOfLines , 1);
 
 #elif defined(TERMCAP)
 
-    printf("%s", tgoto(term_goto, 0, nb_lignes-1));
+    printf("%s", tgoto(term_goto, 0, nbrOfLines-1));
 
 #elif defined(atarist)
 
-    printf("\033Y%c%c", 32 + (nb_lignes-1), 32);
+    printf("\033Y%c%c", 32 + (nbrOfLines-1), 32);
 
 #elif defined(PAPP_WINDOWS_METROWERKS)
 
     long k;
-    for (k=0 ; k < (nb_lignes - nble - 1) ; k++)
+    for (k=0 ; k < (nbrOfLines - nble - 1) ; k++)
         putchar('\n');
     fflush(stdout);
 
 #elif defined(__MSDOS__)
 
     fflush(stdout);
-    gotoxy(1, nb_lignes);
+    gotoxy(1, nbrOfLines);
 
 #elif defined(__THINK_C__)
 
-    cgotoxy(1,nb_lignes,stdout);
+    cgotoxy(1,nbrOfLines,stdout);
 
 #elif defined(PAPP_MAC_METROWERKS)
 
     long k;
-    for (k=0 ; k < (nb_lignes - nble - 1) ; k++)
+    for (k=0 ; k < (nbrOfLines - nble - 1) ; k++)
         putchar('\n');
     fflush(stdout);
 
 #endif
 }
 
-void inv_video (const char *chaine) {
+void reverse_video (const char *string) {
 #ifdef MACOSX
 
     putp((term_inv_video_on ? term_inv_video_on : "")) ;
-    printf("%s", chaine) ;
+    printf("%s", string) ;
     putp((term_inv_video_off ? term_inv_video_off : "")) ;
 
 #elif defined CYGWIN
 
     printf("\E[7m");
-	printf("%s", chaine);
+	printf("%s", string);
     printf("\E[27m");
 
 
 
 #elif defined(TERMCAP)
 
-        printf("%s%s%s", (term_inv_video_on ? term_inv_video_on : ""),
-    chaine, (term_inv_video_off ? term_inv_video_off : "") );
+    printf("%s%s%s", (term_inv_video_on ? term_inv_video_on : ""),
+        string, (term_inv_video_off ? term_inv_video_off : "") );
 
 #elif defined(atarist)
 
-    printf("\033p%s\033q", chaine);
+    printf("\033p%s\033q", string);
 
 #elif defined(__MSDOS__) && !defined(__GO32__) && !defined(__BORLANDC__)
 
     fflush(stdout);
     textattr(112);
-    printf("%s", chaine);
+    printf("%s", string);
     fflush(stdout);
     textattr(7);
 
 #elif defined(__THINK_C__)
 
     char c;
-    while ((c = *chaine++))
+    while ((c = *string++))
         putchar(c | 0x80);
 
 #elif defined(PAPP_MAC_METROWERKS)
 
-    printf("%s ", chaine);
+    printf("%s ", string);
     fflush(stdout);
 
-    /* on selectionne la longueur de la chaine */
+    /* on selectionne la longueur de la chaine  - select string length */
 #if SIOUX_USE_WASTE
     SInt32 weSelStart, weSelEnd;
     WEGetSelection( &weSelStart, &weSelEnd, SIOUXTextWindow->edit );
-    WESetSelection( weSelEnd - strlen(chaine) - 1 , weSelEnd - 1, SIOUXTextWindow->edit );
+    WESetSelection( weSelEnd - strlen(string) - 1 , weSelEnd - 1, SIOUXTextWindow->edit );
 #else
-    TESetSelect( (*SIOUXTextWindow->edit)->selEnd - strlen(chaine) - 1,
+    TESetSelect( (*SIOUXTextWindow->edit)->selEnd - strlen(string) - 1,
                  (*SIOUXTextWindow->edit)->selEnd - 1, SIOUXTextWindow->edit);
 #endif /* SIOUX_USE_WASTE */
 
 #else
 
-    /* La video inverse du pauvre */
-    printf("-- %s --", chaine);
+    /* La video inverse du pauvre - poor man's reverse video */
+    printf("-- %s --", string);
 
 #endif
 }
 
 
 
-/* long imprime_fichier(char *filename)
+/* long print_file(char *filename)
  *
- * Envoie le fichier *filename du repertoire courant sur l'imprimante.
- * Le fichier est suppose ferme au depart, et rendu ferme.
- * Il faut renvoyer 0 si tout se passe bien, ou -1 en cas de probleme
+ * Envoie le fichier *filename du repertoire courant sur l'imprimante. Le fichier est suppose ferme au depart,
+ * et rendu ferme. Il faut renvoyer 0 si tout se passe bien, ou -1 en cas de probleme
  * (imprimante non trouvee, fichier non trouve, etc).
+ ****
+ * Sends the given filename of the current directory to the printer. File is considered closed at start and
+ * will be closed at the end. 0 must be returned if all goes well, -1 in case of error
+ * (printer or file not found...)
  */
-long imprime_fichier(char *filename) {
+long print_file(char *filename) {
 
 # ifdef ENGLISH
 #  define IMPR_FICHIER  "\nprinting file %s ...\n\n"
@@ -1204,25 +1304,28 @@ long imprime_fichier(char *filename) {
 
 #else
 
-   /* Garder ca par defaut tant qu'on n'a pas implemente l'impression
-      pour sa machine :-) */
+   /* Garder ca par defaut tant qu'on n'a pas implemente l'impression pour sa machine :-)
+    ****
+    * Keep this as default as long as printing is not implemented for our machine :)
+    */
    printf(IMPR_ERROR,filename);
    beep();
-   lire_touche();
-
+   read_key();
    return(-1);
 
 #endif
 }
 
-/* long fichier_existe(char *filename)
+/* long isFIleExist(char *filename)
  *
- * Teste l'existence d'un fichier
- * Le fichier est suppose ferme au depart, et rendu ferme.
+ * Teste l'existence d'un fichier. Le fichier est suppose ferme au depart, et rendu ferme.
  * Renvoie 1 si le fichier existe, et 0 sinon.
+ ****
+ * Check whether a file exists. File is considered closed at start and will be closed at the end.
+ * Returns 1 if file exists and 0 otherwise.
  */
-long fichier_existe(char *filename) {
-    FILE *fp = myfopen_dans_sous_dossier(filename, "r", nom_sous_dossier, utiliser_sous_dossier, 0);
+long isFIleExist(char *filename) {
+    FILE *fp = myfopen_in_subfolder(filename, "r", subfolder_name, use_subfolder, 0);
     if (fp == NULL)
         return (0);
     else {
@@ -1237,7 +1340,7 @@ void init_mac_SIOUX_console(void) {
 WindowPtr theWP;
 
     SIOUXSettings.columns = 81;
-    SIOUXSettings.rows    = 45;    /* a priori on demande 45 lignes */
+    SIOUXSettings.rows    = 45;    /* a priori on demande 45 lignes - ask for 45 lines*/
     SIOUXSettings.tabspaces  = 0;
     SIOUXSettings.setupmenus = TRUE;
     SIOUXSettings.standalone = TRUE;
@@ -1245,10 +1348,9 @@ WindowPtr theWP;
     SIOUXSettings.autocloseonquit = TRUE;
     SIOUXSettings.asktosaveonclose = FALSE;
 
-    /* Il peut arriver qu'une fenetre de 45 lignes ne tienne pas sur
-       un petit ecran, en particulier sur les portables. On calcule donc
-       le vrai nombre de lignes disponibles sur l'ecran : pour cela, on
-       ouvre la fenetre SIOUX, puis on divise sa hauteur par la hauteur
+    /* Il peut arriver qu'une fenetre de 45 lignes ne tienne pas sur un petit ecran,
+     * en particulier sur les portables. On calcule donc le vrai nombre de lignes disponibles sur l'ecran :
+     * pour cela, on ouvre la fenetre SIOUX, puis on divise sa hauteur par la hauteur
        des caracteres (valable pour la police Monaco 9) */
     printf("\n");
     theWP = (WindowPtr)SIOUXTextWindow;
