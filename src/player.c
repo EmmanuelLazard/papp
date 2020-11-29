@@ -371,7 +371,7 @@ char *coupon (const Player *player_1, const Player *player_2, discs_t score) {
 
     /*
      * S'il y a eu de nouveaux inscrits depuis la derniere fois ou cette fonction a ete appelee,
-     * nous recalculons `maxlen', la longueur maximum des demi-coupons.
+     * nous recalculons 'maxlen', la longueur maximum des demi-coupons.
      *
      ****
      *

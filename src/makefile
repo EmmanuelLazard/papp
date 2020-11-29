@@ -1,149 +1,213 @@
 #########################################################################################
-#
-# Makefile pour PAPP (programme d'appariements)
-# par Thierry Bousch, Emmanuel Lazard & Stephane Nicolet
-#
-# Makefile v1.36                                                                        #
+#                                                                                       #
+# Makefile pour PAPP (programme d'appariements)                                         #
+# Makefile for PAPP (pairing program)                                                   #
+# par/by Thierry Bousch, Emmanuel Lazard & Stephane Nicolet                             #
+#                                                                                       #
+# Makefile v1.37                                                                        #
+# 29/11/2020 (Lazard) : English translation                                             #
 # 17/07/2012 (Lazard) : Ajout des options 'pedantic' et 'ansi' pour se conformer au C90 #
+#                     : 'pedantic' and 'ansi' options added to respect C90 standard     #
 # 12/01/2007 (Lazard) : Ajout d'une option de compilation pour supprimer les warnings   #
+#                     : compiler option added to suppress warnings                      #
 #########################################################################################
 
 # POUR COMPILER, IL FAUT LANCER LA CIBLE 'papp' EN TAPANT 'make papp'
+# TO COMPILE, TARGET 'papp' MUST BE LAUNCHED BY TYPING 'make papp'
 
-# Le compilateur utilise doit etre ANSI
+# Le compilateur utilise doit etre ANSI - Use an ANSI compiler
 CC = gcc
 
-# PAPP a ete compile au moins une fois sur des machines variees, et
-# utilise les symboles suivants exportes par les compilateurs:
-# (Il ne faut donc pas les definir)
+# PAPP a ete compile au moins une fois sur des machines variees, et utilise les symboles suivants
+#  exportes par les compilateurs: (Il ne faut donc pas les definir)
+######
+# PAPP was compile on various machines and uses the following symbols exported by compilers:
+#  (They must therefore not be defined)
 #
-# `atarist' pour l'Atari,
-# `__GNUC__' pour le GCC,
-# `__MSDOS__' pour MS-DOS,
-# `__THINK_C__' pour le Think-C (Macintosh),
-# `__MWERKS__' pour le CodeWarrior-C (Macintosh),
-# `__BORLANDC__' pour Borland C++ pour Windows
-# `__GO32__' pour le cross- compilateur MS-DOS (sous linux).
+# 'atarist' pour l'Atari,
+# '__GNUC__' pour le GCC,
+# '__MSDOS__' pour MS-DOS,
+# '__THINK_C__' pour le Think-C (Macintosh),
+# '__MWERKS__' pour le CodeWarrior-C (Macintosh),
+# '__BORLANDC__' pour Borland C++ pour Windows
+# '__GO32__' pour le cross- compilateur MS-DOS (sous linux).
 #
 #-------------------------------------------------------------------------------
 #
-# On peut, par ailleurs, definir les symboles suivants
-# soit pour faciliter la compilation en fonction de l'OS,
-# soit pour activer/desactiver certaines options
-# (voir aussi le fichier changes.h, qui definit
-# d'autres symboles plus recents).
-#
+# On peut, par ailleurs, definir les symboles suivants soit pour faciliter la compilation
+#  en fonction de l'OS, soit pour activer/desactiver certaines options
+#  (voir aussi le fichier changes.h, qui definit d'autres symboles plus recents).
+######
+# The following symbols can also be defined either to help compilation
+#  corresponding to the OS or to activate/desactivate some options
+#  (see also changes.h file which defines other more recent symbols).
 #
 #----------- Symboles caracterisant le systeme d'exploitation ------------------
+#----------- Symboles concerning Operating System             ------------------
 #
 # UNIX_BSD
-#   si vous utilisez un Unix de type BSD, et
+#   si vous utilisez un Unix de type BSD, et - if you use a BSD type Unix and
 #
 # UNIX_SYSV
-#   si vous utilisez un Unix de type Systeme 5.
+#   si vous utilisez un Unix de type Systeme 5. - if you use a System V Unix.
 #
 # MACOSX
-#   si vous utilisez un Unix MacOS X
+#   si vous utilisez un Unix MacOS X - if you use a MacOS X Unix
 #
 # CYGWIN
 #       pour la compilation sous Windows avec l'emulateur Unix cygwin
+#       to compile under Windows OS with the cygwin Unix emulator
 #
 # LINUX
-#      si vous utilisez un Unix Linux
+#      si vous utilisez un Unix Linux - if you use a Linux Unix
 #
 #----------- Symboles a definir ou non suivant votre OS ------------------------
+#----------- Symboles to be defined or not depending on your OS ----------------
 #
 # TERMCAP
-#   si vous avez la librairie Termcap, sinon les commandes de gestion
-#   d'ecran (effacement, etc.) devront etre codees en dur dans le
-#   programme. Unix surtout.
+#   si vous avez la bibliotheque Termcap, sinon les commandes de gestion d'ecran (effacement, etc.)
+#    devront etre codees en dur dans le programme. Unix surtout.
+######
+#   if you have the TERMCAP library, otherwise screen handling commands (clearing, etc.)
+#    will have to be hard coded. Mostly Unix.
+#
 #
 # NO_TERMCAP_H
 #   si vous avez TERMCAP mais pas de fichier d'en-tete <termcap.h>.
+######
+#   if you do have TERMCAP but no header file <termcap.h>.
 #
-# SIGNAUX_POSIX
+#
+# POSIX_SIGNALS
 #   si vous voulez utiliser les fonctions POSIX pour manipuler les
-#   signaux (sigaction, sigprogmask, sigemptyset,...)
+#    signaux (sigaction, sigprogmask, sigemptyset,...)
+######
+#   if you wish to use the POSIX functions to manipulate signals
+#    (sigaction, sigprogmask, sigemptyset,...)
+#
 #
 # NO_RAISE
-#   si raise() n'est pas dans les librairies -- c'est pourtant une
-#   fonction ANSI.
+#   si raise() n'est pas dans les bibliotheques -- c'est pourtant une fonction ANSI.
+######
+#   if raise() is not in the libraries -- it is however an ANSI function.
+#
 #
 # P_OPEN
-#   si votre compilateur connait les fonctions popen()/pclose()
-#       et si elles font quelque chose de sense, evidemment.
-#   Si ce symbole est defini, il est possible de "piper" le classement
-#   des joueurs vers une commande (less, par exemple).
+#   si votre compilateur connait les fonctions popen()/pclose() et si elles font
+#    quelque chose de sense, evidemment. Si ce symbole est defini,
+#    il est possible de "piper" le classement des joueurs vers une commande (less, par exemple).
+######
+#   if your compiler knows the popen()/pclose() functions and if they do something usefull.
+#    if this symbol is defined, it is possible to pipe standings towards a command (less for example).
 #
-#----------- Options de compilation -----------
+#
+#----------- Options de compilation - Compilation options -----------
 #
 # ENGLISH
 #   define this symbol if you want messages and menus in English.
-#   The translations are not very good. Note that all key bindings
-#   are the same as in the french version (at least for now),
-#   except for the yes/no questions. The config file must
-#   still be in French (well, not the comments, of course)
-#   for compatibility with the french version.
+#    The translations are not very good. Note that all key bindings  are the same as in the french version
+#    (at least for now), except for the yes/no questions.
+#    The config file must still be in French (well, not the comments, of course)
+#    for compatibility with the french version.
 #
-# CURSEUR (defaut : OFF)
-#   sur certains terminaux (que nous ne nommerons pas), le curseur est
-#   invisible, ce qui est incommode pour entrer du texte. Si ce symbole
-#   est defini, le curseur sera materialise par une tilde.
 #
-# LOCK (defaut : ON)
+# CURSOR (defaut/default: OFF)
+#   sur certains terminaux (que nous ne nommerons pas), le curseur est invisible, ce qui est incommode
+#    pour entrer du texte. Si ce symbole est defini, le curseur sera materialise par une tilde.
+######
+#   on certain terminals, cursor is invisible which inconvenient to enter some text.
+#    If this symbol is defined, cursor will be displayed as a tilde.
+#
+#
+# LOCK (defaut/default: ON)
 #   cree un fichier-verrou dans le repertoire courant pour eviter
-#   que deux invocations de papp ne modifient le meme fichier intermediaire.
+#    que deux invocations de papp ne modifient le meme fichier intermediaire.
+######
+#   creates a lockfile in the current directory to prevent two papp processes
+#    running at the same time to change the same intermediate workfile.
 #
-# DEBUG_PEN (defaut : OFF)
-#   Si ce symbole est defini, PAPP affiche les penalites trouvees (ainsi
-#   que leur total) dans les appariements optimaux.
 #
-# SAVE_MATRIX (defaut : OFF)
-#   sauve la matrice des penalites dans `matrice.pen' avant de lancer
-#   l'algorithme d'Edmonds, sous une forme ou elle peut etre relue par
-#   le programme `test'. Peut etre utile pour la mise au point du
-#   module edmonds.c. Les resultats de l'optimisation (si on arrive
-#   jusque la) seront stockes dans `matrice.out'.
+# DEBUG_PEN (defaut/default: OFF)
+#   Si ce symbole est defini, PAPP affiche les penalites trouvees (ainsi que leur total)
+#    dans les appariements optimaux.
+######
+#   If this symbol is defined, PAPP will display the penalties found (and their total)
+#    in the final optimal pairings.
 #
-# USE_LONG_LONG (defaut : OFF)
-#   si vous voulez utiliser des "long long" dans edmonds.c (entiers
-#   sur 64 bits) au lieu des "double" (flottants sur 64 bits).
-#   Seul le GCC supporte ce type. Peut etre necessaire si la librairie
-#   flottante est boguee ou imprecise. (Ce symbole est automatiquement
-#   defini si __GO32__ est defini).
 #
-# EDEBUG (defaut : OFF)
-#   affiche enormement de details sur le deroulement de l'algorithme
-#   d'Edmonds. N'est utile que pour la mise au point.
+# SAVE_MATRIX (defaut/default: OFF)
+#   sauve la matrice des penalites dans 'matrix.pen' avant de lancer l'algorithme d'Edmonds,
+#    sous une forme ou elle peut etre relue par le programme '''test'.
+#    Peut etre utile pour la mise au point du module edmonds.c.
+#    Les resultats de l'optimisation (si on arrive jusque la) seront stockes dans 'matrix.out'.
+######
+#   Save the penalties matrix in 'matrix.pen', before starting the Edmonds algorithm,
+#    so that it can be read by the 'test' program.
+#    This can be useful when tuning the edmonds.c module.
+#    Optimisation results will be saved in 'matrix.out'
 #
-# MELANGE (defaut : ON)
-#   si vous voulez melanger les joueurs avant toute optimisation,
-#   c.a.d. pas uniquement a la premiere ronde. Ceci a pour consequence
-#   de rendre les appariements non deterministes.
 #
-# HUIT_BITS (defaut : OFF)
-#   si vous voulez autoriser l'utilisateur a entrer des caracteres
-#   huit bits au clavier. A utiliser avec circonspection, parce que
-#   cela diminue la portabilite vers d'autres machines. Seules les
-#   machines utilisant le jeu ISO-Latin-1 (windows, unix) devraient
-#   avoir le droit de definir ce symbole.
+# USE_LONG_LONG (defaut/default: OFF)
+#   si vous voulez utiliser des "long long" dans edmonds.c (entiers sur 64 bits)
+#    au lieu des "double" (flottants sur 64 bits). Seul le GCC supporte ce type.
+#    Peut etre necessaire si la bibliotheque flottante est boguee ou imprecise.
+#    (Ce symbole est automatiquement defini si __GO32__ est defini).
+######
+#   If you want to use "long long" in edmonds.c (64 bits int) instead of "double"
+#    (64 bits floating point numbers). Only GCC supports this type.
+#    May be necessary if the float library is bugged or imprecise
+#    (this symbol is automatically defined if  __GO32__ is defined).
 #
-# Voici les options rajoutees a la compilation
 #
-EXTRA  = #-DENGLISH
+# EDEBUG (defaut/default: OFF)
+#   affiche enormement de details sur le deroulement de l'algorithme d'Edmonds.
+#    N'est utile que pour la mise au point.
+######
+#   Displays at lot of details during the Edmonds algorithm flow.
+#    only useful during the tunign of the algorithm
+#
+#
+# MIXING (defaut/default: ON)
+#   si vous voulez melanger les joueurs avant toute optimisation, c.a.d. pas uniquement
+#    a la premiere ronde. Ceci a pour consequence de rendre les appariements non deterministes.
+######
+#   If you want to mix players before any optimisation, that is not only before round 1.
+#    As a consequence, pairings will not be deterministic.
+#
+#
+# EIGHT_BITS (defaut/default: OFF)
+#   si vous voulez autoriser l'utilisateur a entrer des caracteres huit bits au clavier.
+#    A utiliser avec circonspection, parce que cela diminue la portabilite vers d'autres machines.
+#    Seules les machines utilisant le jeu ISO-Latin-1 (windows, unix) devraient avoir
+#    le droit de definir ce symbole.
+######
+#   If you wish to authorize user to enter 8-bits characters with the keyboard.
+#    Use with caution because portability to other machines may be reduced.
+#    Only machines using ISO-Latin-1 set (Windows, Linux) should hav the right
+#    to define ths symbol.
+#
+#
+#########################################################################################
+#
+# Voici les options rajoutees a la compilation - Here are the added compiler options
+#
+EXTRA  = -DMIXING #-DENGLISH
 #
 #-------------------------------------------------------------------------------
 #
 # Voici les commmandes de compilation pour divers compilateurs
-# Il faut toutes les commenter sauf celle qui vous correspond.
+#  Il faut toutes les commenter sauf celle qui vous correspond.
+######
+# Here are all compilation commands for various compilers
+#  They must all be commented except the one which corresponds to your system.
 #
 #------------------------------------
 #
-# Options de compilation pour MacOS X
+# MacOS X
 
 CFLAGS = -DMACOSX -DUNIX_BSD \
-		 -DSIGNAUX_POSIX -DP_OPEN -DTERMCAP -DTERMCAP_H \
-         -DMELANGE  $(EXTRA) \
+		 -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
+         $(EXTRA) \
          -O2 -pipe -arch x86_64 -mmacosx-version-min=10.10 \
          -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
          -pedantic -ansi
@@ -152,11 +216,11 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de compilation pour CygWin sous Windows avec ncurses
+# CygWin sous Windows avec ncurses - Cygwin under Windows with ncurses
 
 #CFLAGS = -DCYGWIN -DUNIX_BSD \
-#         -DSIGNAUX_POSIX \
-#         -DMELANGE  $(EXTRA) \
+#         -DPOSIX_SIGNALS \
+#         $(EXTRA) \
 #         -O2 -pipe \
 #         -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
 #         -Wno-char-subscripts -pedantic -ansi
@@ -165,13 +229,12 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de compilation pour Linux
-# avec la librairie Termcap
-# (si vous ne l'avez pas au bon endroit, copiez-la dans le repertoire papp)
+# Linux with Termcap library
+# (if you don't have it at the right place, copy it into the papp directory)
 
 #CFLAGS = -DLINUX -DUNIX_SYSV \
-#        -DSIGNAUX_POSIX -DP_OPEN -DTERMCAP -DTERMCAP_H \
-#        -DMELANGE  $(EXTRA) \
+#        -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
+#        $(EXTRA) \
 #        -O2 -pipe \
 #        -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
 #        -fomit-frame-pointer -pedantic -ansi
@@ -181,12 +244,11 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de compilation pour Linux
-# sans la libraire Termcap
+# Linux without Termcap library
 
 #CFLAGS = -DLINUX -DUNIX_SYSV \
-#         -DSIGNAUX_POSIX -DP_OPEN -DNO_TERMCAP_H \
-#         -DMELANGE  $(EXTRA) \
+#         -DPOSIX_SIGNALS -DP_OPEN -DNO_TERMCAP_H \
+#         $(EXTRA) \
 #         -O2 -pipe \
 #         -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
 #         -fomit-frame-pointer
@@ -195,12 +257,11 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de compilation pour SunOS (ou autres versions BSD d'Unix)
-# avec la librairie Termcap
+#  SunOS (or other BSD Unix versions) with Termcap library
 #
 #CFLAGS = -DUNIX_BSD \
-#         -DSIGNAUX_POSIX -DP_OPEN -DTERMCAP -DTERMCAP_H -DNO_RAISE \
-#         -DMELANGE  $(EXTRA) \
+#         -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H -DNO_RAISE \
+#         $(EXTRA) \
 #         -O2 -pipe \
 #         -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
 #LDFLAGS =
@@ -208,12 +269,11 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de compilation pour SunOS (ou autres versions BSD d'Unix)
-# sans la librairie Termcap
+#  SunOS (or other BSD Unix versions) without Termcap library
 #
 #CFLAGS = -DUNIX_BSD \
-#         -DSIGNAUX_POSIX -DP_OPEN -DNO_TERMCAP_H -DNO_RAISE \
-#         -DMELANGE  $(EXTRA) \
+#         -DPOSIX_SIGNALS -DP_OPEN -DNO_TERMCAP_H -DNO_RAISE \
+#         $(EXTRA) \
 #         -O2 -pipe \
 #         -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
 #LDFLAGS =
@@ -221,10 +281,10 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Options de cross-compilation pour Ms-Dos
+# Ms-Dos cross-compilation
 #
 #GO32_CFLAGS = \
-#       -DMELANGE -DVERROU $(EXTRA) \
+#       $(EXTRA) \
 #       -O2 -fomit-frame-pointer -pipe -m486 -Wall
 #GO32_LDFLAGS = -s
 #GO32_LIBS = -lm -lpc
@@ -233,26 +293,24 @@ LIBS = -lm -ltermcap -arch x86_64
 
 # Compilation options for Windows:
 #
-# When compiling with the Borland C++ compiler,
-# you should set Large model in the Code Generation dialog box.
-# Then create a project with the C files specified below (after
-# the CFILE keyword), then Build All, and Run.
+# When compiling with the Borland C++ compiler, you should set Large model
+# in the Code Generation dialog box. Then create a project with the C files specified below
+# (after the CFILE keyword), then Build All, and Run.
 
-# Les regles suivantes permettent de verifier le code assembleur
-# genere, ainsi que de cross-compiler pour Ms-Dos. Commentez-les si
-# elles posent probleme avec votre version de `make'.
+# Following rules enable checking the generated assembler code and cross-compile for Ms-Dos.
+# You may comment them if there is an issue with your 'make' version.
 #
-%.s: %.c
-	$(CC) $(CFLAGS) -S $< -o $@
-%.oms: %.c
-	$(GO32_CC) $(GO32_CFLAGS) -c $< -o $@
-%.sms: %.c
-	$(GO32_CC) $(GO32_CFLAGS) -S $< -o $@
+# %.s: %.c
+# 	$(CC) $(CFLAGS) -S $< -o $@
+# %.oms: %.c
+# 	$(GO32_CC) $(GO32_CFLAGS) -c $< -o $@
+# %.sms: %.c
+# 	$(GO32_CC) $(GO32_CFLAGS) -S $< -o $@
 
 #-------------------------------------------------------------------------------------
 #
-# Voici la liste de tous les fichiers sources. Ces fichiers peuvent
-# etre sauvegardes avec `make archive'
+# Voici la liste de tous les fichiers sources. Ces fichiers peuvent etre sauvegardes avec 'make archive'
+# Here is the list of all source files. They can be saved with 'make archive'
 #
 HEADERS = changes.h couplage.h crosstable.h pairings.h discs.h global.h \
           more.h pairings.h player.h tiebreak.h version.h
@@ -269,50 +327,49 @@ RCSFILES = $(HEADERS) $(CFILES) $(SFILES) $(DOCUS)
 SOURCES = $(RCSFILES) $(AUTRES)
 
 #
-# Fichiers objets requis par PAPP
+# Fichiers objets requis par PAPP - Object files required by PAPP
 #
 
-OBJETS  = \
+OBJECTS  = \
     lexyy.o pap_tab.o \
     couplage.o crosstable.o tiebreak.o edmonds.o elo.o \
     enterPlayer.o global.o player.o main.o more.o  penalties.o \
     discs.o results.o roundrobin.o XML.o
 
-OBJETS_DOS = \
+OBJECTS_DOS = \
     lexyy.oms pap_tab.oms \
     edmonds.oms global.oms player.oms main.oms elo.oms more.oms \
     enterPlayer.oms roundrobin.oms couplage.oms results.oms penalties.oms \
     discs.oms crosstable.oms tiebreak.oms XML.oms
 
 #
-# Les programmes `exemple' et `geom' produisent des matrices
-# d'exemples pour le programme `testp'. Le programme proprement dit
-# est `papp', sa documentation est `papp_doc.tex', et `changes' contient
-# l'historique des versions.
+# Les programmes 'exemple' et 'geom' produisent des matrices d'exemples pour le programme 'testp'.
+#  Le programme proprement dit est 'papp', sa documentation est 'papp_doc.tex',
+#  et 'changes' contient l'historique des versions.
+######
+# The 'exemple' and 'geom' programs produce exemple matrices for the 'testp' program.
+#  The main program is 'papp', its documentation is 'papp_doc.tex',
+#  and 'changes' contains versions history.
 #
 
 all:
 	$(MAKE) papp
-	$(MAKE) papp_GB_PHONY
-
-papp : LANGUE=
-papp : $(OBJETS)
-	$(CC) $(LDFLAGS) -o papp $(OBJETS) $(LIBS)
-#	cp papp ..
-
-.PHONY : papp_GB_PHONY
-papp_GB_PHONY :
-	rm -f *.o
 	$(MAKE) papp_GB
 
-papp_GB : LANGUE=-DENGLISH
-papp_GB : $(OBJETS)
-	$(CC) $(LDFLAGS) -o papp_GB $(OBJETS) $(LIBS)
+papp : LANGUAGE=
+papp : $(OBJECTS)
+	$(CC) $(LDFLAGS) -o papp $(OBJECTS) $(LIBS)
 	rm -f *.o
-	cp papp_GB ..
+#	cp papp ..
+
+papp_GB : LANGUAGE=-DENGLISH
+papp_GB : $(OBJECTS)
+	$(CC) $(LDFLAGS) -o papp_GB $(OBJECTS) $(LIBS)
+	rm -f *.o
+#	cp papp_GB ..
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) $(EXTRA) $(LANGUE)
+	$(CC) -c $< $(CFLAGS) $(EXTRA) $(LANGUAGE)
 
 .PHONY : clean
 clean:
@@ -327,8 +384,7 @@ veryclean: clean
 	rm -f team_*.txt crosstable_*.htm crosstable_*.html
 
 #
-# Ces targets ne sont pas utilises sauf en test
-#
+# Ces targets ne sont pas utilises sauf en test - Unused targets unless testing
 
 BINAIRES_TEST = testp geom exemple edtest contest papp
 
@@ -343,8 +399,8 @@ edtest: discs.o edmonds.o edtest.o
 contest: discs.o edmonds.o contest.o
 	$(CC) $(LDFLAGS) -o contest $^ $(LIBS)
 
-papp.exe: $(OBJETS_DOS)
-	$(GO32_CC) $(GO32_LDFLAGS) -o papp.go32 $(OBJETS_DOS) $(GO32_LIBS)
+papp.exe: $(OBJECTS_DOS)
+	$(GO32_CC) $(GO32_LDFLAGS) -o papp.go32 $(OBJECTS_DOS) $(GO32_LIBS)
 	cat $(GO32_STUB) papp.go32 >papp.exe
 
 edtest.exe: discs.oms edmonds.oms edtest.oms
@@ -359,7 +415,7 @@ geom: geom.c
 
 
 #
-# Archivage
+# Archivage - Archives
 #
 archive: appari.tgz
 	@echo Sauvegarde du dossier RCS
@@ -372,8 +428,10 @@ distrib: appari.tgz
 	./makedist
 
 #
-# Maintenant que la documentation est en LaTeX, nous ajoutons une `cible'
-# pour previsualiser le document
+# Maintenant que la documentation est en LaTeX,
+#  nous ajoutons une 'cible' pour previsualiser le document
+######
+# Now that documentation is in LaTeX format, a target is added to preview document.
 #
 
 preview: papp_doc.dvi
@@ -385,7 +443,7 @@ papp_doc.dvi: papp_doc.tex
 
 
 #
-# Dependances pour Lex et Yacc.
+# Dependances pour Lex et Yacc. - Lex and yacc dependencies
 #
 lexyy.c: pap.l
 	flex -8 pap.l
@@ -397,14 +455,14 @@ pap_tab.c: pap_tab.h
 	touch pap_tab.c
 
 pap_tab.h: pap.y
-	@echo "pap.y devrait contenir 2 conflits de type shift/reduce"
+	@echo "pap.y should have 2 shift/reduce type conflict"
 	bison -d pap.y
 	mv pap.tab.c pap_tab.c
 	mv pap.tab.h pap_tab.h
 
 #
-# Autres dependances (on n'est jamais trop prudent):
+# Autres dependances (on n'est jamais trop prudent) - Other dependencies (never cautious enough)
 #
-$(OBJETS) $(OBJETS_DOS): $(HEADERS)
+$(OBJECTS) $(OBJECTS_DOS): $(HEADERS)
 test.o edtest.o contest.o: pairings.h discs.h $(HEADERS)
 test.oms edtest.oms contest.oms: pairings.h discs.h $(HEADERS)

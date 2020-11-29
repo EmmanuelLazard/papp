@@ -221,7 +221,7 @@ void next_round(void) {
  * Sauve les resultats de la ronde courante ; les signaux sont supposes etre masques.
  * Aucun controle d'erreur pour l'instant!
  * S'il s'agit de la premiere ronde et que le nombre de joueurs permet un toutes-rondes,
- * alors on sauvegarde la `table' de numerotation des joueurs.
+ * alors on sauvegarde la 'table' de numerotation des joueurs.
  ****
  * Save current round results; signals should be blocked. No error control for now.
  * If it is the first round and if number of players enables a round-robin,

@@ -45,7 +45,7 @@
 #include "crosstable.h"
 
 #ifdef ENGLISH
-# define ERES_COMPLETE  "THE RESULTS ARE COMPLETE: type `!' to confirm."
+# define ERES_COMPLETE  "THE RESULTS ARE COMPLETE: type '!' to confirm."
 # define ERES_PROMPT    "Player & Score: "
 # define ERES_RANDOM    "Choosing random results..."
 # define ERES_I_PAIR    "Incomplete pairings!"
@@ -77,7 +77,7 @@
 # define CORR_TOUCHE    "hit any key..."
 # define MSG_CROSS_MEMORY "Not enough memory to generate the cross-table."
 #else
-# define ERES_COMPLETE  "RESULTATS COMPLETS: tapez `!' pour confirmer."
+# define ERES_COMPLETE  "RESULTATS COMPLETS: tapez '!' pour confirmer."
 # define ERES_PROMPT    "Joueur & Score: "
 # define ERES_RANDOM    "Tirage des resultats au hasard..."
 # define ERES_I_PAIR    "Appariements incomplets !"

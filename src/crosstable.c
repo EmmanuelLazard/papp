@@ -1363,7 +1363,7 @@ long HTMLCrosstableSave(char *htmlFilename) {
         block_signals();
         fp = myfopen_in_subfolder(htmlFilename, "w", subfolder_name, 1, 0);
         if (fp == NULL) {
-            printf(CANT_OPEN " `%s'\n", htmlFilename);
+            printf(CANT_OPEN " '%s'\n", htmlFilename);
             result = 0;
         }
         else {
@@ -1407,7 +1407,7 @@ long TextCrosstableSave(long whichRound, char *textFilename, char *openingMode) 
     if (textFilename[0]) {
         fp = myfopen_in_subfolder(textFilename, openingMode, subfolder_name, 1, 0);
         if (fp == NULL) {
-            printf(CANT_OPEN " `%s'\n", textFilename);
+            printf(CANT_OPEN " '%s'\n", textFilename);
             result = 0;
         }
     }

@@ -89,7 +89,7 @@ void createXMLstandings(void) {
     block_signals();
     fp = myfopen_in_subfolder(filename, "w", subfolder_name, use_subfolder, 0);
     if (fp == NULL) {
-        printf(CANT_OPEN " `%s'\n",filename);
+        printf(CANT_OPEN " '%s'\n",filename);
         goto theEnd;
     }
 
@@ -202,7 +202,7 @@ void createXMLround(void) {
     block_signals();
     fp = myfopen_in_subfolder(filename, "w", subfolder_name, use_subfolder, 0);
     if (fp == NULL) {
-        printf(CANT_OPEN " `%s'\n",filename);
+        printf(CANT_OPEN " '%s'\n",filename);
         goto theEnd_2;
     }
 

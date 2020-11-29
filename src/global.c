@@ -311,14 +311,14 @@ void init_default_penalties(void) {
 #ifdef ENGLISH
 # define VPEN_COLORS    "non-increasing colour penalties"
 # define VPEN_FLOAT     "non-increasing float penalties"
-# define VPEN_MINFAC    "value of `min_fac' is too big"
+# define VPEN_MINFAC    "value of 'min_fac' is too big"
 # define FATAL_OPEN     "ne peut etre ouvert (pb de droits ?) : "
 # define FATAL_MSG      "%s: fatal error: %s\n"
 # define FATAL_HAK      "Hit any key to quit."
 #else
 # define VPEN_COLORS    "penalites de couleur non croissantes"
 # define VPEN_FLOAT     "penalites de flottement non croissantes"
-# define VPEN_MINFAC    "la valeur de `min_fac' est trop grande"
+# define VPEN_MINFAC    "la valeur de 'min_fac' est trop grande"
 # define FATAL_OPEN     "ne peut etre ouvert (pb de droits ?) : "
 # define FATAL_MSG      "%s: erreur fatale: %s\n"
 # define FATAL_HAK      "Pressez une touche pour quitter."
@@ -353,7 +353,7 @@ static void _ending(void) EXITING;    /* declaration forward */
 typedef void (*Signal_handler)(int);
 static sigset_t old_sigmask;
 
-#ifndef SIGNAUX_POSIX
+#ifndef POSIX_SIGNALS
 void bloquer_signaux() {
     old_sigmask = sigblock( (1L<<SIGHUP) | (1L<<SIGINT) |
                             (1L<<SIGQUIT) | (1L<<SIGTERM) );
@@ -379,7 +379,7 @@ void unblock_signals() {
 }
 #endif
 
-#ifndef SIGNAUX_POSIX
+#ifndef POSIX_SIGNALS
     #define handle_signal(sig, fn)  signal((sig),(Signal_handler)(fn))
 #else
     #define handle_signal(sig, fn)  do {           \
@@ -405,7 +405,7 @@ static void change_size(void) {
      return;
      nbrOfLines   = screen.ws_row;
      nbrOfColumns = screen.ws_col;
-# if defined(UNIX_SYSV) && !defined(SIGNAUX_POSIX)
+# if defined(UNIX_SYSV) && !defined(POSIX_SIGNALS)
      handle_signal(SIGWINCH, change_size);
 # endif
      */

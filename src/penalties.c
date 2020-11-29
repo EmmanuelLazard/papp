@@ -116,7 +116,7 @@ void compute_pairings(void) {
          * A la premiere ronde, nous appliquons une permutation aleatoire sur cette table,
          * afin que l'appariement choisi ne soit pas toujours le meme.
          *
-         * Si le symbole MELANGE est defini, nous melangeons toujours les joueurs avant d'optimiser ;
+         * Si le symbole MIXING est defini, nous melangeons toujours les joueurs avant d'optimiser ;
          * attention ! ceci rend les appariements difficilement reproductibles...
          *
          ****
@@ -124,11 +124,11 @@ void compute_pairings(void) {
          * On first round, a random permutation is applied on this table so that the pairing
          * is not always the same.
          *
-         * If MELANGE symbol is defined, all players are mixed before optimization; careful, this causes
+         * If MIXING symbol is defined, all players are mixed before optimization; careful, this causes
          * pairings to be not reproducible.
          *
          */
-#ifndef MELANGE
+#ifndef MIXING
         if (current_round == 0)
 #endif
         for (x = 0; x < NumberPlayers; x++) {

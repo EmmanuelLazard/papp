@@ -131,7 +131,7 @@ pen_t doPairings(long n, pen_t **_p, long *v) {
      * Therefore, if an error occurs in this module, it can be easily
      * be reproduced.
      */
-    FILE *fp = myfopen_in_subfolder("matrice.pen","w", "", 0, 0);
+    FILE *fp = myfopen_in_subfolder("matrix.pen","w", "", 0, 0);
     if (fp) {
         fprintf(fp,"%ld\n\n", n);
         for (i = 0; i < 2*n; i++) {
@@ -217,7 +217,7 @@ pen_t doPairings(long n, pen_t **_p, long *v) {
     free(T);
 
 #ifdef SAVE_MATRIX
-    fp = myfopen_in_subfolder("matrice.out","w", "", 0, 0);
+    fp = myfopen_in_subfolder("matrix.out","w", "", 0, 0);
     if (fp) {
         for (i=0; i<n; i++) {
             j = v[2*i];

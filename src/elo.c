@@ -287,7 +287,7 @@ void create_ELO_file(void) {
     block_signals();
     fp = myfopen_in_subfolder(filename, "w", subfolder_name, 1, 0);
     if (fp == NULL) {
-        printf(CANT_OPEN " `%s'\n",filename);
+        printf(CANT_OPEN " '%s'\n",filename);
         goto attendre_touche;
     }
     /* Inscrire le fullname du tournoi - put tournament fullname */

@@ -67,7 +67,7 @@
        #undef SAVE_MATRIX
 
        /* on utilise un curseur en video inverse */
-       #define CURSEUR
+       #define CURSOR
 
        /* Semble manquer dans CodeWarrior */
        #define ENOENT (-43)   /* -43 = FileNotFoundErr */
@@ -100,7 +100,7 @@
        #define DEBUG_PEN           1
 
        /* on n'utilise pas ~ comme curseur */
-       #undef CURSEUR
+       #undef CURSOR
 
        /* THINK C ne connait pas alloca */
        #define alloca malloc
@@ -130,7 +130,7 @@
        #undef  EDEBUG
 
        /* on utilise un curseur en video inverse */
-       #define CURSEUR
+       #define CURSOR
 
 
        #include <stdio.h>

@@ -82,13 +82,13 @@
 /*#define yywrap()	1*/
 
 #ifdef ENGLISH
-# define BAD_KEYWORD		"unknown keyword `%s'"
+# define BAD_KEYWORD		"unknown keyword '%s'"
 # define BAD_BYTE			"found byte 0x%02x (binary data?)"
 # define BAD_QUOTE			"unmatched quotes"
 # define TOO_MANY_ERRS		"too many syntax errors"
 # define AT_LINE			"%s, line %ld: %s\n"
 #else
-# define BAD_KEYWORD		"mot-cle `%s' inconnu"
+# define BAD_KEYWORD		"mot-cle '%s' inconnu"
 # define BAD_BYTE			"caractere 0x%02x (donnees binaires?)"
 # define BAD_QUOTE			"guillemets non refermes"
 # define TOO_MANY_ERRS		"trop d'erreurs de syntaxe"
@@ -232,7 +232,7 @@ __eof__         return 0;
 		return STRING;
 		}
 
-<UNQUOTED>`[^\x0A\x0D\000]*	{
+<UNQUOTED>'[^\x0A\x0D\000]*	{
 		yylval.string = strcpy(new_string(), text+1);
 		return COMMENT;
 		}

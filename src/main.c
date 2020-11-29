@@ -391,7 +391,7 @@ void displayTournamentParameters(void) {
 }
 
 void Init_Subfolder(void) {
-	const char *special_chars = "#&%:?*!/'`\"\\" ;
+	const char *special_chars = "#&%:?*!/''\"\\" ;
 	unsigned long i ;
 
 	if (use_subfolder != 1)

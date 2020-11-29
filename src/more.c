@@ -169,7 +169,7 @@ long read_Line_init (char *buffer, long maxlen, long complete) {
     p = buffer + strlen(buffer);
     printf("%s", buffer);
     while (1) {
-#ifdef CURSEUR
+#ifdef CURSOR
 
     #ifdef PAPP_MAC_METROWERKS
         inv_video(" ");
@@ -230,7 +230,7 @@ long read_Line_init (char *buffer, long maxlen, long complete) {
             /* Caractere de controle non reconnu - unknown control character */
             beep();
         }
-#ifndef HUIT_BITS
+#ifndef EIGHT_BITS
         else if ((unsigned)c > 127) {
             /* les caracteres >= 128 sont interdits - chracters >= 128 are forbidden */
             beep();
@@ -268,7 +268,7 @@ long read_Line_init (char *buffer, long maxlen, long complete) {
 
 void more_init (const char *filename) {
     /*
-     * On essaie d'ouvrir le fichier indique par `filename' - we try to open file named 'filename'
+     * On essaie d'ouvrir le fichier indique par 'filename' - we try to open file named 'filename'
      */
     more_fp = NULL;
     do_print = 1;           /* affichage actif - active display */
