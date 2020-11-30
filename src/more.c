@@ -1295,12 +1295,12 @@ long print_file(char *filename) {
 
 #elif defined(UNIX_BSD) || defined(UNIX_SYSV)
 
-   char s[512];
+    char s[512];
 
-   sprintf(s, "lpr < %s", filename);
-   system(s);
-
-   return(0);
+    sprintf(s, "lpr < %s", filename);
+    if (system(s) == -1)
+        return -1;
+    return(0);
 
 #else
 

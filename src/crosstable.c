@@ -507,11 +507,11 @@ void ReplaceStr(char *str, char *coupon, char color, char *oppon, char *oppon_na
     if (p) {
             strcpy(buffer2, p+(long)strlen("PAPP_SCORE_RELATIF"));
             strcpy(buf, relative_game_score) ;
-		/* On aimerait supprimer le 0 en tete des nombres inferieurs a 10. -
-		 * remove leading 0 in front of <10 numbers */
-			if ((buf[1] == '0') && strlen(buf)>2) {
-				memmove(&buf[1], &buf[2], strlen(buf)-1) ;
-			}
+        /* On aimerait supprimer le 0 en tete des nombres inferieurs a 10. -
+         * remove leading 0 in front of <10 numbers */
+            if ((buf[1] == '0') && strlen(buf)>2) {
+                memmove(&buf[1], &buf[2], strlen(buf)-1) ;
+            }
             for (i = strlen(buf); i < 12 ; i++)
                buf[i] = ' ' ;
             len = max_of(strlen(relative_game_score), 3);
@@ -806,121 +806,121 @@ FILE *GenerateCellFile(void) {
 
     if (!(fp = myfopen_in_subfolder("cell.tmpl", "w", "", 0, 0)))
         return NULL ;
-	printf("FICHIER TEMPLATE GENERE\n") ;
+    printf("FICHIER TEMPLATE GENERE\n") ;
 
     fprintf(fp, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n") ;
     fprintf(fp, "<html>\n<head>\n<title>PAPP_TOURNAMENT_NAME : #PAPP_RONDE</title>\n") ;
-	fprintf(fp, "<style type=\"text/css\">\n"
+    fprintf(fp, "<style type=\"text/css\">\n"
 /* table#crosstable : the table itself */
-				"/* table#crosstable : the table itself */\n"
-				"table#crosstable {\n"
-				"\tborder: 2px solid black;\n"
-				"\tborder-collapse: collapse;\n"
-				"\tmargin-left: auto;\n"
-				"\tmargin-right: auto;\n"
-				"\tpadding: 0px;\n"
-				"\tbackground-color: #ffffff;\n"
-				"\tfont-family: Verdana, Arial, Helvetica, sans-serif;\n}\n") ;
+                "/* table#crosstable : the table itself */\n"
+                "table#crosstable {\n"
+                "\tborder: 2px solid black;\n"
+                "\tborder-collapse: collapse;\n"
+                "\tmargin-left: auto;\n"
+                "\tmargin-right: auto;\n"
+                "\tpadding: 0px;\n"
+                "\tbackground-color: #ffffff;\n"
+                "\tfont-family: Verdana, Arial, Helvetica, sans-serif;\n}\n") ;
 /* crosstable_caption : the text for the caption */
-	fprintf(fp, "/* crosstable_caption : the text for the caption */\n"
-				".crosstable_caption {\n"
-				"\tfont-weight: bold;\n"
-				"\tfont-size: 150%%;\n"
-				"\ttext-align: center;\n"
-				"\tmargin-bottom: 15px;\n}\n") ;
+    fprintf(fp, "/* crosstable_caption : the text for the caption */\n"
+                ".crosstable_caption {\n"
+                "\tfont-weight: bold;\n"
+                "\tfont-size: 150%%;\n"
+                "\ttext-align: center;\n"
+                "\tmargin-bottom: 15px;\n}\n") ;
 /* td : each cell of the main table */
-	fprintf(fp, "/* td : each cell of the main table */\n"
-				"td	{\n"
-				"\tpadding: 0px;\n"
-				"\tborder: 1px solid black;\n}\n") ;
+    fprintf(fp, "/* td : each cell of the main table */\n"
+                "td {\n"
+                "\tpadding: 0px;\n"
+                "\tborder: 1px solid black;\n}\n") ;
 /* td.crosstable_title : the title line */
-	fprintf(fp, "/* td.crosstable_title : the title line */\n"
-				"td.crosstable_title {\n"
-				"\ttext-align: center;\n"
-				"\tfont-weight: bold;\n"
-				"\tpadding: 5px 5px 5px 5px;\n}\n") ;
+    fprintf(fp, "/* td.crosstable_title : the title line */\n"
+                "td.crosstable_title {\n"
+                "\ttext-align: center;\n"
+                "\tfont-weight: bold;\n"
+                "\tpadding: 5px 5px 5px 5px;\n}\n") ;
 /* td.crosstable_name : the name column */
-	fprintf(fp, "/* td.crosstable_name : the name column */\n"
-				"td.crosstable_name {\n"
-				"\ttext-align: left;\n"
-				"\tpadding: 0px 10px 0px 10px ;\n"
-				"\tfont-weight: bold;\n}\n") ;
+    fprintf(fp, "/* td.crosstable_name : the name column */\n"
+                "td.crosstable_name {\n"
+                "\ttext-align: left;\n"
+                "\tpadding: 0px 10px 0px 10px ;\n"
+                "\tfont-weight: bold;\n}\n") ;
 /* td.crosstable_country : the country column */
-	fprintf(fp, "/* td.crosstable_country : the country column */\n"
-				"td.crosstable_country {\n"
-				"\ttext-align: center;\n"
-				"\tpadding: 0px 3px 0px 3px ;\n"
-				"\tfont-size: 90%%;\n"
-				"\tfont-weight: bold;\n}\n") ;
+    fprintf(fp, "/* td.crosstable_country : the country column */\n"
+                "td.crosstable_country {\n"
+                "\ttext-align: center;\n"
+                "\tpadding: 0px 3px 0px 3px ;\n"
+                "\tfont-size: 90%%;\n"
+                "\tfont-weight: bold;\n}\n") ;
 /* td.crosstable_points : the total number of points column */
-	fprintf(fp, "/* td.crosstable_points : the total number of points column */\n"
-				"td.crosstable_points {\n"
-				"\tpadding: 0px 3px 0px 3px ;\n"
-				"\ttext-align: center;\n"
-				"\tfont-weight: bold;\n"
-				"\tfont-size: 115%%;\n}\n") ;
+    fprintf(fp, "/* td.crosstable_points : the total number of points column */\n"
+                "td.crosstable_points {\n"
+                "\tpadding: 0px 3px 0px 3px ;\n"
+                "\ttext-align: center;\n"
+                "\tfont-weight: bold;\n"
+                "\tfont-size: 115%%;\n}\n") ;
 /* td.crosstable_tiebreak : the tiebreak column */
-	fprintf(fp, "/* td.crosstable_tiebreak : the tiebreak column */\n"
-				"td.crosstable_tiebreak {\n"
-				"\ttext-align: center;\n"
-				"\tpadding: 0px 3px 0px 3px ;\n"
-				"\tfont-size: 90%%;\n"
-				"\tfont-weight: normal;\n}\n") ;
+    fprintf(fp, "/* td.crosstable_tiebreak : the tiebreak column */\n"
+                "td.crosstable_tiebreak {\n"
+                "\ttext-align: center;\n"
+                "\tpadding: 0px 3px 0px 3px ;\n"
+                "\tfont-size: 90%%;\n"
+                "\tfont-weight: normal;\n}\n") ;
 /* table.crosstable_cell : each individual cell view as a table */
-	fprintf(fp, "/* table.crosstable_cell : each individual cell view as a table */\n"
-				"table.crosstable_cell {\n"
-				"\tmargin-left: auto;\n"
-				"\tmargin-right: auto;\n"
-				"\ttext-align: center;\n}\n") ;
+    fprintf(fp, "/* table.crosstable_cell : each individual cell view as a table */\n"
+                "table.crosstable_cell {\n"
+                "\tmargin-left: auto;\n"
+                "\tmargin-right: auto;\n"
+                "\ttext-align: center;\n}\n") ;
 /* td.cell : each cell inside each individual cell */
-	fprintf(fp, "/* td.cell : each cell inside each individual cell */\n"
-				"td.cell {\n"
-				"\tborder: 0px solid black;\n}\n") ;
-	fprintf(fp, "</style>\n") ;
-	fprintf(fp, "</head>\n<body bgcolor=\"#FFFFFF\" vlink=\"#CC6600\">\n\n\n\n") ;
-	fprintf(fp, CELLBEGIN) ;
+    fprintf(fp, "/* td.cell : each cell inside each individual cell */\n"
+                "td.cell {\n"
+                "\tborder: 0px solid black;\n}\n") ;
+    fprintf(fp, "</style>\n") ;
+    fprintf(fp, "</head>\n<body bgcolor=\"#FFFFFF\" vlink=\"#CC6600\">\n\n\n\n") ;
+    fprintf(fp, CELLBEGIN) ;
     fprintf(fp, "<table class=\"crosstable_cell\">\n") ;
     fprintf(fp, "<tr><td class=\"cell\" align=\"left\"><span STYLE=\"font-size: 90%%; color: #990000;\">PAPP_COLOR</span></td>\n"
-				"    <td class=\"cell\" align=\"right\"><span STYLE=\"font-size: 90%%; color: #006600;\">PAPP_OPP</span></td></tr>\n") ;
+                "    <td class=\"cell\" align=\"right\"><span STYLE=\"font-size: 90%%; color: #006600;\">PAPP_OPP</span></td></tr>\n") ;
     fprintf(fp, "<tr><td colspan=\"2\" class=\"cell\" align=\"center\"><span STYLE=\"font-weight: bold; text-align: center; color: #000000;\">PAPP_TOTAL</span></td></tr>\n") ;
     fprintf(fp, "<tr><td class=\"cell\" align=\"left\"><span STYLE=\"font-size: 90%%; color: #000000;\">PAPP_PTS</span></td>\n"
-				"    <td class=\"cell\" align=\"right\"><span STYLE=\"font-size: 90%%; color: #660000;\">PAPP_SCORE</span></td></tr>\n") ;
+                "    <td class=\"cell\" align=\"right\"><span STYLE=\"font-size: 90%%; color: #660000;\">PAPP_SCORE</span></td></tr>\n") ;
     fprintf(fp, "</table>\n") ;
-	fprintf(fp, CELLEND) ;
-	fprintf(fp, "\n<div class=\"crosstable_caption\">\n"
-				"PAPP_TOURNAMENT_NAME<br>\n"
+    fprintf(fp, CELLEND) ;
+    fprintf(fp, "\n<div class=\"crosstable_caption\">\n"
+                "PAPP_TOURNAMENT_NAME<br>\n"
 #ifdef ENGLISH
-				"Standings after round PAPP_RONDE<br>\n"
+                "Standings after round PAPP_RONDE<br>\n"
 #else
-				"Classement apr&egrave;s la ronde PAPP_RONDE<br>\n"
+                "Classement apr&egrave;s la ronde PAPP_RONDE<br>\n"
 #endif
-				"</div>\n" MC_CROSSTABLE "\n") ;
-	fprintf(fp, "</body>\n</html>\n") ;
+                "</div>\n" MC_CROSSTABLE "\n") ;
+    fprintf(fp, "</body>\n</html>\n") ;
     fclose(fp) ;
     return myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0) ;
 }
 
 /* Enregistre les lignes definissant une cellule du tableau - record lines defining a table cell */
 void RecordCell(char cellule[],  long taille, FILE *file) {
-	short begin=0 ;
-	char *buf = malloc(taille+1) ;
-	cellule[0] = '\0' ;
-	printf("RECORD CELL DANS TEMPLATE\n") ;
-	while ( fgets(buf, taille, file) ) {
-		if (!begin) {
-			if (strstr(buf, CELLBEGIN)) /* le debut de la def. - start of def. */
-				begin = 1 ;
-			continue ;
-		} else { /* on est dans la definition - we're in definition */
-			if (strstr(buf, CELLEND)) { /* fin de la def. - end of def. */
-				begin = 0 ;
-				break ;
-			}
-			/* On recorde - recording */
-			strncat(cellule, buf, taille-strlen(cellule)) ;
-		}
-	}
-	cellule[taille-1] = '\0' ;
+    short begin=0 ;
+    char *buf = malloc(taille+1) ;
+    cellule[0] = '\0' ;
+    printf("RECORD CELL DANS TEMPLATE\n") ;
+    while ( fgets(buf, taille, file) ) {
+        if (!begin) {
+            if (strstr(buf, CELLBEGIN)) /* le debut de la def. - start of def. */
+                begin = 1 ;
+            continue ;
+        } else { /* on est dans la definition - we're in definition */
+            if (strstr(buf, CELLEND)) { /* fin de la def. - end of def. */
+                begin = 0 ;
+                break ;
+            }
+            /* On recorde - recording */
+            strncat(cellule, buf, taille-strlen(cellule)) ;
+        }
+    }
+    cellule[taille-1] = '\0' ;
 }
 
 /* Essaie de lire le fichier de template pour la crosstable. Si non trouve,
@@ -934,36 +934,36 @@ void RecordCell(char cellule[],  long taille, FILE *file) {
  * Returns 0 in case of error.
  */
 short LookForTMPLFile(char *cell, long cellSize) {
-	FILE *cellFile ;
-	short begin, end ;
-	char buf[LINE_MAX_LENGTH] ;
+    FILE *cellFile ;
+    short begin, end ;
+    char buf[LINE_MAX_LENGTH] ;
 
-	if ( (cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0 ) {
-		printf("TEMPLATE TROUVE\n") ;
-		begin = end = 0 ;
-		while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
-			if ( strstr(buf, CELLBEGIN) )
-				 begin = 1; /* Debut de la definition de la cellule - start of cell def. */
-			if ( (strstr(buf, CELLEND)) && begin ) {
-				end = 1 ; /* Fin de la definition de la cellule - end of cell def. */
-				break ;
-			}
-		}
-		if (begin && end) { /* Il y avait une def. de cellule - There was a cell def. */
-			printf("DEF. CELL TROUVEE\n") ;
-			fseek(cellFile, 0, SEEK_SET) ;
-			RecordCell(cell, cellSize, cellFile) ;
-			fclose(cellFile) ;
-			return 1 ;
-		}
-		printf(BAD_TMPL_FILE) ;
-		return 0 ;
-	} else if ( (cellFile = GenerateCellFile()) != 0) {
-		RecordCell(cell, cellSize, cellFile) ;
-		fclose(cellFile) ;
-		return 1 ;
-	} else
-		return 0 ;
+    if ( (cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0 ) {
+        printf("TEMPLATE TROUVE\n") ;
+        begin = end = 0 ;
+        while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
+            if ( strstr(buf, CELLBEGIN) )
+                 begin = 1; /* Debut de la definition de la cellule - start of cell def. */
+            if ( (strstr(buf, CELLEND)) && begin ) {
+                end = 1 ; /* Fin de la definition de la cellule - end of cell def. */
+                break ;
+            }
+        }
+        if (begin && end) { /* Il y avait une def. de cellule - There was a cell def. */
+            printf("DEF. CELL TROUVEE\n") ;
+            fseek(cellFile, 0, SEEK_SET) ;
+            RecordCell(cell, cellSize, cellFile) ;
+            fclose(cellFile) ;
+            return 1 ;
+        }
+        printf(BAD_TMPL_FILE) ;
+        return 0 ;
+    } else if ( (cellFile = GenerateCellFile()) != 0) {
+        RecordCell(cell, cellSize, cellFile) ;
+        fclose(cellFile) ;
+        return 1 ;
+    } else
+        return 0 ;
 }
 
 /* Generation du code pour la crosstable, a inserer dans un fichier HTML
@@ -974,33 +974,33 @@ void OutputCrosstable(char cell[], FILE *out) {
     char cell2[CELL_MAX_SIZE + 100] ;
     player_structure *pj ;
     round_structure *pr;
-	long i, j ;
+    long i, j ;
 
 #ifdef ENGLISH
     fprintf(out, "<table id=\"crosstable\">\n") ;
 /*    fprintf(out, "<caption>%s<br>Standings after %ld round%c<br>&nbsp</caption>\n",tournament_name, ronde, (ronde==1?' ':'s')); */
 
     fprintf(out, "<tr>\n"
-				 "<td class=\"crosstable_title\">No.</td>\n"
-			     "<td class=\"crosstable_title\" align=\"left\">Name</td>\n"
-				 "<td class=\"crosstable_title\">Country</td>\n") ;
+                 "<td class=\"crosstable_title\">No.</td>\n"
+                 "<td class=\"crosstable_title\" align=\"left\">Name</td>\n"
+                 "<td class=\"crosstable_title\">Country</td>\n") ;
     for (j = 0 ; j < current_round ; j++)
         fprintf(out, "<td class=\"crosstable_title\">r. %ld</td>\n", j+1) ;
     fprintf(out, "<td class=\"crosstable_title\">Points</td>\n"
-			     "<td class=\"crosstable_title\">Tie-break</td>\n</tr>\n") ;
+                 "<td class=\"crosstable_title\">Tie-break</td>\n</tr>\n") ;
     fflush(out) ;
 #else
     fprintf(out, "<table id=\"crosstable\">\n") ;
 /*    fprintf(out, "<caption><%s<br>Classement apr&egrave;s %ld ronde%c<br>&nbsp</caption>\n", tournament_name,ronde, (ronde==1?' ':'s'));*/
 
     fprintf(out, "<tr>\n"
-			"<td class=\"crosstable_title\">No.</td>\n"
-			"<td class=\"crosstable_title\" align=\"left\">Nom</td>\n"
-			"<td class=\"crosstable_title\">Pays</td>\n") ;
+            "<td class=\"crosstable_title\">No.</td>\n"
+            "<td class=\"crosstable_title\" align=\"left\">Nom</td>\n"
+            "<td class=\"crosstable_title\">Pays</td>\n") ;
     for (j = 0 ; j < current_round ; j++)
         fprintf(out, "<td class=\"crosstable_title\">r. %ld</td>\n", j+1) ;
     fprintf(out, "<td class=\"crosstable_title\">Points</td>\n"
-			"<td class=\"crosstable_title\">D&eacute;partage</td>\n</tr>\n") ;
+            "<td class=\"crosstable_title\">D&eacute;partage</td>\n</tr>\n") ;
     fflush(out) ;
 #endif
     for (i = 0 ; i < registered_players->n ; i++) {
@@ -1029,25 +1029,25 @@ void OutputCrosstable(char cell[], FILE *out) {
  * PAPP_RONDE : ID de la ronde - round ID
  */
 void ProcessHTMLLine(char *str) {
-	char *p ;
-	char buf_tmp[LINE_MAX_LENGTH] ;
-	char buf2[LINE_MAX_LENGTH] ;
-	long len ;
+    char *p ;
+    char buf_tmp[LINE_MAX_LENGTH] ;
+    char buf2[LINE_MAX_LENGTH] ;
+    long len ;
 
-	p = strstr(str, "PAPP_RONDE");
+    p = strstr(str, "PAPP_RONDE");
     if (p) {
-		strcpy(buf_tmp, p+(long)strlen("PAPP_RONDE"));
-		sprintf(buf2, "%ld", current_round) ;
-		len = strlen(buf2);
-		strncpy(p, buf2, len);
-		strcpy(p+len, buf_tmp);
+        strcpy(buf_tmp, p+(long)strlen("PAPP_RONDE"));
+        sprintf(buf2, "%ld", current_round) ;
+        len = strlen(buf2);
+        strncpy(p, buf2, len);
+        strcpy(p+len, buf_tmp);
     }
-	p = strstr(str, "PAPP_TOURNAMENT_NAME");
+    p = strstr(str, "PAPP_TOURNAMENT_NAME");
     if (p) {
-		strcpy(buf_tmp, p+(long)strlen("PAPP_TOURNAMENT_NAME"));
-		len = strlen(tournament_name);
-		strncpy(p, tournament_name, len);
-		strcpy(p+len, buf_tmp);
+        strcpy(buf_tmp, p+(long)strlen("PAPP_TOURNAMENT_NAME"));
+        len = strlen(tournament_name);
+        strncpy(p, tournament_name, len);
+        strcpy(p+len, buf_tmp);
     }
 }
 
@@ -1061,39 +1061,39 @@ void ProcessHTMLLine(char *str) {
  */
 void HTMLCrosstableOutput(FILE *out) {
     char cell[CELL_MAX_SIZE + 100] ;
-	short begin=0 ;
-	char buf[LINE_MAX_LENGTH] ;
+    short begin=0 ;
+    char buf[LINE_MAX_LENGTH] ;
     FILE *cellFile ;
 
-	if (!LookForTMPLFile(cell, CELL_MAX_SIZE + 100)) { /* on n'a pas trouve un fichier - File wasn't found */
-		printf(CANT_OPEN ": cell.tmpl file\n");
+    if (!LookForTMPLFile(cell, CELL_MAX_SIZE + 100)) { /* on n'a pas trouve un fichier - File wasn't found */
+        printf(CANT_OPEN ": cell.tmpl file\n");
         return ;
     }
-	/* On a donc enregistre une cellule - So a cell was recorded */
-	if ((cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0) {
-		while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
-			if (begin) {
-				if (strstr(buf, CELLEND)) /* la fin de la def. - end of def. */
-					begin = 0 ;
-				continue ;
-			} else { /* on n'est pas dans la definition - Not in def. */
-			if (strstr(buf, CELLBEGIN)) { /* debut de la def. - start of def. */
-				begin = 1 ;
-				continue ;
-			}
-			/* On recopie - copy */
-				if (strstr(buf, MC_CROSSTABLE))
-					OutputCrosstable(cell, out) ;
-				else {
+    /* On a donc enregistre une cellule - So a cell was recorded */
+    if ((cellFile = myfopen_in_subfolder("cell.tmpl", "r", "", 0, 0)) != 0) {
+        while ( fgets(buf, LINE_MAX_LENGTH, cellFile) ) {
+            if (begin) {
+                if (strstr(buf, CELLEND)) /* la fin de la def. - end of def. */
+                    begin = 0 ;
+                continue ;
+            } else { /* on n'est pas dans la definition - Not in def. */
+            if (strstr(buf, CELLBEGIN)) { /* debut de la def. - start of def. */
+                begin = 1 ;
+                continue ;
+            }
+            /* On recopie - copy */
+                if (strstr(buf, MC_CROSSTABLE))
+                    OutputCrosstable(cell, out) ;
+                else {
                     ProcessHTMLLine(buf) ; /* remplacement des mots-clefs - keywords replacement */
-					fputs(buf, out) ;
-				}
+                    fputs(buf, out) ;
+                }
 
-			}
-		}
-	} else {
-		printf(CANT_OPEN ": cell.tmpl file\n");
-	}
+            }
+        }
+    } else {
+        printf(CANT_OPEN ": cell.tmpl file\n");
+    }
 }
 
 /* void TextCrosstableOutput(long ronde_aff, FILE *fp)

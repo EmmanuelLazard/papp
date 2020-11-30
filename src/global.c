@@ -76,7 +76,7 @@
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
  */
 
-#define  _POSIX_C_SOURCE 1L
+#define  _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1127,7 +1127,7 @@ void init_workfile(long file_type) {
 
     if (file_type == OLD) {
         /* On sauvegarde l'ancien "papp-internal-workfile.txt" - old workfile is saved */
-        if (mktemp(tmp_filename) == NULL)
+        if (mkstemp(tmp_filename) == -1)
         	return ;
         papp_file = myfopen_in_subfolder(workfile_filename, "rb", "", 0, 1) ;
         if ((tmpfile = myfopen_in_subfolder(tmp_filename, "wb", "", 0, 0)) == NULL) {

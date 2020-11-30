@@ -579,7 +579,7 @@ long uncouple(long n) {
             modified_coupling = 1;
             return 1;
         }
-        return 0;
+    return 0;
 }
 
 void make_couple(long n1, long n2, discs_t value) {
@@ -999,13 +999,13 @@ void pairings_manipulate(void) {
                      * individualSheet() will do it itself.
                      */
                     individualSheet(n1, NULL);
-                    break;
+                break;
             case 'z':
                 clear_line();
                 printf("\n");
                 if (yes_no(MAN_ZAP))
                     zero_coupling();
-                    break;
+                break;
             case 'a':
                 clear_line();
                 printf("\n");

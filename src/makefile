@@ -191,7 +191,7 @@ CC = gcc
 #
 # Voici les options rajoutees a la compilation - Here are the added compiler options
 #
-EXTRA  = -DMIXING #-DENGLISH
+EXTRA  = -DMIXING
 #
 #-------------------------------------------------------------------------------
 #
@@ -203,22 +203,50 @@ EXTRA  = -DMIXING #-DENGLISH
 #
 #------------------------------------
 #
-# MacOS X
 
-CFLAGS = -DMACOSX -DUNIX_BSD \
-		 -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
-         $(EXTRA) \
-         -O2 -pipe -arch x86_64 -mmacosx-version-min=10.10 \
-         -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
-         -pedantic -ansi
-LDFLAGS = -mmacosx-version-min=10.10
-LIBS = -lm -ltermcap -arch x86_64
+COMMON_FLAGS = -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
+COMMON_OPTIONS = -O2 -pipe
+COMMON_WARNINGS = -Wall -Wextra -pedantic -ansi \
+	-Wstrict-prototypes -Wno-unused-function -Wimplicit-function-declaration \
+	-Wno-char-subscripts
+
+ifeq ($(OS),Windows_NT)
+	# CygWin sous Windows avec ncurses - Cygwin under Windows with ncurses
+	CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
+		-DCYGWIN -DUNIX_BSD -DPOSIX_SIGNALS
+	LDFLAGS =
+	LIBS = -lm -lncurses
+	ARCH = Windows
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
+		# MacOS X
+		CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
+			-DMACOSX -DUNIX_BSD -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
+	    	-arch x86_64 -mmacosx-version-min=10.10
+		LDFLAGS = -mmacosx-version-min=10.10
+		LIBS = -lm -ltermcap -arch x86_64
+		ARCH = MacOS
+	else
+		ifeq ($(UNAME_S),Linux)
+			# Linux with Termcap library
+			# (if you don't have it at the right place, copy it into the papp directory)
+			CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
+				-DLINUX -DUNIX_SYSV -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
+	    	    -Wno-unused-but-set-variable -Wimplicit-fallthrough=0 \
+	    	    -Wmisleading-indentation -fomit-frame-pointer
+			LDFLAGS = -L.
+			LIBS = -lm -ltermcap
+			ARCH = Linux
+		endif
+	endif
+endif
 
 #----------
 
 # CygWin sous Windows avec ncurses - Cygwin under Windows with ncurses
 
-#CFLAGS = -DCYGWIN -DUNIX_BSD \
+#CFLAGS = -DCYGWIN -DUNIX_BSD -D_POSIX_C_SOURCE=200809L \
 #         -DPOSIX_SIGNALS \
 #         $(EXTRA) \
 #         -O2 -pipe \
@@ -229,24 +257,9 @@ LIBS = -lm -ltermcap -arch x86_64
 
 #----------
 
-# Linux with Termcap library
-# (if you don't have it at the right place, copy it into the papp directory)
-
-#CFLAGS = -DLINUX -DUNIX_SYSV \
-#        -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
-#        $(EXTRA) \
-#        -O2 -pipe \
-#        -Wstrict-prototypes -Wall -Wextra -Wno-unused-function \
-#        -fomit-frame-pointer -pedantic -ansi
-#LDFLAGS = -L.
-#LIBS = -lm -ltermcap
-
-
-#----------
-
 # Linux without Termcap library
 
-#CFLAGS = -DLINUX -DUNIX_SYSV \
+#CFLAGS = -DLINUX -DUNIX_SYSV -D_POSIX_C_SOURCE=200809L  \
 #         -DPOSIX_SIGNALS -DP_OPEN -DNO_TERMCAP_H \
 #         $(EXTRA) \
 #         -O2 -pipe \
@@ -353,23 +366,25 @@ OBJECTS_DOS = \
 #
 
 all:
+	@echo "\nBuilding for" $(ARCH)
 	$(MAKE) papp
+	@echo "\nBuilding English version for" $(ARCH)
 	$(MAKE) papp_GB
 
 papp : LANGUAGE=
 papp : $(OBJECTS)
 	$(CC) $(LDFLAGS) -o papp $(OBJECTS) $(LIBS)
 	rm -f *.o
-#	cp papp ..
+	mv papp ../bin/$(ARCH)
 
 papp_GB : LANGUAGE=-DENGLISH
 papp_GB : $(OBJECTS)
 	$(CC) $(LDFLAGS) -o papp_GB $(OBJECTS) $(LIBS)
 	rm -f *.o
-#	cp papp_GB ..
+	mv papp_GB ../bin/$(ARCH)
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) $(EXTRA) $(LANGUAGE)
+	$(CC) -c $< $(CFLAGS) $(LANGUAGE)
 
 .PHONY : clean
 clean:

@@ -858,45 +858,45 @@ press_key :
             sprintf(line,"%3ld.", round0+1);
             more_line(line);
         }
-        /* Afficher le total des points, des pions et des scores - Display points, discs and scores */
-        more_line("");
-        /* La variable i contient toujours le ID d'inscription - i has registration ID */
-        if (display_score_diff) {
-            /*
-             * On implemente la ligne suivante : - following line is implemented
-             * Score = 2*nbr_discs[i] - round*discsTotal;
-             */
-            Score = nbr_discs[i];
-            ADD_SCORE(Score, Score);
-            ADD_SCORE(Score, INTEGER_TO_SCORE(-current_round * discsTotal));
-            sprintf(csc, "%s%s", SCORE_IS_POSITIVE(Score) ? "+":"", discs2string(Score));
-        } else {
-            sprintf(csc, "%s", discs2string(nbr_discs[i]));
-        }
+    /* Afficher le total des points, des pions et des scores - Display points, discs and scores */
+    more_line("");
+    /* La variable i contient toujours le ID d'inscription - i has registration ID */
+    if (display_score_diff) {
+        /*
+         * On implemente la ligne suivante : - following line is implemented
+         * Score = 2*nbr_discs[i] - round*discsTotal;
+         */
+        Score = nbr_discs[i];
+        ADD_SCORE(Score, Score);
+        ADD_SCORE(Score, INTEGER_TO_SCORE(-current_round * discsTotal));
+        sprintf(csc, "%s%s", SCORE_IS_POSITIVE(Score) ? "+":"", discs2string(Score));
+    } else {
+        sprintf(csc, "%s", discs2string(nbr_discs[i]));
+    }
 
-        if ((score[i] % 2) == 0)
-            sprintf(line, FICH_TRAILER_PAIR, score[i] / 2, current_round, csc);
-        else
-            sprintf(line, FICH_TRAILER_IMPAIR, score[i] / 2, current_round, csc);
+    if ((score[i] % 2) == 0)
+        sprintf(line, FICH_TRAILER_PAIR, score[i] / 2, current_round, csc);
+    else
+        sprintf(line, FICH_TRAILER_IMPAIR, score[i] / 2, current_round, csc);
 
-        more_line(line);
+    more_line(line);
 
 end_sheet:
-        /*
-         * Meme si aucune partie n'a encore ete jouee, il peut etre interessant de savoir
-         * si le joueur a deja(!) abandonne, ou s'il y a un commentaire le concernant.
-         *****
-         * Even if no games have been played, it may be interesting to know if the player
-         * has already resigned or if there is any commentary about him.
-         */
-        if (!present[i])
-            more_line(FICH_OUT);
-        comm = findPlayer(playerNumber) -> comment;
-        if (comm) {
-            sprintf(line, "--> %s", comm);
-            more_line(line);
-        }
-        more_close();
+    /*
+     * Meme si aucune partie n'a encore ete jouee, il peut etre interessant de savoir
+     * si le joueur a deja(!) abandonne, ou s'il y a un commentaire le concernant.
+     *****
+     * Even if no games have been played, it may be interesting to know if the player
+     * has already resigned or if there is any commentary about him.
+     */
+    if (!present[i])
+        more_line(FICH_OUT);
+    comm = findPlayer(playerNumber) -> comment;
+    if (comm) {
+        sprintf(line, "--> %s", comm);
+        more_line(line);
+    }
+    more_close();
 }
 
 /*

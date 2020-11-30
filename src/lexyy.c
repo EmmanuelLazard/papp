@@ -2280,7 +2280,7 @@ long Macintosh_to_PC(char *filename, char **tempfile) {
 		return -1;
 
 	/* On essaie d'avoir un nom temporaire - trying to get temporary filename */
-	if (mktemp(temp_name) == NULL)
+	if (mkstemp(temp_name) == -1)
 		return -1;
 
 	temp = fopen( temp_name, "wb" );

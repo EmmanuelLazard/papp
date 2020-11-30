@@ -241,7 +241,7 @@ void create_ELO_file(void) {
 
     if (current_round < 1)
         return;
-	clearScreen();
+    clearScreen();
     /* Creation d'un fullname de fichier par defaut - Creation of full filename */
 	if (strlen(tournament_date) > 9) {
 		strcpy(filename, &tournament_date[6]) ;/* annee - year */
