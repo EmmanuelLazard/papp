@@ -1,1 +1,50 @@
-Revision: $Id: Bugs,v 1.3 1995/04/09 18:33:01 bousch Exp $Voici une liste (non exhaustive) de problemes connus de PAPP, pourlesquels je n'ai pas trouve de solution satisfaisante. A moins qu'il n'yait une volonte tres forte de les corriger, ces problemes risquentd'etre la pour quelque temps.* Disque pleinPAPP n'affichera aucun message d'erreur si le disque est plein, et lesdonnees seront perdues pour de bon. Verifiez qu'il reste au moinsquelques dizaines de kilo-octets sur votre disquette -- ceci devraitetre largement suffisant, meme pour de tres gros tournois.* Relecture des fichiers de joueursDe maniere generale, PAPP est trop laxiste en ce qui concerne les nomsde joueurs (ou de programmes) entres au clavier. Ceci peut causer deserreurs de syntaxe si vous quittez et relancez PAPP, parce quel'analyseur syntaxique qui lit "joueurs" et "nouveaux" est beaucoup plusstrict, lui. En general, PAPP indiquera le fichier et la ligne ou s'estproduite l'erreur. La documentation ne precise d'ailleurs pas quels sontles caractereres acceptables dans un nom de joueur (mais allez voir danspap.l).* Limites de l'alloc-ringLes chaines de caracteres lues a partir des differents fichiers (enparticulier le fichier des joueurs) sont temporairement stockees dans unalloc-ring pour des questions d'efficacite. Si PAPP a besoin de plus deALLOC_RING_SLOTS (par defaut 16) chaines temporaires, ou d'une chainetemporaire de longueur depassant ALLOC_RING_LENGTH (par defaut 256,incluant le \0 final), il peut se passer des choses terribles. Ceslimites pourraient etre atteintes si un nom de joueur atteignait 256caracteres, ou etait compose de 16 fragments (un nom et quinze prenoms).* Emulation de terminalCelle-ci est extremement incomplete; beaucoup d'affichages auront unaspect inelegant si le terminal a trop peu de lignes (moins de 20) ou decolonnes (moins de 65). L'edition (^H, ^X) des chaines tapees parl'utilisateur ne fonctionne que sur la ligne elle-meme, pas si la chainedeborde sur la ligne suivante, a moins que votre terminal n'autorise le"reverse-wraparound", comme par exemple xterm.* Nom des joueursIl n'est pas possible d'inscrire des joueurs dont le nom complet faitplus de 70 caracteres, a moins de recompiler le programme.
+Revision: $Id: Bugs,v 1.3 1995/04/09 18:33:01 bousch Exp $
+
+Voici une liste (non exhaustive) de problemes connus de PAPP, pour
+lesquels je n'ai pas trouve de solution satisfaisante. A moins qu'il n'y
+ait une volonte tres forte de les corriger, ces problemes risquent
+d'etre la pour quelque temps.
+
+* Disque plein
+
+PAPP n'affichera aucun message d'erreur si le disque est plein, et les
+donnees seront perdues pour de bon. Verifiez qu'il reste au moins
+quelques dizaines de kilo-octets sur votre disquette -- ceci devrait
+etre largement suffisant, meme pour de tres gros tournois.
+
+* Relecture des fichiers de joueurs
+
+De maniere generale, PAPP est trop laxiste en ce qui concerne les noms
+de joueurs (ou de programmes) entres au clavier. Ceci peut causer des
+erreurs de syntaxe si vous quittez et relancez PAPP, parce que
+l'analyseur syntaxique qui lit "joueurs" et "nouveaux" est beaucoup plus
+strict, lui. En general, PAPP indiquera le fichier et la ligne ou s'est
+produite l'erreur. La documentation ne precise d'ailleurs pas quels sont
+les caractereres acceptables dans un nom de joueur (mais allez voir dans
+pap.l).
+
+* Limites de l'alloc-ring
+
+Les chaines de caracteres lues a partir des differents fichiers (en
+particulier le fichier des joueurs) sont temporairement stockees dans un
+alloc-ring pour des questions d'efficacite. Si PAPP a besoin de plus de
+ALLOC_RING_SLOTS (par defaut 16) chaines temporaires, ou d'une chaine
+temporaire de longueur depassant ALLOC_RING_LENGTH (par defaut 256,
+incluant le \0 final), il peut se passer des choses terribles. Ces
+limites pourraient etre atteintes si un nom de joueur atteignait 256
+caracteres, ou etait compose de 16 fragments (un nom et quinze prenoms).
+
+* Emulation de terminal
+
+Celle-ci est extremement incomplete; beaucoup d'affichages auront un
+aspect inelegant si le terminal a trop peu de lignes (moins de 20) ou de
+colonnes (moins de 65). L'edition (^H, ^X) des chaines tapees par
+l'utilisateur ne fonctionne que sur la ligne elle-meme, pas si la chaine
+deborde sur la ligne suivante, a moins que votre terminal n'autorise le
+"reverse-wraparound", comme par exemple xterm.
+
+
+* Nom des joueurs
+
+Il n'est pas possible d'inscrire des joueurs dont le nom complet fait
+plus de 70 caracteres, a moins de recompiler le programme.

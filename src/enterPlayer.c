@@ -471,7 +471,7 @@ static int sort_teams(const void *ARG1, const void *ARG2) {
  */
 void display_registered(const char *filename) {
     long i, _i, nbi, draws, len_dep;
-    char string[256], string2[256];
+    char string[512], string2[1024];
     char *tournamentName ;
 
     assert(registered_players != NULL);

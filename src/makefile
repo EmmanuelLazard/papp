@@ -213,7 +213,9 @@ COMMON_WARNINGS = -Wall -Wextra -pedantic -ansi \
 ifeq ($(OS),Windows_NT)
 	# CygWin sous Windows avec ncurses - Cygwin under Windows with ncurses
 	CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
-		-DCYGWIN -DUNIX_BSD -DPOSIX_SIGNALS
+		-DCYGWIN -DUNIX_BSD -DPOSIX_SIGNALS \
+  	    -Wno-unused-but-set-variable -Wimplicit-fallthrough=0 \
+  	    -Wno-format-overflow -Wno-stringop-truncation -Wno-stringop-overflow
 	LDFLAGS =
 	LIBS = -lm -lncurses
 	ARCH = Windows
