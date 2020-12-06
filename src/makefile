@@ -236,6 +236,7 @@ else
 			CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
 				-DLINUX -DUNIX_SYSV -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
 	    	    -Wno-unused-but-set-variable -Wimplicit-fallthrough=0 \
+  	    		-Wno-format-overflow -Wno-stringop-truncation -Wno-stringop-overflow \
 	    	    -Wmisleading-indentation -fomit-frame-pointer
 			LDFLAGS = -L.
 			LIBS = -lm -ltermcap
