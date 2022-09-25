@@ -3,6 +3,7 @@
 /*
  * pap.l: Analyse lexicale pour PAPP
  *
+ * (EL) 23/09/2022 : v1.37.1, small change in lex file: allow ' as first character of name
  * (EL) 03/04/2020 : v1.37, English version for code.
  * (EL) 22/09/2012 : v1.36, no change.
  * (EL) 12/09/2012 : v1.35, no change.
@@ -227,7 +228,7 @@ __eof__         return 0;
 <UNQUOTED>{CRLF}   { ++line_number; return TOK_NEWLINE; }
 <UNQUOTED>{EOL}    { ++line_number; return TOK_NEWLINE; }
 
-<UNQUOTED>[a-z_A-Z][a-z_A-Z'0-9\-\.]* {
+<UNQUOTED>[a-z_A-Z'][a-z_A-Z'0-9\-\.]* {
 		yylval.string = strcpy(new_string(), text);
 		return STRING;
 		}

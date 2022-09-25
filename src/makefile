@@ -191,7 +191,7 @@ CC = gcc
 #
 # Voici les options rajoutees a la compilation - Here are the added compiler options
 #
-EXTRA  = -DMIXING
+EXTRA  = -DMIXING #-DINCLUDE_COUNTRY
 #
 #-------------------------------------------------------------------------------
 #
