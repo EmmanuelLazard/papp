@@ -5,6 +5,7 @@
 # par/by Thierry Bousch, Emmanuel Lazard & Stephane Nicolet                             #
 #                                                                                       #
 # Makefile v1.37                                                                        #
+# 28/08/2023 (Lazard) : Ajout de l'architecture arm pour MacOS                          #
 # 29/11/2020 (Lazard) : English translation                                             #
 # 17/07/2012 (Lazard) : Ajout des options 'pedantic' et 'ansi' pour se conformer au C90 #
 #                     : 'pedantic' and 'ansi' options added to respect C90 standard     #
@@ -191,7 +192,7 @@ CC = gcc
 #
 # Voici les options rajoutees a la compilation - Here are the added compiler options
 #
-EXTRA  = -DMIXING #-DINCLUDE_COUNTRY
+EXTRA  = -DMIXING -DINCLUDE_COUNTRY
 #
 #-------------------------------------------------------------------------------
 #
@@ -208,7 +209,7 @@ COMMON_FLAGS = -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
 COMMON_OPTIONS = -O2 -pipe
 COMMON_WARNINGS = -Wall -Wextra -pedantic -ansi \
 	-Wstrict-prototypes -Wno-unused-function -Wimplicit-function-declaration \
-	-Wno-char-subscripts
+	-Wno-char-subscripts -Wno-unused-but-set-variable
 
 ifeq ($(OS),Windows_NT)
 	# CygWin sous Windows avec ncurses - Cygwin under Windows with ncurses
@@ -225,9 +226,9 @@ else
 		# MacOS X
 		CFLAGS = $(COMMON_OPTIONS) $(COMMON_FLAGS) $(COMMON_WARNINGS) $(EXTRA) \
 			-DMACOSX -DUNIX_BSD -DPOSIX_SIGNALS -DP_OPEN -DTERMCAP -DTERMCAP_H \
-	    	-arch x86_64 -mmacosx-version-min=10.10
+	    	-arch arm64 -arch x86_64 -mmacosx-version-min=10.10
 		LDFLAGS = -mmacosx-version-min=10.10
-		LIBS = -lm -ltermcap -arch x86_64
+		LIBS = -lm -ltermcap -arch arm64 -arch x86_64
 		ARCH = MacOS
 	else
 		ifeq ($(UNAME_S),Linux)

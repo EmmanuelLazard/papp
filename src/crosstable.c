@@ -10,10 +10,10 @@
  * (EL) 19/11/2007 : v1.32 : La sortie en HTML prend un fichier de template qui definit toute
                      la page HTML. On doit y trouver la definition de la cellule individuelle
                      ainsi que l'emplacement de la crosstable. Nouvelles fonction 'RecordCell()',
-                     'ChercherFichierCellTMPL()' et 'void OutputCrosstable()'.
+                     'LookForTMPLFile()' et 'OutputCrosstable()'.
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 06/04/2007 : changement des 'fopen()' en 'myfopen_in_subfolder()'
- * (EL) 12/02/2007 : Modification de 'sortie_tableau_croise_HTML()', 'sortie_tableau_croise_texte()'
+ * (EL) 12/02/2007 : Modification de 'HTMLCrosstableOutput()', 'TextCrosstableOutput()'
  *                   pour qu'ils affichent le fullname du tournoi au debut.
  * (EL) 02/02/2007 : changement du type de 'Departage' en double
  * (EL) 13/01/2007 : v1.30 by E. Lazard, no change
@@ -30,7 +30,7 @@
  * (EL) 21/04/2008 : v1.32, HTML output uses a template file that defines all html page.
  *                    The individual cell definition is there and the crosstable place.
  *                    New functions: 'RecordCell()', 'LookForTMPLFile()' and
- *                    'void OutputCrosstable()'.
+ *                    'OutputCrosstable()'.
  * (EL) 29/04/2007 : v1.31, no change
  * (EL) 06/04/2007 : change all 'fopen()' to 'myfopen_in_subfolder()'
  * (EL) 12/02/2007 : Modify 'HTMLCrosstableOutput()', 'TextCrosstableOutput()'
@@ -271,7 +271,7 @@ long score_player1_vs_player2(long FFO_ID_1, long FFO_ID_2) {
 /* void local_compute_tiebreak(long rr)
  *
  * Calcul du departage apres la ronde rr (>=0).
- * Appelle la fonction DepartageJoueur() (tiebreak.c) pour tous les joueurs.
+ * Appelle la fonction PlayerTiebreak() (tiebreak.c) pour tous les joueurs.
  ****
  * Compute tiebreak after round rr (>=0)
  * Calls function PlayerTiebreak() (tiebreak.c) for all players.

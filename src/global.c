@@ -354,16 +354,16 @@ typedef void (*Signal_handler)(int);
 static sigset_t old_sigmask;
 
 #ifndef POSIX_SIGNALS
-void bloquer_signaux() {
+void bloquer_signaux(void) {
     old_sigmask = sigblock( (1L<<SIGHUP) | (1L<<SIGINT) |
                             (1L<<SIGQUIT) | (1L<<SIGTERM) );
 }
 
-void debloquer_signaux() {
+void debloquer_signaux(void) {
     sigsetmask(old_sigmask);
 }
 #else
-void block_signals() {
+void block_signals(void) {
     sigset_t set;
 
     sigemptyset(&set);
@@ -374,7 +374,7 @@ void block_signals() {
     sigprocmask(SIG_BLOCK, &set, &old_sigmask);
 }
 
-void unblock_signals() {
+void unblock_signals(void) {
     sigprocmask(SIG_SETMASK, &old_sigmask, NULL);
 }
 #endif
@@ -411,7 +411,7 @@ static void change_size(void) {
      */
 }
 
-void install_signals() {
+void install_signals(void) {
     handle_signal(SIGHUP, _ending);
     handle_signal(SIGINT, SIG_IGN);
     handle_signal(SIGQUIT, terminate);
@@ -422,9 +422,9 @@ void install_signals() {
 #else
 
 /* pas de signaux */
-void block_signals()          { }
-void unblock_signals()        { }
-void install_signals()        { }
+void block_signals(void)          { }
+void unblock_signals(void)        { }
+void install_signals(void)        { }
 
 #endif
 
@@ -449,7 +449,7 @@ void fatal_error(const char *error) {
     exit(1);
 }
 
-void terminate() {
+void terminate(void) {
 #if defined(UNIX_BSD) || defined(UNIX_SYSV)
     /* peut-etre ne pouvons-nous plus ecrire sur ce terminal - Maybe we can't write on terminal anymore */
     handle_signal(SIGTTIN, _ending);
@@ -467,7 +467,7 @@ void terminate() {
     _ending();
 }
 
-static void _ending() {
+static void _ending(void) {
     /* Nous devons sauvegarder l'etat - state must be saved */
     save_registered();
     save_pairings();
@@ -482,25 +482,25 @@ static void _ending() {
  * Les fonctions suivantes sont protegees contre les signaux - Following functions are signals protected
  */
 
-void save_round() {
+void save_round(void) {
     block_signals();
     _save_round();
     unblock_signals();
 }
 
-void save_registered() {
+void save_registered(void) {
     block_signals();
     _save_registered();
     unblock_signals();
 }
 
-void save_pairings() {
+void save_pairings(void) {
     block_signals();
     _save_pairings();
     unblock_signals();
 }
 
-void recreate_workfile() {
+void recreate_workfile(void) {
     block_signals();
     _recreate_workfile();
     unblock_signals();

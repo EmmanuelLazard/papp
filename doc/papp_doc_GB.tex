@@ -7,7 +7,7 @@
 %\usepackage{times}
 
 %\french
-\def\contentsname{Table des matières}
+\def\contentsname{Table of contents}
 \parskip 1ex plus 0.5ex minus 0.5ex
 \tolerance 1000
 \frenchspacing
@@ -31,9 +31,8 @@
 \voffset=-0.6in
 \begin{document}
 
-\title{\huge\bf Documentation de Papp 1.36}
+\title{\huge\bf Documentation for Papp 1.36}
 \author{ {Thierry Bousch {\tt <bousch@topo.math.u-psud.fr>}}
-\and {Liste Papp-FFO {\tt <ffo-papp@yahoogroupes.fr>}}
 \and {Emmanuel Lazard {\tt <Emmanuel.Lazard@katouche.fr>}}
 }
 \date{Septembre 2012}
@@ -51,129 +50,97 @@
 
 \section{Introduction}
 
-PAPP est un programme d'appariements, c'est-à-dire quelque chose qui 
-est censé simplifier le travail des arbitres.  Il permet d'inscrire 
-des joueurs, d'enregistrer les résultats des rondes, de calculer des 
-appariements, et de produire en sortie des fichiers utilisables pour 
-le calcul du classement national des joueurs (improprement appelé 
-``classement Elo'').
+	PAPP is a pairing program, that is, something which is supposed to 
+simplify referees work during tournaments.  With it, they can 
+inscribe players, save the results of the rounds, calculate pairings 
+automatically and produce files used to calculate a international 
+rating list.
 
-PAPP offre également une mini-base de données permettant de 
-retrouver les numéros Elo des joueurs (s'ils en ont un), et le 
-calcul des appariements est entièrement paramétrable.
+	PAPP also offers a mini-database to allow players numbers 
+management, and the pairing procedure is completely parametrable.
 
-PAPP est écrit en ANSI C, tout particulièrement pour le GCC. Le 
-manuel a été écrit en \LaTeX. Les analyses lexicale et 
-syntaxique utilisent Flex et Bison de la ``fondation du logiciel 
-libre''.
+	PAPP is written in ANSI C, especially for the GCC. The manual has 
+been written in \LaTeX. The lexical and syntactic analysis phases use 
+Flex and Bison, from the ''Free Software Foundation''.
 
-\section{Premier contact}
+\section{First contact}
 
-	L'executable s'appelle \verb|papp|, \verb|papp.exe| ou \verb|Papp MacOS X| selon le
-système d'exploitation. Au lancement, PAPP cherche un fichier de configuration et vous affiche un message correspondant. Il cherche ensuite si vous avez un tournoi en cours (présence d'un fichier intermédiaire, voir section \ref{inter}). Si c'est le cas, PAPP affiche ses caractéristiques, sinon il vous les demande. Ensuite, le menu
-principal apparaît.
+Executable is called \verb|papp|, \verb|papp.exe| or \verb|Papp MacOS X| depending on the OS. When launched, PAPP looks for a configuration file and prints a message. It then looks for an ongoing tournament (presence of a papp work file, see section~\ref{inter}). If it is the case, PAPP
+displays its caracteristics otherwise it asks for them. Then the main menu appears.
 
-	Toutes les commandes sont accessibles par une touche~; s'il
-s'agit d'une lettre, aucune distinction n'est faite entre majuscule et
-minuscule.  Il n'est pas nécessaire de taper [Return] ensuite, de
-même que ce n'est pas nécessaire dans les autres menus, ni après
-les questions Oui/Non.
+	All commands are accessible with a single key stroke, there is no upper/lower case distinction. 
+It is not  necessary to type [Return] afterwards, nor is it necessary after the 
+other menus, nor after the Yes/No questions.
 
-	Expérimentez un peu, ce n'est pas dangereux~; PAPP protestera
-chaque fois que vous pressez une touche invalide (montez le son si
-nécessaire).  La plupart des commandes seront sans effet parce
-qu'aucun joueur n'est encore inscrit.  Tapez donc `\verb|I|' pour
-inscrire des joueurs.
+	Experiment a little bit, it is not dangerous.  PAPP will emit a 
+protestation beep if you press an invalid key (raise the sound level 
+of your computer if necessary). Most commands will be uneffective 
+since no player is inscribed in the tournament, so type `\verb|I|' to 
+inscribe players.
 
 \subsection{Inscriptions}
 
-En réponse au prompt \verb|Nom & Prenom :|, vous pouvez commencer à taper le nom d'un joueur, par exemple `\verb|willi|', puis appuyez sur la touche [Tab]~; PAPP affiche alors la liste de tous les 
-joueurs dont le nom commence par `willi', à savoir \verb|WILLIAM (Jacquart)|, \verb|WILLIAMS Anthony|, \verb|WILLIAMS Eddie| et \verb|WILLIAMSON Tim|.  Vous remarquez que le tampon d'entrée 
-contient maintenant \verb|WILLIAM|, parce que PAPP a complété le nom 
-jusqu'à ce qu'une ambigu{\"\i}té apparaisse --- ici, il ne sait 
-pas si la lettre suivante est une espace ou un `S'.  Effacez le tampon 
-avec [Backspace] ou [Esc], et tapez \verb|laz|, puis [Tab].  Cette 
-fois-ci, il n'y a qu'une complétion possible~: \verb|LAZARD Emmanuel|,
- et il ne reste qu'à confirmer avec [Return].
+Faces with the prompt \verb|Nom & Prenom :|, you can start to type in the name of player for example `\verb|willi|', then press the [TAB] key ; PAPP then displays the list of all players whose name starts with  `willi', thats is \verb|WILLIAM (Jacquart)|, \verb|WILLIAMS Anthony|, \verb|WILLIAMS Eddie| and \verb|WILLIAMSON Tim|.  You'll notice that the entry buffer now holds \verb|WILLIAM|, because PAPP completed the name until the first ambiguity --- here, it does not know wether the fourth letter is `S' 
+or a space.  Delete the buffer with [Backspace] ou [Esc], and type 
+\verb|laz|, then [Tab].  This time, there is only one possible 
+completion: \verb|LAZARD Emmanuel|, and you only have to confirm with 
+[Return].
 
-Maintenant, entrez le nom d'un nouveau joueur (utilisez [Tab] pour 
-véri\-fier qu'il n'est pas déjà dans la base).  PAPP vous 
-demandera confirmation (vous auriez pu faire une erreur de frappe), 
-puis la nationalité du joueur (tapez simplement [Return] s'il s'agit 
-du pays par défaut) de manière à lui attribuer un numéro.  Le joueur sera alors 
-ajouté à la base.
+	Now, enter the name of a new, unknown player (use [Tab]
+to verify that he/she is not already in the database).  PAPP will
+ask for confirmation (you may have done a typographic error), then 
+the player's nationnality (just hit [Return] if it is the default 
+country) so that he can choose a number for the new player  --- you 
+can change that number if you wish.  The player will then be added to 
+the database as a new player.
 
-Amusez-vous quelque temps à inscrire des joueurs et à vous 
-promener dans la base.  Quand vous en aurez assez, tapez simplement 
-[Return] (ou Ctrl-C) en réponse au prompt.  Une fois revenu au menu 
-principal, vérifiez la liste des inscrits avec `\verb|L|'.
+Spend some time playing with the database and inscribing players.  
+Once you get bored, just type [Return] (or Ctrl-C) at the prompt.  
+Then, at the main menu, you can check the list of players in the 
+tournament with `\verb|L|'.
 
-\subsection{Appariements}
 
-	Si vous tapez `\verb|V|', vous verrez la liste de tous les
-inscrits, un par ligne.  C'est parce qu'ils ne sont pas encore
-appariés.  Il est possible de les apparier manuellement avec
-`\verb|M|', ou de demander à PAPP d'apparier tous les joueurs qui ne
-l'ont pas encore été (sauf un, s'il y en a un nombre impair) avec
-`\verb|A|'.  Tapez donc sur `\verb|A|'~: peu après apparaît la
-liste des appariements~; cette fois-ci, il y a deux joueurs sur chaque
-ligne (sauf sur la dernière si le nombre de joueurs est impair).  Cela
-signifie que l'appariement est complet.
+\subsection{Pairings}
 
-Si des retardataires arrivent après que les appariements de la
-premiere ronde ont été annoncés, l'arbitre est libre de les
-accepter ou non~; mais en ce qui concerne PAPP, il n'y a aucune
-difficulté~: vous revenez au menu principal, vous inscrivez les
-joueurs, et puis vous tapez `\verb|A|' pour compléter les appariements. 
-Il est possible d'inscrire des nouveaux joueurs pour une ronde donnée
-tant que les résultats de cette ronde n'ont pas été entièrement
-entrés et validés, ce qui laisse de la marge.
+If you hit `\verb|V|', you'll see the list of all these players, one 
+per line.  That's because they are not yet paired.  It is possible to 
+pair them manually with `\verb|M|', or to ask PAPP to pair 
+automatically all the players that are not yet paired with `\verb|A|'.  
+So type `\verb|A|': the list of pairings appears shortly alfterwards; 
+This time, there are two players on each line (except on the last line 
+if there is an odd number of players).  This means the pairings are 
+complete.
 
-\subsection{Entrée des résultats}
+If some players show up late after the beginning of round one, the 
+tournament director has the choice to accept them or not; but as far 
+as PAPP is concerned, there is no difficulty: you come back to the 
+main menu, you inscribe the players, and you type `\verb|A|' to 
+complete the pairings.  It is possible to inscribe players for a 
+particular round as long as all the results for that round have not 
+been entered and validated, which should be flexible enough for most 
+cases.
 
-Lorsque la ronde se termine et que les petits coupons commencent à 
-arriver sur le bureau, sélectionnez l'option `\verb|R|' pour entrer 
-les résultats.  Le prompt \verb|Joueur & Score :| s'affiche alors~; 
-pour entrer un coupon, tapez le nom (ou le début du nom, ou le 
-numéro) de l'un des joueurs, suivi de son score, séparés par un 
-espace. PAPP vérifiera le nom ou le numéro du joueur désigné, 
-s'étonnera si le coupon avait déjà été rentré, puis 
-affichera le coupon rempli. En cas d'erreur, vous pouvez {\em 
-effacer} un coupon en tapant le signe `\verb|-|' suivi du nom de l'un 
-des joueurs de la partie (ou, si vous préférez, en tapant le 
-numéro de l'un des joueurs suivi de la lettre `\verb|e|' --- 
-l'espace entre les deux est facultatif). Il est possible d'entrer les 
-scores sous forme relative~; ainsi, `\verb|145+4|', `\verb|145=|' et 
-`\verb|145-6|' signifient que le joueur 145 a fait quatre pions de 
-plus que son adversaire, a égalisé, ou a perdu de six pions, 
-respectivement --- ici encore, il n'est pas nécessaire de séparer 
-le numéro du joueur de son score, parce qu'il n'y a pas 
-d'ambigu{\"\i}té possible.
+\subsection{Entering results}
 
-Si vous n'êtes pas s\^ur des informations portées sur un coupon 
-(notamment l'orthographe ou le numéro Elo d'un joueur), ou si vous 
-n'avez pas de coupon du tout, par exemple parce qu'on vous a donné 
-le résultat oralement, tapez sur [Tab]~: PAPP affichera alors tous 
-les coupons, d'abord ceux qui ont été entrés, puis ceux qui 
-restent à entrer.  Ainsi, même si la liste des coupons est trop 
-longue pour tenir sur l'écran, au moins le bas de la liste sera 
-lisible.  Une autre solution moins commode consiste à revenir au 
-menu principal, puis à choisir l'option `\verb|V|' pour voir les 
-appariements et les résultats partiels.
+When the games of the round end and you begin to collect score coupons 
+on your desk, select the option `\verb|R|' to enter the results.  the 
+prompt \verb|Joueur & Score:| is displayed in an empty screen; to 
+enter a game result, type in the name (or the beginning of the name , 
+or the number) of one of the players, followed by his/her score, 
+separated by a space.  PAPP verifies the name or the number of the 
+designated player, outputs a warning message if the result had already 
+been entered, then displays the filled coupon. In case of an error, you can {\em remove} a coupon by typing the sign `\verb|-|' followed by the name of one of the players ( if you prefer by typing a player ID followed by the letter `\verb|e|' --- spacing between them is optional. It is possible to enter relative scores: for example, `\verb|145+4|', `\verb|145=|' and 
+`\verb|145-6|' means that player 145 won by 4 discs, drew, or lost by 6 discs respectively. --- Here again, spacing is unnecessary as there is no ambiguity.
 
-	PAPP vous signalera quand les résultats seront complets.
-Relisez-vous (éventuellement en utilisant [Tab] pour vous rappeler des
-coupons entrés quelque temps avant), et si tout semble correct, tapez
-simplement un `\verb|!|' en réponse au prompt, puis [Return]~; après
-avoir enregistré les résultats, PAPP vous affichera le nouveau
-classement. 
+If you are not sure of the information on the coupon (name spelling or ID of a player), or if the result was orally given to you, press [TAB]: PAPP will display all coupon, first those already entered and then those left to enter.
+Therefore, even if the list is too long to fit on a screen, at least the end of the list will still show. Another less convenient solution is to come back to the main menu and to choose the `\verb|V|' option to see all pairings and partial results.
 
-	A des fins de test, j'ai ajouté dans le même sous-menu une
-option `\verb|?|' pour tirer aléatoirement les résultats des rondes
---- plus précisement, de celles dont les résultats n'ont pas encore
-été entrés.  C'est surtout intéressant quand PAPP connaît
-le classement des joueurs, car il peut estimer raisonnablement les
-probabilités relatives de gain.
+PAPP will warn you when all results are entered. Proofread yourself (eventually by using [TAB] to check old results) and if everything seems correct, simply press `\verb|!|' in response to the prompt then  [Return]; after saving the results, PAPP will display the new standings.
+
+For testing purposes, a `\verb|?|' option has been added instead of entering a result. Then PAPP will randomly generate results for still pending ones. If PAPP knows the players ratings, random results will follow winning probabilities.
+
+
+
 
 \subsection{Chargement et sauvegarde} \label{inter}
 
@@ -334,214 +301,159 @@ trois d'entre eux en `\verb|USA2|' pour que le classement par équipe
 fasse la distinction entre les équipes `\verb|USA|' et `\verb|USA2|'.
 
 
-\section{Appariements automatiques}
 
-C'est ce qui se cache derrière la commande `\verb|A|' du menu 
-principal.  Tout d'abord, insistons sur le fait que `\verb|A|' ne fait 
-que {\em compléter\/} les appariements déjà existants~; en aucun 
-cas cette commande ne peut modifier les appariements précédemment 
-choisis, que ce soit par l'utilisateur ou par PAPP lui-même.  En 
-particulier, si les appariements sont déjà complets, alors 
-`\verb|A|' n'a pas d'autre effet que d'afficher, et éventuellement 
-imprimer, la liste des appariements.
 
-Les appariements sont toujours calculés par optimisation (même à 
-la première ronde).  Tout d'abord, si le nombre de joueurs est 
-impair, on ajoute un joueur fictif (Bip)~; on peut donc supposer qu'il 
-y a $2n$ joueurs.  On détermine ensuite, pour chaque couple $(i,j)$ 
-de joueurs, une {\em pénalité}, c'est-à-dire un nombre réel 
-positif $p_{ij}$ exprimant dans quelle mesure il n'est pas souhaitable 
-que le joueur $i$ joue (avec les noirs) contre le joueur $j$.  Puis, 
-on cherche l'appariement $(i_1,j_1)$, $(i_2,j_2)$, \dots, $(i_n,j_n)$, 
-minimisant la pénalité totale
- $$ {\it Penalite\_totale} = \sum_{k=1}^n p_{i_k j_k} $$
 
-	Ceci est un problème classique de théorie des graphes
-(recherche d'un couplage de poids maximum dans un graphe) qui peut
-être résolu en temps polynomial, typiquement en $O(n^3)$.
-L'implémentation actuelle de PAPP semble plut\^ot en $O(n^4)$.
+\section{Automatic pairings}
 
-\subsection{Description des pénalités}
+That is what behind the `\verb|A|' command from the main menu. First, we insist that `\verb|A|' just completes
+already existing pairings; in no way can this command modify already chosen pairings, by PAPP or the user. If pairings are already completed, `\verb|A|' has no other effect to display the pairings list.
 
-Les pénalités sont calculées comme suit~:
+Pairings are always calculated by optimisation, even for round 1. First if there is an odd number of players, a fictional player, BYE, is added. So it can be assumed there is an even number of players. Then for each couple of players $(i,j)$, a {\em penalty} is computed --- that is a real positive number $p_{ij}$ expressing how much it is not desirable that player $i$ plays black against player $j$.
+PAPP then looks for the pairing  $(i_1,j_1)$, $(i_2,j_2)$, \dots, $(i_n,j_n)$, minimizing overall penalty
+ $$ {\it Overall\_Penalty} = \sum_{k=1}^n p_{i_k j_k} $$
+
+This a classical graph theory problem (maximum-weight perfect matching) that can be solved in polynomial time, typically $O(n^3)$. Papp implementation seems to rather be in $O(n^4)$.
+
+\subsection{Penalties decription}
+
+Penalties are computed as follows:
+
  $$\matrix{
-    p_{ij} &= {\it pen\_couleur}(i,{\rm NOIR})
-	    + {\it pen\_couleur}(j,{\rm BLANC})		\hfill\cr
-	   &\quad{}+ {\it pen\_flottement}(i,j)		\hfill\cr
+    p_{ij} &= {\it pen\_color}(i,{\rm BLACK})
+	    + {\it pen\_color}(j,{\rm WHITE})		\hfill\cr
+	   &\quad{}+ {\it pen\_float}(i,j)		\hfill\cr
 	   &\quad{}+ {\it pen\_repetition}(i,j)		\hfill\cr
-	   &\quad{}+ {\it pen\_chauvinisme}(i,j)	\hfill\cr
-	   &\quad{}+ {\it pen\_elitisme}(i,j)	    \hfill\cr
+	   &\quad{}+ {\it pen\_chauvinism}(i,j)	\hfill\cr
+	   &\quad{}+ {\it pen\_elitism}(i,j)	    \hfill\cr
  }$$
 
 
-\subsubsection{Pénalités de couleur}
+\subsubsection{Color penalties}
 
-	Le terme ${\it pen\_couleur}(i,{\it couleur})$ indique qu'il
-n'est pas souhaitable que le joueur $i$ joue la couleur $\it couleur$
-lors de cette ronde. Notons $\delta_i$ l'{\em écart chromatique\/} de ce
-joueur, c'est-à-dire le nombre de fois o\`u il a eu les Noirs moins le
-nombre de fois ou il a eu les Blancs. Selon qu'il jouera Noir ou Blanc
-à cette ronde, son écart chromatique deviendra $\delta_i+1$ ou
-$\delta_i-1$, respectivement.
-On prend donc
- $$ {\it pen\_couleur}(i,{\it couleur}) =
+	The term ${\it pen\_color}(i,{\it color})$ indicates that it is not desirable for player $i$ to play with color $\it color$ this round. Let $\delta_i$ be the {\em chromatic difference\/} of the player, that is number of times he played Black minus number of times he played White.
+	Depending on whether he plays Black or White at this round, its chromatic difference will become $\delta_i+1$ or $\delta_i-1$, respectively. We then use:
+
+ $$ {\it pen\_color}(i,{\it color}) =
     {\bf p\_coul}\Bigl[\left|\delta_i\pm1\right|\Bigr]
-  + {\it pen\_couleur\_repetee} $$
-Le terme $\it pen\_couleur\_repetee$ vaut $\bf p\_repcl$ si le joueur
-avait déjà joué cette couleur à la ronde précédente, et $0$
-sinon.  On a toujours ${\bf p\_coul}[0] = 0$.
+  + {\it pen\_color\_repeated} $$
+Term $\it pen\_color\_repeated$ is $\bf p\_repcl$ if the player has already played that color at the previous round and  $0$ otherwise. ${\bf p\_coul}[0]$ is always $0$.
 
-\subsubsection{Pénalités de flottement}	
-	Le terme ${\it pen\_flottement}(i,j)$ dit qu'il n'est pas
-souhaitable de faire jouer entre eux deux joueurs dont les scores sont
-trop différents.  On prend ici
- $${\it pen\_flottement}(i,j) =
+\subsubsection{Floating penalties}
+
+The term ${\it pen\_float}(i,j)$ indicates that it is not desirable to have a pairing between two players whose scores are too different. We here use:
+ $${\it pen\_float}(i,j) =
     {\bf p\_flot}[f] + {\it corr\_flot}(i) + {\it corr\_flot}(j)
  $$
-o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deux
-joueurs, exprimé en demi-points.  On a toujours ${\bf p\_flot}[0]=0$.
-Le terme correctif ${\it corr\_flot}(i)$ vaut $+{\bf p\_flcum}$ si le
-joueur flotte alors qu'il avait déjà flotté dans le même sens
-à la ronde précédente.  Il vaut $-{\bf min\_fac}$ si le joueur
-flotte dans l'autre sens.  Il vaut zéro si le joueur n'a pas flotté
-à cette ronde ou à la ronde précédente, ou s'il s'agit de la
-première ronde.  Un joueur qui joue contre Bip flotte toujours bas
-(pour savoir de combien, voir plus bas). Les corrections, si elles sont
-négatives, ne peuvent excéder en valeur absolue le terme qu'elles
-sont supposées corriger, si bien que ${\it pen\_flottement}(i,j)$ sera
-toujours positif (voir la section suivante).
+where $f=\left| S_i-S_j \right|$ is the score difference between the players, expressed in half-points.
+We should always have ${\bf p\_flot}[0]=0$.
+
+Corrective term ${\it corr\_flot}(i)$ is $+{\bf p\_flcum}$ if the player floats in the same direction as the previous round. It values $-{\bf min\_fac}$ if the player floats in the opposite direction. It is always $0$ if the player does not float this round or has not floated at the previous one, or for the first round.
+
+A player paired against BYE always floats down (see below to see how much). Corrections, if negative cannot exceeded (in absolute value) the term they are correcting, so that ${\it pen\_float}(i,j)$ will always be positive.
+
+\subsubsection{Repetition penalties} 
+
+The term ${\it pen\_repetition}(i,j)$ prevents two players to be paired again if they have already done so i a previous round. If $i$ and $j$ have already played together with the same colors, the $\bf p\_mcoul$ penalty is added; if they have already played together with opposite colors, $\bf p\_clopp$ is added.
+If they have already played together several times, above penalties get added.
+The $\bf p\_desuite$ penalty is added if both players have met at the previous round.
+
+\subsubsection{Chauvinisme penalty}
+The term ${\it pen\_chauvinisme}(i,j)$ penalizes games between players from the same country. Its value is ${\bf p\_chauv}[{\it
+round\_number}]$ if $i$ and $j$ have the same nationality, and $0$ otherwise.
 
 
-\subsubsection{Pénalités de répétition} 	
-	Le terme ${\it pen\_repetition}(i,j)$ empêche de faire jouer
-entre eux deux joueurs qui se sont déjà rencontrés lors d'une
-ronde précédente.  Si $i$ et $j$ ont déjà joué ensemble avec
-les mêmes couleurs, on ajoute la pénalité $\bf p\_mcoul$~; s'ils
-ont déjà joué ensemble avec les couleurs opposées, on ajoute
-$\bf p\_clopp$.  S'ils ont déjà joué plusieurs parties ensemble,
-les pénalités ci-dessus s'ajoutent.  Enfin, on ajoute la
-pénalité $\bf p\_desuite$ si les deux joueurs se sont rencontrés
-à la ronde immédiatement précédente. 
-
-
-\subsubsection{Pénalités de chauvinisme}  	
-	Le terme ${\it pen\_chauvinisme}(i,j)$ pénalise les parties
-entre joueurs d'un même pays~: il vaut ${\bf p\_chauv}[{\it
-numero\_ronde}]$ si $i$ et $j$ sont de même nationalité, et $0$
-sinon.
-
-
-\subsubsection{Pénalités d'élitisme} 
-	Le terme ${\it pen\_elitisme}(i,j)$ dit que, quand il est nécessaire 
-d'avoir des matchs entre deux joueurs dont les scores sont 
-différents, il est préférable de répartir ces matchs 
-déséquilibrés dans le bas du classement plut\^ot que dans le 
-haut du classement.  On prend ici 
+\subsubsection{Elitisme penalty} 
+The term ${\it pen\_elitisme}(i,j)$ says that, when games between players having different scores
+are necessary, it is better to have these matches at the lower end of the standings instead of the upper end.
+We use:
 $${\it pen\_elitisme}(i,j) = 
-({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_j) \fois f ) / 2
+({\bf p\_elit}[{\it round\_number}] \fois (S_i+S_j) \fois f ) / 2
  $$
-o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deux
-joueurs, exprimé en demi-points.
+where $f=\left| S_i-S_j \right|$ is the score difference between the players, expressed as half-points.
 
 
+\subsubsection{BYE case} 
 
-\subsubsection{Le cas de Bip} 
+If one of the player is BYE, penalties simplify because there is no worry about colors.
+We use:
 
-	Si l'un des joueurs est Bip, les pénalités se simplifient un
-peu, parce qu'il n'y a pas à se soucier de la couleur. On prend
  $$\matrix{
-   p_{i,{\rm Bip}} = p_{{\rm Bip},i} &=
-   	{\it pen\_couleur}(i, {\rm GRIS})		\hfill\cr
-	&\quad{}+{\it pen\_flottement}(i,{\rm Bip})	\hfill\cr
-	&\quad{}+{\it pen\_repetition}(i,{\rm Bip})	\hfill\cr
-	&\quad{}+{\it pen\_elitisme}(i,{\rm Bip})	\hfill\cr
+   p_{i,{\rm BYE}} = p_{{\rm BYE},i} &=
+   	{\it pen\_color}(i, {\rm GREY})		\hfill\cr
+	&\quad{}+{\it pen\_float}(i,{\rm BYE})	\hfill\cr
+	&\quad{}+{\it pen\_repetition}(i,{\rm BYE})	\hfill\cr
+	&\quad{}+{\it pen\_elitisme}(i,{\rm BYE})	\hfill\cr
  }
  $$
  
  \begin{itemize}
  
  \item
-Comme l'écart chromatique n'est pas modifié quand on joue contre
-Bip, la pénalité de couleur vaut
+As the chromatic difference is not modified when playing BYE, color penalty is:
 $$
-  {\it pen\_couleur}(i,{\rm GRIS}) =
+  {\it pen\_color}(i,{\rm GREY}) =
     {\bf p\_coul}\Bigl[\left| \delta \right|\Bigr]
 $$
  
  \item
-	Les pénalités $\it pen\_flottement$ et $\it pen\_elitisme$ 
+	$\it pen\_float$ and $\it pen\_elitisme$ penalties are defined as above;
+	but even as BYE score is zero, 
 	sont définies comme plus haut~; cependant, bien que le score de 
-	Bip soit de zéro point, on fait ``comme si'' son score était 
-	immédiatement inférieur, d'un demi-point, à celui du dernier 
-	joueur présent (ceci pour éviter d'avoir des pénalités de 
-	flottement vraiment excessives).  Donc, en notant $f = S_i - 
+	Bip soit de zéro point, we act ``as if" his score was immediately lower, by half a point, than that of the last
+player present (to prevent excessive floating penalty). So if $f = S_i - 
 	S_{\rm min} + 1$~:
 	
-	
 $$ 
-  {\it pen\_flottement}(i,{\rm Bip}) =
+  {\it pen\_float}(i,{\rm BYE}) =
     {\bf p\_flot}[f] 
 $$
 $$
-  {\it pen\_elitisme}(i,{\rm Bip}) =
-    ({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_{\rm min} - 1) 
+  {\it pen\_elitisme}(i,{\rm BYE}) =
+    ({\bf p\_elit}[{\it round\_number}] \fois (S_i+S_{\rm min} - 1) 
      \fois f) / 2 
 $$ 
  \item
-	Dans le terme $\it pen\_repetition$, la distinction entre $\bf
-p\_mcoul$ et $\bf p\_clopp$ disparaît, il n'y a plus qu'une seule
-pénalité à considérer~: on ajoute $\bf p\_bipbip$ autant de fois
-que le joueur a joué contre Bip aux rondes précédentes, et comme
-plus haut on ajoute $\bf p\_desuite$ si le joueur a joué contre Bip à
-la ronde immédiatement précédente. 
+	In the $\it pen\_repetition$ penalty, distinction between $\bf
+p\_mcoul$ et $\bf p\_clopp$ disappears, there is just one penalty to consider: $\bf p\_bipbip$ is added as many times as the player has played against BYE in the previous rounds, and as above, $\bf p\_desuite$ is added if the player has just plkayed BYE at the previous round.
+
 
 \end{itemize}
 
-\subsection{Conditions sur les pénalités}
+\subsection{Conditions concerning penalties}
 
-	PAPP n'impose qu'un minimum de conditions de cohérence sur les
-pénalités~; si ces conditions ne sont pas remplies, le programme
-se termine en signalant une erreur fatale. Ces conditions sont les
-suivantes~:
+For coherence, PAPP imposes a minimum number of conditions on penalties. If they are not fulfilled, the program abord on a fatal error. The conditions are the following:
 
 \begin{itemize}
 
-\item	Les pénalités de couleur doivent croître avec
-l'écart chromatique~:
+\item	Color penalties must grow along chromatic difference:
 $$ 0 = {\bf p\_coul}[0] \le {\bf p\_coul}[1] \le {\bf p\_coul}[2] \le\cdots$$
 
-\item	Les pénalités de flottement doivent croître avec
-le flottement~; et
+\item	Floating penalties must grow with score difference and:
 
-\item	la quantité ${\bf min\_fac}$ doit être inférieure ou
-égale à la moitié de la plus petite pénalité de flottement~:
+\item	${\bf min\_fac}$ must be lower or equal to half the smallest floating penalty:
 $$ 0 = {\bf p\_flot}[0] \le 2\fois{\bf min\_fac} \le {\bf p\_flot}[1] \le
 	{\bf p\_flot}[2] \le \cdots $$
 
 \end{itemize}
 
-	Ces conditions ne suffisent évidemment pas à garantir des
-appariements ``raisonnables''~; il faudrait au moins s'assurer que les
-penalites de couleur et de flottement croissent ``suffisamment vite'' en
-fonction de l'écart chromatique ou du flottement. La troisième
-condition garantit que les pénalites de flottement après correction
-sont toujours positives (voir la section précédente).
+These conditions do not assure ``reasonable" pairings. Floating and color penalties should also grow ``fast enough". The last condition ensures that the floating penalty after correction is always positive.
 
-\subsection{Dernière passe}
+\subsection{Last pass}
 
-Une fois l'optimisation réalisée, PAPP examine s'il existe
-d'autres appariements optimaux, se déduisant du premier uniquement
-par des interversions de couleurs.  Quand c'est le cas ---
-c'est-à-dire pour toute paire $\{i,j\}$ de joueurs appariés telle
-que $p_{ij}=p_{ji}$ ---, PAPP choisira les couleurs comme suit~: on
-cherche la ronde la plus récente o\`u $i$ et $j$ avaient des couleurs
-différentes, et on inverse ces couleurs.  Si ce n'est pas possible,
-c'est-à-dire si les deux joueurs ont toujours joué avec les
-mêmes couleurs, alors on tire les couleurs au sort.
+Once optimisation is done, PAPP checks if there exists other optimal pairings that can be deduced from the first one 
 
-Insistons sur le fait que cette dernière passe ne dégrade 
-nullement la qualité de l'appa\-rie\-ment~; PAPP choisit simplement entre plusieurs 
-appariements optimaux.
+Once the optimization has been carried out, PAPP checks whether there are other optimal pairings,
+deduced from the first only by color inversions. When this is the case ---
+that is to say for any pair $\{i,j\}$ of matched players such
+that $p_{ij}=p_{ji}$ ---, PAPP will choose the colors as follows: we
+search for the most recent round where $i$ and $j$ had different colors
+ and we invert these colors. If it is not possible,
+that is to say if both players have always played with the
+same colors, then we draw the colors randomly.
+
+We insist on the fact that this last pass does not degrade pairing quality; PAPP will only chose etween several optimal pairings.
+
 
 \section{Le fichier de configuration}
 

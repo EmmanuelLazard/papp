@@ -121,7 +121,7 @@ static long areResultsComplete(void) {
 }
 
 /*  sauvegardes dans les fichiers "stand###.txt" - saves in "stand###.txt" files */
-void saveStandingsFile() {
+void saveStandingsFile(void) {
     char    *filename, old_more_mode[10];
     FILE    *file;
     long     i;
@@ -169,7 +169,7 @@ void saveStandingsFile() {
 }
 
 /*  sauvegardes dans les fichiers "team###.txt" - saves in "team###.txt" files */
-void saveTeamsFile() {
+void saveTeamsFile(void) {
     char    *filename, old_more_mode[10];
     FILE    *file;
     long     i;
@@ -214,7 +214,7 @@ void saveTeamsFile() {
 }
 
 /*  sauvegardes dans les fichiers "cross###.htm" - saves in "cross###.txt" files */
-void saveHTMLcrosstableFile() {
+void saveHTMLcrosstableFile(void) {
 
     if (html_crosstable_file_save && (current_round >= 1)) {
 
@@ -290,7 +290,7 @@ void displayEnterGameResults(void) {
 }
 
 /* fonction interactive d'entree des resultats - interactive function to enter the results */
-void enterResults() {
+void enterResults(void) {
     long displayMessage = 1, ret, n1, n2, len;
     discs_t v;
     long player, relative ;
@@ -482,7 +482,7 @@ prompt:
     }
 }
 
-void imagineResults() {
+void imagineResults(void) {
     long n1, n2, grade1, grade2, half0, half1;
     discs_t *valc, scn, v;
     double prob_n;
@@ -521,7 +521,7 @@ void imagineResults() {
     }
 }
 
-void clearScores() {
+void clearScores(void) {
     long i;
 
     for (i=0; i<MAX_REGISTERED ; i++) {
@@ -577,7 +577,7 @@ void updateScores(void) {
 }
 
 /*  sauvegardes dans les fichiers "resul###.txt" - saves in "resul###.txt" files */
-void saveResultsFile() {
+void saveResultsFile(void) {
     char    *filename,  old_more_mode[10];
     FILE    *file;
     long     i;
@@ -643,7 +643,7 @@ void resultsValidation(long isSaveResultsFile) {
  * Correction of a previous results in a previous round or the current one if results have already been entered.
  * Players can be exchanged and/or score can be changed
  */
- void ResultCorrection() {
+ void ResultCorrection(void) {
     char     string[256], *line;
     long     round2correct, ret, relative;
     long     blackCorrect, whiteCorrect;

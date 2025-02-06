@@ -593,7 +593,7 @@ void remove_lock(void)  { }
  * NOTE: this function may be called several times under Unix, if program is suspended and awaken.
  */
 
-void init_screen() {
+void init_screen(void) {
 #ifdef TERMCAP
     /*
      * Terminfo n'est pas supporte, desole... - Sorry Terminfo isn't supported...
@@ -744,7 +744,7 @@ screen_size:
  * void screen_reset() : retablit l'etat initial du terminal - reset terminal to initial state
  */
 
-void screen_reset() {
+void screen_reset(void) {
     /* Rien pour l'instant - nothing here for the moment */
     fflush(stdout);
 }
@@ -765,7 +765,7 @@ void screen_reset() {
 
 static struct termios otty;
 
-void init_keyboard() {
+void init_keyboard(void) {
     struct termios ntty;
 
     tcgetattr(0, &otty);
@@ -778,24 +778,24 @@ void init_keyboard() {
     tcsetattr(0, TCSANOW, &ntty);
 }
 
-void keyboard_reset() {
+void keyboard_reset(void) {
     tcsetattr(0, TCSANOW, &otty);
 }
 
 #elif defined(__THINK_C__)
 
-void init_keyboard() { csetmode(C_RAW,stdin); }
-void keyboard_reset()    { }
+void init_keyboard(void) { csetmode(C_RAW,stdin); }
+void keyboard_reset(void)    { }
 
 #elif defined(PAPP_MAC_METROWERKS)
 
-void init_keyboard() { FlushEvents(everyEvent,0); }
-void keyboard_reset()    { }
+void init_keyboard(void) { FlushEvents(everyEvent,0); }
+void keyboard_reset(void)    { }
 
 #else
 
-void init_keyboard() { }
-void keyboard_reset()    { }
+void init_keyboard(void) { }
+void keyboard_reset(void)    { }
 
 #endif
 
@@ -809,7 +809,7 @@ void keyboard_reset()    { }
  * This function must first empty stdout buffer.
  */
 
-long read_key() {
+long read_key(void) {
 #if defined(UNIX_SYSV) || defined(UNIX_BSD)
 
     long c;

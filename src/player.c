@@ -121,7 +121,7 @@ Player *new_player(long number, const char *name, const char *firstname,
     return pl;
 }
 
-long countPlayersInDatabase() {
+long countPlayersInDatabase(void) {
     long nb = 0;
     Player *pl;
 
@@ -152,7 +152,7 @@ Player *findPlayer(long IDnumber) {
 }
 
 /* Creation d'une liste de joueurs (initialement vide) - Creation of an empty list of players */
-Players_list *createList() {
+Players_list *createList(void) {
     Players_list *list;
 
     CALLOC(list, 1, Players_list);

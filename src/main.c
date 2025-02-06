@@ -132,7 +132,7 @@ void Init_Subfolder(void) ;
 
 
 
-void messages_copyleft() {
+void messages_copyleft(void) {
 	clearScreen();
 	printf("\n\n"
 #ifdef ENGLISH

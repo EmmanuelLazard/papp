@@ -1,1 +1,1211 @@
-%% PAPP Documentation , in LaTeX.%% $Id: papp_doc.tex,v 1.19 1995/04/09 18:17:39 bousch Exp $%%\documentstyle[11pt]{article}\documentclass[10pt]{article} %\usepackage{a4wide}%\usepackage{times}%\french\def\contentsname{Table of contents}\parskip 1ex plus 0.5ex minus 0.5ex\tolerance 1000% Macro pour inserer du code TeX non utilise pour la version HTML\def\tthdump#1{#1}% Macro pour ecrire du code different en HTML (branche iftth)% et en TeX (branche \else). Usage :% \iftth  code HTML   \else   code Tex \fi\newif\iftth% \times semble manquer dans TtH, on le definit\def\fois{\iftth    {\begin{html}<font face=symbol> ´ </font>\end{html}} \else    \times \fi}     \begin{document}\title{\huge\bf Documentation for Papp 1.22}\author{ {Thierry Bousch {\tt <bousch@topo.math.u-psud.fr>}}\and {Liste Papp-FFO {\tt <ffo-papp@egroups.fr>}}}\date{September 2000}\maketitle\iftth   {\begin{html}<small>If mathematics display oddly in that document,        change the encoding (MacRoman or ISO-8859-1) in         your browser. If this is not enough, you might         find a solution there :        http://hutchinson.belmont.ma.us/tth/manual/</small> \end{html}} \else {}\fi    \section{Introduction}	PAPP is a pairing program, that is, something which is supposed to simplify referees work during tournements.  With it, they can inscribe players, save the results of the rounds, calculate pairings automatically and produce files used to calculate a international rating list (\`a la Elo).	PAPP also offers a mini-database to allow players numbers management, and the pairing procedure is completely parametrable.	PAPP is written in ANSI C, especially for the GCC. The manual has been written in \LaTeX. The lexical and syntaxic analysis phases use Flex and Bison, from the ''Free Software Foundation''.\section{First contact}	The program is named \verb|papp| or \verb|papp.exe|, depending on theexploitation system. Launch it; after a couple of seconds, the main menu appears.	All commands are accessible with a single key stroke.  It is not necessary to type [Return] afterwards, nor is it necessary after the other mennus, nor after the Yes/No questions.	Experiment a little bit, it is not dangerous.  PAPP will emit a protestation beep if you press an invalid key (raise the sound level of your computer if necessary). Most commands will be uneffective since no player is inscribed in the tournament, so type `\verb|I|' to inscribe players.\subsection{Inscriptions}Faced with the prompt \verb|Nom & Prenom:|, type `\verb|y|', then hit the [Tab] key; PAPP then lists all players whose name begins with `y', That is \verb|YASOJIMA Keiji| and \verb|YASUI Tsugo|.  Note that the input buffer now contains \verb|YAS|, because PAPP has completed the name until the first ambiguity --- here, it does not know wether the fourth letter is `O' or `U'.  Delete the buffer with [Backspace] ou [Esc], and type \verb|laz|, then [Tab].  This time, there is only one possible completion: \verb|LAZARD Emmanuel|, and you only have to confirm with [Return].	Now, enter the name of a new, unknown player (use [Tab]to verify that he/she is not already in the database).  PAPP willask for confirmation (you may have done a typographic error), then the player's nationnality (just hit [Return] if it is the default country) so that he can choose a number for the new player  --- you can change that number if you wish.  The player will then be added to the database.Spend some time playing with the database and inscribing players.  Once you get bored, just type [Return] (or Ctrl-C) at the prompt.  Then, at the main menu, you can check the list of players in the tournament with `\verb|L|'.\subsection{Pairings}If you hit `\verb|V|', you'll see the list of all these players, one per line.  That's because they are not yet paired.  It is possible to pair them manually with `\verb|M|', or to ask PAPP to pair automatically all the players that are not yet paired with `\verb|A|'.  So type `\verb|A|': the list of pairings appears shortly alfterwards; This time, there are two players on each line (except on the last line if there is an odd number of players).  This means the pairings are complete.If some players show up late after the beginning of round one, the tournement director has the choice to accept them or not; but as far as PAPP is concerned, there is no difficulty: you come back to the main menu, you inscribe the players, and you type `\verb|A|' to complete the pairings.  It is possible to inscribe players for a particular round as long as all the results for that round have not been entered and validated, which should be flexible enough for most cases.\subsection{Entering results}When the games of the round end and you begin to collect score coupons on your desk, select the option `\verb|R|' to enter the results.  the prompt \verb|Joueur & Score:| is displayed in an empty screen; to enter a game result, type in the name (or the beginning of the name , or the number) of one of the players, followed by his/her score, separated by a space.  PAPP verifies the name or the number of the designated player, outputs a warning message if the result had already been entered, then displays the filled coupon.  En cas d'erreur, vous pouvez {\em effacer} un coupon en tapant le signe `\verb|-|' suivi du nom de l'un des joueurs de la partie (ou, si vous pr\'ef\'erez, en tapant le num\'ero de l'un des joueurs suivi de la lettre `\verb|e|' --- l'espace entre les deux est facultatif).  Il est possible d'entrer les scores sous forme relative; ainsi, `\verb|145+4|', `\verb|145=|' et `\verb|145-6|' signifient que le joueur 145 a fait quatre pions de plus que son adversaire, a \'egalis\'e, ou a perdu de six pions, respectivement --- ici encore, il n'est pas n\'ecessaire de s\'eparer le num\'ero du joueur de son score, parce qu'il n'y a pas d'ambigu{\"\i}t\'e possible.Si vous n'\^etes pas s\^ur des informations port\'ees sur un coupon (notamment l'orthographe ou le num\'ero Elo d'un joueur), ou si vous n'avez pas de coupon du tout, par exemple parce qu'on vous a donn\'e le r\'esultat oralement, tapez sur [Tab]: PAPP affichera alors tous les coupons, d'abord ceux qui ont \'et\'e entr\'es, puis ceux qui restent \`a entrer.  Ainsi, m\^eme si la liste des coupons est trop longue pour tenir sur l'\'ecran, au moins le bas de la liste sera lisible.  Une autre solution moins commode consiste \`a revenir au menu principal, puis \`a choisir l'option `\verb|V|' pour voir les appariements et les r\'esultats partiels.	PAPP vous signalera quand les r\'esultats seront complets.Relisez-vous (\'eventuellement en utilisant [Tab] pour vous rappeler descoupons entr\'es quelque temps avant), et si tout semble correct, tapezsimplement un `\verb|!|' en r\'eponse au prompt, puis [Return]; apr\`esavoir enregistr\'e les r\'esultats, PAPP vous affichera le nouveauclassement. 	A des fins de test, j'ai ajout\'e dans le m\^eme sous-menu uneoption `\verb|?|' pour tirer al\'eatoirement les r\'esultats des rondes--- plus pr\'ecisement, de celles dont les r\'esultats n'ont pas encore\'et\'e entr\'es.  C'est surtout int\'eressant quand PAPP conna{\^\i}tle classement des joueurs, car il peut estimer raisonnablement lesprobabilit\'es relatives de gain.\subsection{Chargement et sauvegarde}	Il n'y a pas d'option ``Charger'' ou ``Sauver''.  Lessauvegardes sont faites quand c'est n\'ecessaire (voir le chapitre``Mode de sauvegarde'' pour plus de d\'etails) et lorsqu'on quitte leprogramme.  Quand on relance PAPP, celui-ci relit le fichierinterm\'ediaire pr\'ec\'edemment cr\'e\'e sur le disque (celui-ciaura pour nom \verb|__papp__|, typiquement) et se remet exactementdans l'\'etat o\`u il \'etait la derni\`ere fois qu'on l'a quitt\'e.	Ceci a une cons\'equence importante: avant un nouveau tournoi,il faut penser \`a effacer ce fichier du disque, sinon PAPP se remettraitdans l'\'etat ou il \'etait apr\`es la derni\`ere ronde du tournoipr\'ec\'edent, ce qui n'est g\'en\'eralement pas l'effet recherch\'e.\subsection{Appariements manuels}Il est possible de forcer manuellement les appariements avec `\verb|M|'.  Pour des raisons de place disponible sur l'\'ecran, il ne m'a pas sembl\'e possible de donner les noms complets des joueurs ``en clair''.  Les joueurs sont donc repr\'esent\'es par les huit premiers caract\`eres de leur nom, suivi de leur num\'ero (entre parenth\`eses); heureusement, il est possible d'afficher la liste ``en clair'' des joueurs et des appariements sans revenir au menu principal, puisque les options `\verb|L|', `\verb|V|' et `\verb|F|' sont \'egalement disponibles dans ce sous-menu.	PAPP affiche d'abord les couples de joueurs appari\'es (commetoujours, le premier joueur a les noirs), puis les joueurs nonappari\'es.  Ces deux listes sont mises \`a jour apr\`es chaqueop\'eration.  Il y a trois op\'erations possibles:\begin{itemize}	\item[`{\tt Z}':] d\'etruit tous les appariements. Cette commande neprend aucun argument, mais PAPP vous demandera confirmation.\item[`{\tt D}':] d\'ecoupler un joueur. Cette commande prend un argument, qui est le nom ou le num\'ero du joueur.  Si ce joueur \'etait appari\'e, son appariement est d\'etruit.  Sinon, la commande est sans effet.  Comme toujours lorsque PAPP vous demande un nom de joueur, vous pouvez entrer seulement les premi\`eres lettres de son nom, ou obtenir une compl\'etion du tampon d'entr\'ee en appuyant sur la touche [Tab].\item[`{\tt A}':] apparier deux joueurs.  PAPP vous demande successivement le nom (ou le num\'ero) du joueur noir, puis du joueur blanc.  Si ces joueurs \'etaient d\'ej\`a appari\'es, leurs pr\'ec\'edents appariements sont d\'etruits.\end{itemize}\subsection{Lecture des r\'esultats}	La commande `\verb|L|' donne le score et le d\'epartage desjoueurs \`a un moment donn\'e du tournoi; les donn\'ees affich\'ees neseront modifi\'ees qu'apr\`es que les r\'esultats de la ronde auront\'et\'e enti\`erement entr\'es et valid\'es.  Le format d'affichage estle suivant: le rang dans le tournoi, le score puis le d\'epartage entrecrochets, un \'eventuel `\verb|-|' pour indiquer que le joueur estabsent (i.e., a abandonn\'e le tournoi), puis le nom, le num\'ero et lanationalit\'e du joueur.Il est possible d'obtenir les r\'esultats individuels d'un joueur avec la commande `\verb|F|' du menu principal. PAPP affiche alors les appariements et les r\'esultats des rondes pr\'ec\'edentes, sous la forme suivante: le num\'ero de ronde, la couleur du joueur, puis le score de sa partie (eventuellement pr\'ec\'ed\'e d'un `\verb|+|' pour indiquer une victoire ou un `\verb|=|' en cas de nulle), et enfin le nom et le num\'ero Elo de son adversaire.  Si le fichier des joueurs contient des renseignements suppl\'ementaires sur le joueur, ils sont affich\'es tels quels en bas de la fiche.  Pour PAPP, ce ne sont que des commentaires: aucune interpr\'etation n'est faite.  Ces commentaires sont \'egalement affich\'es lors de l'inscription du joueur.	Si vous avez entr\'e seulement une partie des r\'esultats d'uneronde, vous pouvez v\'erifier ce que vous avez d\'ej\`a entr\'e avec lacommande `\verb|V|' du menu principal (encore une fois, le premier nomm\'ea les noirs).\subsection{Autres commandes}La commande `\verb|E|' du menu principal produit un fichier Elo qui peut \^etre relu par JECH. A n'utiliser qu'\`a la fin du tournoi.La commande `\verb|C|' permet de corriger un r\'esultat erron\'e dans une ronde pass\'ee.  Pour plus de d\'etails, voyez le chapitre ``Correction d'un r\'esultat'' plus loin dans ce manuel.La commande `\verb|S|' permet de sauvegarder le classement dans un fichier.  Si le nom de fichier commence par un `\verb.|.'  (``pipe''), celui-ci est interpr\'et\'e comme une redirection vers une commande (cette facilit\'e n'est pas disponible sur tous les syst\`emes d'exploitation).  De m\^eme, les commandes [Ctrl-V] et [Ctrl-F] permettent de rediriger vers un fichier (ou un pipe) la liste des appariements et la fiche d'un joueur, respectivement.  Si vous d\'esirez une sauvegarde automatique, ronde par ronde, des r\'esultats des parties et des classements interm\'ediaires, voyez le chapitre ``R\'ecapitulatif ronde par ronde'' plus loin dans ce manuel.	La commande `\verb|X|' quitte le programme, en faisant toutes lessauvegardes n\'ecessaires.	La commande [Ctrl-Z] suspend le programme, si le syst\`emed'exploitation conna{\^\i}t le ``job control''.	La commande `\verb|&|' affiche un petit message de copyright, lenum\'ero de version, la date de compilation, et diverses limitationsstatiques du programme.	Les commandes `\verb|-|' et `\verb|+|' sont utilis\'ees quand unjoueur quitte le tournoi, ou revient dans le tournoi apr\`es l'avoirquitt\'e.  Il est possible de faire sortir ou revenir tous les joueursen tapant `\verb|*|' en r\'eponse au prompt.  Enfin, la commande`\verb|N|' permet de modifier la nationalit\'e d'un joueur.\section{Appariements automatiques}C'est ce qui se cache derri\`ere la commande `\verb|A|' du menu principal.  Tout d'abord, insistons sur le fait que `\verb|A|' ne fait que {\em compl\'eter\/} les appariements d\'ej\`a existants; en aucun cas cette commande ne peut modifier les appariements pr\'ec\'edemment choisis, que ce soit par l'utilisateur ou par PAPP lui-m\^eme.  En particulier, si les appariements sont d\'ej\`a complets, alors `\verb|A|' n'a pas d'autre effet que d'afficher, et \'eventuellement imprimer, la liste des appariements.Les appariements sont toujours calcul\'es par optimisation (m\^eme \`a la premi\`ere ronde).  Tout d'abord, si le nombre de joueurs est impair, on ajoute un joueur fictif (Bip); on peut donc supposer qu'il y a $2n$ joueurs.  On d\'etermine ensuite, pour chaque couple $(i,j)$ de joueurs, une {\em p\'enalit\'e}, c'est-\`a-dire un nombre r\'eel positif $p_{ij}$ exprimant dans quelle mesure il n'est pas souhaitable que le joueur $i$ joue (avec les noirs) contre le joueur $j$.  Puis, on cherche l'appariement $(i_1,j_1)$, $(i_2,j_2)$, \dots, $(i_n,j_n)$, minimisant la p\'enalit\'e totale $$ {\it Penalite\_totale} = \sum_{k=1}^n p_{i_k j_k} $$	Ceci est un probl\`eme classique de th\'eorie des graphes(recherche d'un couplage de poids maximum dans un graphe) qui peut\^etre r\'esolu en temps polynomial, typiquement en $O(n^3)$.L'impl\'ementation actuelle de PAPP semble plut\^ot en $O(n^4)$.\subsection{Description des p\'enalit\'es}Les p\'enalit\'es sont calcul\'ees comme suit: $$\matrix{    p_{ij} &= {\it pen\_couleur}(i,{\rm NOIR})	    + {\it pen\_couleur}(j,{\rm BLANC})		\hfill\cr	   &\quad{}+ {\it pen\_flottement}(i,j)		\hfill\cr	   &\quad{}+ {\it pen\_repetition}(i,j)		\hfill\cr	   &\quad{}+ {\it pen\_chauvinisme}(i,j)	\hfill\cr	   &\quad{}+ {\it pen\_elitisme}(i,j)	    \hfill\cr }$$\subsubsection{P\'enalit\'es de couleur}	Le terme ${\it pen\_couleur}(i,{\it couleur})$ indique qu'iln'est pas souhaitable que le joueur $i$ joue la couleur $\it couleur$lors de cette ronde. Notons $\delta_i$ l'{\em \'ecart chromatique\/} de cejoueur, c'est-\`a-dire le nombre de fois o\`u il a eu les Noirs moins lenombre de fois ou il a eu les Blancs. Selon qu'il jouera Noir ou Blanc\`a cette ronde, son \'ecart chromatique deviendra $\delta_i+1$ ou$\delta_i-1$, respectivement.On prend donc $$ {\it pen\_couleur}(i,{\it couleur}) =    {\bf p\_coul}\Bigl[\left|\delta_i\pm1\right|\Bigr]  + {\it pen\_couleur\_repetee} $$Le terme $\it pen\_couleur\_repetee$ vaut $\bf p\_repcl$ si le joueuravait d\'ej\`a jou\'e cette couleur \`a la ronde pr\'ec\'edente, et $0$sinon.  On a toujours ${\bf p\_coul}[0] = 0$.\subsubsection{P\'enalit\'es de flottement}		Le terme ${\it pen\_flottement}(i,j)$ dit qu'il n'est passouhaitable de faire jouer entre eux deux joueurs dont les scores sonttrop diff\'erents.  On prend ici $${\it pen\_flottement}(i,j) =    {\bf p\_flot}[f] + {\it corr\_flot}(i) + {\it corr\_flot}(j) $$o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deuxjoueurs, exprim\'e en demi-points.  On a toujours ${\bf p\_flot}[0]=0$.Le terme correctif ${\it corr\_flot}(i)$ vaut $+{\bf p\_flcum}$ si lejoueur flotte alors qu'il avait d\'ej\`a flott\'e dans le m\^eme sens\`a la ronde pr\'ec\'edente.  Il vaut $-{\bf min\_fac}$ si le joueurflotte dans l'autre sens.  Il vaut z\'ero si le joueur n'a pas flott\'e\`a cette ronde ou \`a la ronde pr\'ec\'edente, ou s'il s'agit de lapremi\`ere ronde.  Un joueur qui joue contre Bip flotte toujours bas(pour savoir de combien, voir plus bas). Les corrections, si elles sontn\'egatives, ne peuvent exc\'eder en valeur absolue le terme qu'ellessont suppos\'ees corriger, si bien que ${\it pen\_flottement}(i,j)$ seratoujours positif (voir la section suivante).\subsubsection{P\'enalit\'es de r\'ep\'etition} 		Le terme ${\it pen\_repetition}(i,j)$ emp\^eche de faire jouerentre eux deux joueurs qui se sont d\'ej\`a rencontr\'es lors d'uneronde pr\'ec\'edente.  Si $i$ et $j$ ont d\'ej\`a jou\'e ensemble avecles m\^emes couleurs, on ajoute la p\'enalit\'e $\bf p\_mcoul$; s'ilsont d\'ej\`a jou\'e ensemble avec les couleurs oppos\'ees, on ajoute$\bf p\_clopp$.  S'ils ont d\'ej\`a jou\'e plusieurs parties ensemble,les p\'enalit\'es ci-dessus s'ajoutent.  Enfin, on ajoute lap\'enalit\'e $\bf p\_desuite$ si les deux joueurs se sont rencontr\'es\`a la ronde imm\'ediatement pr\'ec\'edente. \subsubsection{P\'enalit\'es de chauvinisme}  		Le terme ${\it pen\_chauvinisme}(i,j)$ p\'enalise les partiesentre joueurs d'un m\^eme pays: il vaut ${\bf p\_chauv}[{\itnumero\_ronde}]$ si $i$ et $j$ sont de m\^eme nationalit\'e, et $0$sinon.\subsubsection{P\'enalit\'es d'\'elitisme} 	Le terme ${\it pen\_elitisme}(i,j)$ dit que, quand il est n\'ecessaire d'avoir des matchs entre deux joueurs dont les scores sont diff\'erents, il est pr\'ef\'erable de r\'epartir ces matchs d\'es\'equilibr\'es dans le bas du classement plut\^ot que dans le haut du classement.  On prend ici $${\it pen\_elitisme}(i,j) = ({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_j) \fois f ) / 2 $$o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deuxjoueurs, exprim\'e en demi-points.\subsubsection{Le cas de Bip} 	Si l'un des joueurs est Bip, les p\'enalit\'es se simplifient unpeu, parce qu'il n'y a pas \`a se soucier de la couleur. On prend $$\matrix{   p_{i,{\rm Bip}} = p_{{\rm Bip},i} &=   	{\it pen\_couleur}(i, {\rm GRIS})		\hfill\cr	&\quad{}+{\it pen\_flottement}(i,{\rm Bip})	\hfill\cr	&\quad{}+{\it pen\_repetition}(i,{\rm Bip})	\hfill\cr	&\quad{}+{\it pen\_elitisme}(i,{\rm Bip})	\hfill\cr } $$  \begin{itemize}  \itemComme l'\'ecart chromatique n'est pas modifi\'e quand on joue contreBip, la p\'enalit\'e de couleur vaut$$  {\it pen\_couleur}(i,{\rm GRIS}) =    {\bf p\_coul}\Bigl[\left| \delta \right|\Bigr]$$  \item	Les p\'enalit\'es $\it pen\_flottement$ et $\it pen\_elitisme$ 	sont d\'efinies comme plus haut; cependant, bien que le score de 	Bip soit de z\'ero point, on fait ``comme si'' son score \'etait 	imm\'ediatement inf\'erieur, d'un demi-point, \`a celui du dernier 	joueur pr\'esent (ceci pour \'eviter d'avoir des p\'enalit\'es de 	flottement vraiment excessives).  Donc, en notant $f = S_i - 	S_{\rm min} + 1$:		$$   {\it pen\_flottement}(i,{\rm Bip}) =    {\bf p\_flot}[f] $$$$  {\it pen\_elitisme}(i,{\rm Bip}) =    ({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_{\rm min} - 1)      \fois f) / 2 $$  \item	Dans le terme $\it pen\_repetition$, la distinction entre $\bfp\_mcoul$ et $\bf p\_clopp$ dispara{\^\i}t, il n'y a plus qu'une seulep\'enalit\'e \`a consid\'erer: on ajoute $\bf p\_bipbip$ autant de foisque le joueur a jou\'e contre Bip aux rondes pr\'ec\'edentes, et commeplus haut on ajoute $\bf p\_desuite$ si le joueur a jou\'e contre Bip \`ala ronde imm\'ediatement pr\'ec\'edente. \end{itemize}\subsection{Conditions sur les p\'enalit\'es}	PAPP n'impose qu'un minimum de conditions de coh\'erence sur lesp\'enalit\'es; si ces conditions ne sont pas remplies, le programmese termine en signalant une erreur fatale. Ces conditions sont lessuivantes:\begin{itemize}\item	Les p\'enalit\'es de couleur doivent cro{\^\i}tre avecl'\'ecart chromatique:$$ 0 = {\bf p\_coul}[0] \le {\bf p\_coul}[1] \le {\bf p\_coul}[2] \le\cdots$$\item	Les p\'enalit\'es de flottement doivent cro{\^\i}tre avecle flottement; et\item	la quantit\'e ${\bf min\_fac}$ doit \^etre inf\'erieure ou\'egale \`a la moiti\'e de la plus petite p\'enalit\'e de flottement:$$ 0 = {\bf p\_flot}[0] \le 2\fois{\bf min\_fac} \le {\bf p\_flot}[1] \le	{\bf p\_flot}[2] \le \cdots $$\end{itemize}	Ces conditions ne suffisent \'evidemment pas \`a garantir desappariements ``raisonnables''; il faudrait au moins s'assurer que lespenalites de couleur et de flottement croissent ``suffisamment vite'' enfonction de l'\'ecart chromatique ou du flottement. La troisi\`emecondition garantit que les p\'enalites de flottement apr\`es correctionsont toujours positives (voir la section pr\'ec\'edente).\subsection{Derni\`ere passe}Une fois l'optimisation r\'ealis\'ee, PAPP examine s'il existed'autres appariements optimaux, se d\'eduisant du premier uniquementpar des interversions de couleurs.  Quand c'est le cas ---c'est-\`a-dire pour toute paire $\{i,j\}$ de joueurs appari\'es telleque $p_{ij}=p_{ji}$ --- PAPP choisira les couleurs comme suit: oncherche la ronde la plus r\'ecente o\`u $i$ et $j$ avaient des couleursdiff\'erentes, et on inverse ces couleurs.  Si ce n'est pas possible,c'est-\`a-dire si les deux joueurs ont toujours jou\'e avec lesm\^emes couleurs, alors on tire les couleurs au sort.Insistons sur le fait que cette derni\`ere passe ne d\'egrade nullement la qualit\'e de l'appa\-rie\-ment; PAPP choisit simplement entre plusieurs appariements optimaux.\section{Le fichier de configuration}% Macros pour la grammaire% Laisser les espaces : ils sont transparents en TeX, % mais utiles en HTML.%\def\gram#1{$\langle\hbox{\it#1}\rangle$}  \def\opt#1{$[\hbox{\it#1}]$}     % TtH ne connait pas \lbrack et \rbrack !\def\optr#1{$\lbrace\hbox{\it#1}\rbrace$}\def\fleche{$  \longrightarrow\,\,\,  $}\def\ou{$\vert\,\tthdump{\,}$}\def\vrb#1{{\tt #1}}	% le verbatim du pauvre!	Ce fichier est charg\'e par PAPP d\`es l'ex\'ecution.  Le nomde ce fichier est d\'etermin\'e \`a partir de la ligne de commande, sicelle-ci contient exactement un argument.  Sinon, PAPP utilise lavariable d'environnement \verb|PAPP_CFG|, si celle-ci est d\'efinie;sinon, PAPP prendra \verb|papp.cfg| comme nom de fichier (dans ler\'epertoire courant).	Si PAPP ne peut ouvrir le fichier de configuration, ilcr\'eera un fichier \verb|papp.cfg| dans le r\'epertoire courant,contenant ses r\'eglages par d\'efaut. 	Ce fichier de configuration contient les noms des autresfichiers requis par PAPP, la liste des p\'enalit\'es, et quelquesautres param\'etrages. \subsection{Conventions lexicales}	Le texte est d\'ecoup\'e en cha{\^\i}nes, entiers, mots-cl\'eset caract\`eres isol\'es.  Les espaces, tabulations, retours chariotet passages \`a la ligne sont ignor\'es; c'est le point-virgule quitient lieu de fin de commande (voir plus bas).	Une \gram{chaine} est une cha{\^\i}ne de caract\`eresd\'elimit\'ee par des doubles guillemets (\verb|"|), tenant sur uneseule ligne.	Un mot-cl\'e est une s\'equence r\'eserv\'ee de lettres et detirets (`\verb|-|'), le tiret ne pouvant pas appara{\^\i}tre commepremier caract\`ere.  Aucune distinction n'est faite entre majusculeset minuscules.	Un \gram{entier} d\'esigne un nombre entre $0$ et $2^{31}-1 =2\,147\,483\,647$; ce dernier nombre peut \'egalement \^etre obtenuavec le mot-cl\'e \verb|INFINI| --- comme tous les mots-cl\'es, onpourrait aussi l'\'ecrire en minuscules, mais on n'aurait plusl'impression qu'il s'agit d'un grand nombre.  (Note: cette limited\'epend en r\'ealit\'e de l'impl\'ementation; un \gram{entier} \'etantrepr\'esent\'e en C par un \verb|signed long|, la limite serait$2^{63}-1$ sur les machines 64-bits telles que le DEC Alpha.)	Si un `\verb|%|' ou `\verb|#|' appara{\^\i}t sur une ligne, toutle reste de la ligne est ignor\'e (ainsi que le caract\`ere lui-m\^eme),sauf si le `\verb|%|' est imm\'ediatement suivi par un `\verb|_|'; las\'equence `\verb|%_|' est ignor\'ee (elle \'equivaut \`a un espace),donc le reste de la ligne n'est {\em pas\/} ignor\'e.	Si le mot \verb|__eof__| appara{\^\i}t dans le fichier, toutce qui suit est ignor\'e (le fichier est imm\'ediatement referm\'e).\subsection{Grammaire}La syntaxe du fichier de configuration est la suivante:\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{fichier-config} \fleche \optr{\gram{commande}  \vrb;}			\cr    \gram{commande} \fleche \gram{vide}						\cr	\qquad \ou \vrb{fichier} (\vrb{joueurs} \ou \vrb{nouveaux} \ou \vrb{inter}) 	\vrb{=} \gram{chaine}	\cr	\qquad \ou \vrb{fichier} (\vrb{appariements} \ou \vrb{resultats} \ou \vrb{classement}) 	\vrb{=} \gram{chaine}	\cr	\qquad \ou \vrb{pays =} \gram{chaine}				\cr	\qquad \ou \vrb{brightwell =} \gram{entier}				\cr	\qquad \ou \vrb{score-bip =} \gram{entier} \opt{\vrb/ \gram{entier}}	\cr	\qquad \ou \vrb{sauvegarde} (\vrb{immediate} \ou \vrb{differee})	\cr	\qquad \ou \vrb{impression} (\vrb{manuelle} \ou \vrb{automatique} \gram{entier})	\cr	\qquad \ou \vrb{affichage-pions} (\vrb{absolu} \ou \vrb{relatif})	\cr	\qquad \ou \vrb{couleurs = \char`\{} \gram{chaine} \vrb, 	 \gram{chaine} \vrb{\char`\}}	\cr	\qquad \ou \vrb{zone-insertion} \opt{chaine}		\vrb= \gram{entier} \vrb- \gram{entier}				\cr	\qquad \ou \vrb{toutes-rondes} \vrb= \gram{entier}		\vrb- \gram{entier} \vrb{joueurs}				\cr	\qquad \ou \gram{indication-penalites} \ou \gram{commande-interne}   	\cr%    \gram{type-fichier} \fleche \vrb{joueurs} \ou \vrb{nouveaux} \ou \vrb{inter}	\cr%    \gram{type-sauvegarde} \fleche \vrb{immediate} \ou \vrb{differee}		\cr}\medbreak\subsection{Liste des p\'enalit\'es}La liste des p\'enalit\'es se d\'ecompose en cinq sections: les p\'enalit\'es de couleur, celles de flottement, celles de r\'ep\'etition, celles de chauvinisme et celles d'\'elitisme.  Chaque section commence par un label indiquant de quelle section il s'agit, puis la liste des p\'enalit\'es de cette section.\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{indication-penalites} \fleche \vrb{penalites \char`\{} \optr{section}     \vrb{\char`\}}	\cr    \gram{section} \fleche \gram{section-couleur} \ou \gram{section-flottement} \cr	\qquad \qquad \qquad  \ou \gram{section-repetition} \ou \gram{section-chauvinisme} \cr	\qquad \qquad \qquad  \ou \gram{section-elitisme} \cr}\medbreak\subsubsection{P\'enalit\'es de couleur}La section ``couleur'' permet de choisir les penalit\'es ${\bf p\_coul}[\delta]$ et $\bf p\_repcl$. La syntaxe est\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{section-couleur} \fleche \vrb{Couleur :}		\optr{\gram{penalite-couleur} \vrb;}	\cr    \gram{penalite-couleur} \fleche \gram{entier} \opt{\vrb+}		\vrb{fois =} \gram{pen}			\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}		\cr    \gram{pen} \fleche un \gram{entier} entre $0$ et $10\,000\,000$	\cr}\medbreak\noindent Consid\'erons l'exemple suivant:\begin{verbatim}    Couleur:        2  fois  =  500;  % delta == 2        3+ fois  = 5000;  % delta >= 3        de-suite =  100;  % p_repcl\end{verbatim}Cela signifie qu'on aura une penalit\'e de $500$ points si l'\'ecart decouleur ($\delta$) vaut deux, et $5000$ s'il vaut trois {\em ou plus\/}; etil y a $100$ points de p\'enalit\'e si l'on joue deux fois de suite avec lam\^eme couleur.\subsubsection{P\'enalit\'es de flottement}La section ``flottement'' concerne les variables ${\bf p\_flot}(f)$,$\bf p\_flcum$ et $\bf min\_fac$. La syntaxe est\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{section-flottement} \fleche \vrb{Flottement :}		\optr{\gram{penalite-flottement} \vrb;}	\cr    \gram{penalite-flottement} \fleche \gram{entier} \opt{\vrb+}		\vrb{demi-point =} \gram{pen}		\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}		\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{minoration =} \gram{pen}		\cr}\medbreak\noindent On notera que \verb|demi-point| peut prendre un `s' au pluriel.Voici un exemple:\begin{verbatim}    Flottement:        1  demi-point  =  100;  % p_flot[1]        2  demi-points =  500;  % p_flot[2]        3+ demi-points = 5000;  % p_flot[3 et plus]        de-suite       =   50;  % p_flcum        minoration     =   10;  % min_fac\end{verbatim}\subsubsection{P\'enalit\'es de r\'ep\'etition}Ensuite vient la section ``r\'ep\'etition'', qui concerne les variables$\bf p\_mcoul$, $\bf p\_clopp$, $\bf p\_bipbip$ et $\bf p\_desuite$. Cesvariables sont initialis\'ees par les d\'eclara\-tions suivantes,respectivement:\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{section-repetition} \fleche \vrb{Repetition :}    		\optr{\gram{penalite-repetition} \vrb;}		\cr    \gram{penalite-repetition} \fleche \vrb{memes-couleurs =} \gram{pen}	\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{couleurs-opposees =} \gram{pen}		\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{bip-bip =} \gram{pen}			\cr	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}			\cr}\medbreak\subsubsection{P\'enalit\'es de chauvinisme}Le tableau ${\bf p\_chauv}[r]$ est initialis\'e par la section``chauvinisme'', de la mani\`ere suivante:\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{section-chauvinisme} \fleche \vrb{Chauvinisme :}    		\optr{\gram{penalite-chauvinisme} \vrb;}		\cr    \gram{penalite-chauvinisme} \fleche \vrb{ronde} \gram{entier} \opt{\vrb+}    	\vrb= \gram{pen}	\cr}\medbreakLes rondes sont num\'erot\'ees \`a partir de un. Si par exemple on veutque la p\'enalit\'e de chauvinisme soit \'egale \`a $100$ pour les dixpermi\`eres rondes et \`a $1000$ ensuite, on \'ecrira:\begin{verbatim}    Chauvinisme:        ronde  1+ =  100;  % ronde 1  et suivantes        ronde 11+ = 1000;  % ronde 11 et suivantes\end{verbatim}\subsubsection{P\'enalit\'es d'\'elitisme}Le tableau ${\bf p\_elit}[r]$ est initialis\'e par la section``\'elitisme'', de la mani\`ere suivante:\medbreak\halign{\noindent\hskip 1cm\relax#\hfil\cr    \gram{section-elitisme} \fleche \vrb{Elitisme :}    		\optr{\gram{penalite-elitisme} \vrb;}		\cr    \gram{penalite-elitisme} \fleche \vrb{ronde} \gram{entier} \opt{\vrb+}    	\vrb= \gram{pen}	\cr}\medbreakLes rondes sont num\'erot\'ees \`a partir de un.  Si par exemple on veut que la p\'enalit\'e d'\'elitisme soit \'egale \`a $5$ pour les cinq permi\`eres rondes, \`a $25$ pour les rondes six \`a dix, et \`a $100$ ensuite, on \'ecrira:\begin{verbatim}    Elitisme:        ronde  1+ =   5;  % ronde 1  et suivantes        ronde  6+ =  25;  % ronde 6  et suivantes        ronde 11+ = 100;  % ronde 11 et suivantes\end{verbatim}\subsection{Remarques diverses}	D\`es que PAPP rencontre le mot-cl\'e \verb|penalites|, il remet\`a z\'ero {\em toutes\/} les p\'enalit\'es. Ceci permet de partir surdes bases saines, en \'evitant que les p\'enalit\'es d\'efinies parl'utilisateur ne viennent se m\'elanger avec celles par d\'efaut. Enparticulier, si l'utilisateur omet de d\'eclarer une p\'enalit\'e,celle-ci restera \'egale \`a z\'ero. Ce syst\`eme garantit \'egalement unecertaine compatibilit\'e ascendante entre les diff\'erentes versions dePAPP.	Pour des raisons historiques, les p\'enalit\'es ne peuventexc\'eder 10 millions; les p\'enalit\'es plus grandes seront ramen\'ees\`a cette valeur (avec un message d'avertissement).\subsection{Tournois toutes-rondes}	Bien qu'initialement pr\'evu pour organiser des tournois selonle syst\`eme suis\-se (ou l'une de ses multiples variantes), PAPP peut\'egalement organiser des tournois toutes rondes ou plusieurs foistoutes rondes.  Une directive de la forme $$\hbox{\verb|toutes-rondes = 1-12 joueurs;|}$$indique \`a PAPP qu'il doit organiser un toutes-rondes s'il y a entre 1et 12 joueurs.  Si ce n'est pas possible, c'est-\`a-dire s'il y a tropde joueurs, ou bien si des joueurs ont quitt\'e le tournoi ou sontentr\'es apr\`es la fin de la premi\`ere ronde, ou encore si vous avezforc\'e certains appariements \`a la main, alors PAPP se repliera surl'algorithme d'optimisation d\'ecrit plus haut. 	L'arbitre doit s'assurer que le nombre de rondes est un multipledu nombre de joueurs moins un, Bip compris.\subsection{Le d\'epartage de Brightwell}	Par d\'efaut, le d\'epartage se fait au nombre de pions.  Cesera \'egalement le cas si votre fichier de configuration contient ladirective \verb|brightwell = 0|.  Si au contraire vous sp\'ecifiez une valeur strictement positive,celle-ci sera prise comme valeur du coefficient $\beta$ de Brightwell. Rappelons que le d\'epartage de Brightwell est donn\'e par $${\it departage} = {\it nombre\_pions} + \beta\fois{\it buchholz}$$Dans cette formule, le $\it buchholz$ est la somme des scores, en demi-points, des adversaires rencontr\'es. Une partie contre Bip, ou une partie contre un adversaire qui a abandonn\'e le tournoi, est remplac\'ee par une partie nulle contre soi-m\^eme, avant d'appliquer la formule ci-dessus.Imaginons par exemple un joueur $A$, qui joue et gagne 33/31 contre $B$ \`a la premi\`ere ronde, et se retrouve contre Bip \`a la deuxi\`eme ronde.  On suppose que $B$ a gagn\'e sa deuxi\`eme partie.  Si on prend comme coefficient de Brightwell $\beta=3$, quel est le d\'epartage de $A$ \`a l'issue de la deuxi\`eme ronde?On constate que $A$ a 2 points (soit 4 demi-points) et $B$, 1 point (soit 2 demi-points).  La partie de $A$ contre Bip doit \^etre remplac\'ee par une partie nulle 32/32 contre $A$.  Le d\'epartage vaut donc $${\it departage} = (33+32) + 3 \fois (2+4) = \hbox{83 pions}.$$Insistons sur le fait que le d\'epartage de Brightwell est calcul\'e dans PAPP \`a partir de la somme {\it en demi-points} des score des adversaires rencontr\'es, tandis que les r\`eglements \'ecrits des tournois fixent g\'en\'eralement la valeur du coefficient de Brightwell pour des scores en points entiers.  Dans ce cas, la valeur du coefficient de Brightwell sp\'ecifi\'ee dans le fichier de configuration doit \^etre {\it la moiti\'e} de celle apparaissant dans le r\`eglement.Notes : les commandes `\verb|-|' et `\verb|+|' ont un effet de bord sur le d\'epartage de Brightwell, parce que les joueurs absents (\`a un moment donn\'e) sont suppos\'es avoir abandonn\'e le tournoi.  D'autre part, pour les jeux ``sans pions'' (voir ``Autres jeux''), le coefficient de Brightwell est toujours ignor\'e, et c'est le Buchholz qui sert de d\'epartage.\section{Le fichier des joueurs}\subsection{Syntaxe des joueurs}	PAPP peut lire tout fichier de joueurs accept\'e par JECH. Un telfichier contient un joueur par ligne, ainsi que des lignes de la forme $$\hbox{\verb|pays =| \gram{pays-abrege}}$$pour signaler que tous les joueurs qui vont suivre sont du paysindiqu\'e---au moins jusqu'\`a la prochaine ligne de ce type (lesguillemets autour de \gram{pays-abrege} sont facultatifs, mais le nom depays ne doit pas contenir d'espace).  Les lignes d\'ecrivant un joueurdoivent sp\'ecifier le num\'ero Elo, puis le nom et le(s) pr\'enom(s)(\'eventuellement s\'epar\'es par une virgule s'il y aambigu{\"\i}t\'e); on peut ensuite pr\'eciser le pays abr\'eg\'e, entreaccolades, puis le classement, entre chevrons, et un commentaire apr\`esun accent grave; chacun de ces trois derniers champs est optionnel. Exemple:\begin{verbatim}   92 FELDBORG, Karsten {DK} <2209> `Vive les Danois!\end{verbatim}est accept\'e par PAPP.  Mais pas par JECH, malheureusement, qui necomprend pas les signes \verb|<| et \verb|>|, ni l'accent grave; or onaimerait bien que le m\^eme fichier de joueurs soit partag\'e par JECHet PAPP.  L'astuce consiste a r\'e\'ecrire la ligne pr\'ec\'edente commesuit:\begin{verbatim}   92 FELDBORG, Karsten {DK} %_<2209> `Vive les Danois!\end{verbatim}	L'id\'ee est que JECH ignore tout ce qui suit le `\verb|%|'; alorsque pour PAPP, la s\'equence `\verb|%_|' est ``transparente'', et tout sepasse comme s'il y avait un espace \`a la place. 	Notez par ailleurs que JECH et PAPP cessent de lire le fichierd\`es qu'ils rencontrent \verb|__eof__|; cette astuce peut \^etrecombin\'ee avec la pr\'ec\'edente pour sauter des parties enti\`eres dufichier. 	Le fichier fourni dans la distribution du programme se conforme\`a cette convention, et donc peut \^etre utilis\'e \`a la fois par JECHet PAPP.  Par d\'efaut, PAPP cherchera le fichier \verb|joueurs| dans ler\'epertoire courant, mais il est possible de lui faire lire un autrefichier en pla\c cant dans votre fichier de configuration $$\hbox{\verb|fichier joueurs =| \gram{nom-fichier} \verb|;|}$$	Les commentaires peuvent, par exemple, \^etre utilis\'es poursavoir si un joueur est adh\'erent et \`a jour de cotisation.  Ils sontaffich\'es lors de l'inscription des joueurs, et peuvent \^etre relus\`a tout moment avec la commande \verb|F| du menu principal. \section{Autres options}\subsection{Les zones d'insertion}	Ce sont de grandes plages de num\'eros Elo non encore (tous)attribu\'es, destin\'ees \`a l'inscription des nouveaux joueurs.  Il estpossible de d\'efinir une ou plusieurs zones d'insertion pour chaquepays, et une ou plusieurs zones ``internationales'', o\`u quiconquepourra s'inscrire.Supposons par exemple que le fichier de configuration contienne\begin{verbatim}    zone-insertion "F"  =  700- 900;  % francais    zone-insertion "GB" = 1500-1700;  % anglais    zone-insertion      = 5000-6000;  % tous les autres\end{verbatim}	Les nouveaux joueurs fran{\c c}ais obtiendront un num\'ero entre700 et 900, les joueurs anglais un num\'ero entre 1500 et 1700, et lesjoueurs de tous les autres pays un num\'ero entre 5000 et 6000.	Pour choisir un num\'ero, PAPP commence par scruter toutes leszones d'insertion correspondant \`a la nationalit\'e du joueur. S'il n'yen a pas ou si elles sont toutes pleines, PAPP cherchera un emplacementlibre dans les zones internationales. Si ce n'est pas possible non plus,PAPP choisira le plus petit num\'ero $\ge1$ non attribu\'e. Dans tousles cas, l'arbitre est libre de choisir un autre num\'ero que celuipropos\'e par PAPP.	Les nouveaux joueurs sont alors enregistr\'es dans un fichierdont le nom par d\'efaut est \verb|nouveaux|, mais ceci peut \^etrechang\'e si votre fichier de configuration contient une ligne de laforme $$\hbox{\verb|fichier nouveaux =| \gram{nouveau nom} \verb|;|}$$Ce fichier est au m\^eme format que le fichier principal des joueurs. On apr\'ef\'er\'e cr\'eer un autre fichier plut\^ot que de ``polluer'' le fichierprincipal avec des informations moins s\^ures.\subsection{Les appariements de la premi\`ere ronde}	Les appariements de la premi\`ere ronde sont, pour l'essentiel,al\'eatoires.  Comme pour toutes les autres rondes, l'appariement estproduit par optimisation, donc si la p\'enalit\'e de chauvinisme est nonnulle, PAPP aura tendance \`a apparier des joueurs de nationalit\'esdiff\'erentes.  En ce sens, l'appariement n'est pas al\'eatoire: s'il ya plus de fran{\c c}ais que d'\'etrangers \`a un tournoi, il est garantique chaque \'etranger jouera contre un fran{\c c}ais; et que c'est unfran{\c c}ais qui jouera contre Bip s'il y a un nombre impair dejoueurs. 	En d'autres termes: la probabilit\'e que deux joueurs jouentensemble \`a la premi\`ere ronde ne d\'epend que de leur nationalit\'e. Si la p\'enalit\'e de chauvinisme de la premi\`ere ronde est nulle,l'appariement sera rigoureusement al\'eatoire. \subsection{R\'ecapitulatif ronde par ronde}Il est possible de demander \`a PAPP de sauvegarder automatiquement (et m\^eme d'envoyer automatiquement \`a une \'eventuelle imprimante), \`a la fin de chaque ronde, un r\'ecapitulatif des r\'esultats des parties qui viennent de se terminer, et le nouveau classement des joueurs dans le tournoi. Si le fichier de configuration contient une ligne de laforme $$\hbox{\verb|fichier resultats =| \gram{nom de fichier} \verb|;|}$$dans laquelle \gram{nom de fichier} est un nom g\'en\'erique (non vide) de fichier, alors PAPP, au moment o\`u vous confirmez les coupons, va sauvegarder les r\'esultats ``en clair'' de toutes les parties dans un fichier num\'erot\'e par le num\'ero de la ronde.  Pour cr\'eer le nom du fichier pour la ronde qui vient de se terminer, PAPP essaye de trouver les caract\`eres `\verb|###|' dans le nom g\'en\'erique sp\'ecifi\'e, et les remplace par le num\'ero de la ronde (par exemple, si le nom g\'en\'erique dans le fichier de configuration est \verb|result###.txt|, PAPP cr\'eera la suite des fichiers \verb|result__1.txt|, \verb|result__2.txt|, \verb|result__3.txt|, \emph{etc.}).  Si le nom g\'en\'erique ne contient pas `\verb|###|', PAPP suffixera simplement ce nom g\'en\'erique avec le num\'ero de la ronde.D'autre part, si le fichier de configuration contient des lignes de laforme $$\hbox{\verb|fichier classement =| \gram{nom de fichier} \verb|;|}$$$$\hbox{\verb|fichier appariements =| \gram{nom de fichier} \verb|;|}$$dans laquelle les \gram{nom de fichier} sont des noms g\'en\'eriques (non vides) de fichier, alors PAPP, de la m\^eme mani\`ere, sauvegardera automatiquement les classements interm\'ediaires \`a la fin de chaque ronde, et les appariements de la ronde suivante.  Il applique les m\^emes conventions que ci-dessus pour construire les noms successifs des fichiers.Vous pouvez tout-\`a-fait, dans le fichier de configuration, sp\'ecifier des \gram{nom de fichier} identiques pour les fichiers d'appariements, de r\'esultats ou de classement (ou pour deux d'entre eux) : PAPP ne cr\'eera au besoin qu'un ou deux fichier(s) par ronde, dans lequel il collera \`a la suite les appariements, les r\'esultats des parties et le classement du tournoi.  Si vous ne voulez pas utiliser l'une de ces trois options, vous pouvez soit commenter la (les) ligne(s) correspondant dans le fichier de configuration, soit sp\'ecifier un nom de fichier vide.  Par exemple \hbox{\verb|fichier resultats = ""|} annule la sauvegarde du fichier des r\'esultats.Note : lors de ces sauvegardes, PAPP \'ecrase sans vergogne les fichiers \'eventuels qui ont le m\^eme nom que ceux qu'il est en train d'\'ecrire et qui \'etaient l\`a au d\'emarrage du programme.  Il faut donc penser \`a la fin du tournoi \`a d\'eplacer en lieu s\^ur ces fichiers, faute de quoi ils risqueraient d'\^etre perdus lors du tournoi suivant.\subsection{Impression}Si vous avez une imprimante allum\'ee et connect\'ee \`a votre ordinateur, la commande $$\hbox{\verb|impression automatique| \gram{nbre-de-copies} \verb|;| }$$ plac\'ee dans le fichier de configuration, ordonnera \`a PAPP, d\`es qu'il les aura cr\'e\'es, d'imprimer (avec le nombre d'exemplaires sp\'ecifi\'e) les fichiers d'appariements, de r\'esultats et de classement ronde par ronde.  Le r\'eglage par d\'efaut est le contraire, \verb|impression manuelle|, qui vous permet de passer dans un \'editeur de textes pour modifier les fichiers avant de les imprimer.\subsection{Modes de sauvegarde}Le mode de sauvegarde par d\'efaut pour le fichier interm\'ediaire \verb|__papp__| est ``sauvegarde diff\'er\'ee''~; ceci signifie que les sauvegardes sont faites seulement quand les r\'esultats d'une ronde ont \'et\'e enti\`erement entr\'es et valid\'es, ou bien quand on quitte le programme.  En particulier, les appariements ne sont pas sauvegard\'es, puisqu'on attend d'avoir les r\'esultats de la ronde pour le faire!  Ce mode est parfait pour les tests, mais dangereux en tournoi, parce qu'un temps consid\'erable peut s'\'ecouler entre le moment o\`u les appariements sont calcul\'es et celui o\`u les r\'esultats seront entr\'es, et on ne peut garantir que personne ne se sera pris les pieds dans le fil entretemps.La commande \verb|sauvegarde immediate| ordonne \`a PAPP de faire ses sauve\-gardes internes aussi r\'eguli\`erement que possible, c'est-\`a-dire avant tout affichage et, \'evidemment, avant de quitter.  Plus pr\'ecisement, les commandes `\verb|L|' et `\verb|V|' provoquent une sauvegarde des inscrits et des appariements respectivement, avant tout affichage.  D'autres commandes, comme `\verb|A|', appellent implicitement `\verb|V|' et donc provoquent \'egalement une sauvegarde.  Essentiellement, si vous voyez \`a l'\'ecran une liste de joueurs ou d'appariements, vous pouvez \'eteindre la machine en toute s\'ecurit\'e parce que vous savez que cette liste a \'et\'e sauvegard\'ee avant d'\^etre affich\'ee.  (En toute rigueur, ce n'est pas enti\`erement exact: le syst\`eme d'exploitation peut utiliser un cache disque, et donc diff\'erer l'\'ecriture des donn\'ees.  Il est donc {\em toujours\/} pr\'ef\'erable de quitter PAPP, puis d'\'eteindre ``proprement'' la machine).Une fois le tournoi termin\'e, PAPP peut cr\'eer un fichier ELOqui sera utilis\'e pour le calcul du classement de Jech.  Choisissezl'option `\verb|E|' du menu principal, indiquez le nom du fichier que vousvoulez cr\'eer (sous TOS ou MS-DOS, vous \^etes limit\'e a $8+3$caract\`eres), et le nom complet du tournoi, qui peut \^etre nettement pluslong; vous avez droit \`a 127 caract\`eres, profitez-en et n'utilisez pasd'abr\'eviations.On notera que PAPP ne d\'etecte jamais quand le disque estplein; et m\^eme s'il le pouvait, que pourrait-il faire?  Donc, v\'erifieztoujours qu'il reste de la place sur vos disquettes.\subsection{D\'epart et retour des joueurs}L'arbitre a la possibilit\'e de faire sortir, temporairement ou d\'efini\-tivement, des joueurs du tournoi avec la commande `\verb|-|' du menu principal.  Le joueur est alors consid\'er\'e comme absent: il ne peut \^etre appari\'e pour cette ronde (s'il l'\'etait, son appariement est d\'etruit), il ne jouera pas et ne marquera pas de point contre Bip.  Il est possible de le faire revenir avec la commande~`\verb|+|'.  Dans la liste des joueurs (commande~`\verb|L|'), les joueurs ``absents'' sont indiqu\'es par le signe~`\verb|-|'.	Bien que ces commandes soient principalement utilis\'ees quandun joueur abandonne au milieu d'un tournoi, on peut leur imaginerd'autres applications.  Par exemple, au moment de la finale, tous lesjoueurs quittent le tournoi sauf deux.  Aussi PAPP offre-t-il unecommodit\'e pour faire sortir ou revenir tous les joueurs: apr\`es`\verb|+|' ou `\verb|-|', tapez `\verb|*|' en r\'eponse au prompt. \subsection{Correction d'un r\'esultat}Il arrive parfois que deux adversaires ne respectent pas les bonnes couleurs dans leur partie, ou qu'ils se trompent de scores en remplissant le coupon apport\'e \`a l'arbitre.  PAPP permet \`a celui-ci de corriger ces deux types d'erreurs.  Utilisez la commande `\verb|C|' du menu principal : PAPP vous demande de rentrer successivement le num\'ero de la ronde du coupon \`a corriger (ce peut \^etre le num\'ero de la ronde courante si vous avez commenc\'e \`a rentrer des r\'esultats pour cette ronde), le joueur noir \emph{correct} (c'est-\`a-dire dans la vraie partie), le \emph{vrai} score noir, le joueur blanc \emph{correct} puis le \emph{vrai} score blanc.  PAPP v\'erifie la coh\'erence de la correction apport\'ee (pr\'esence d'un appariement entre ces joueurs \`a cette ronde, l\'egalit\'e des scores, \emph{etc.}), affiche le coupon modifi\'e, \'ecrit le nouveau fichier interm\'ediaire sur le disque et recalcule les nouveaux scores et les nouveaux d\'epartages des joueurs dans le tournoi.Note : PAPP ne refait pas les appariements de la ronde en cours suite \`a une correction dans une ronde pass\'ee ; c'est une d\'ecision qui d\'epend du r\`eglement du tournoi et d'autre param\`etres (les appariements ont-ils \'et\'e annonc\'es ?  les parties ont-elles commenc\'e ?)  et qui doit revenir \`a l'arbitre.  Si l'arbitre d\'ecide de recalculer de nouveaux appariements, il peut le faire en effacant tous les appariements (commandes `\verb|M|', puis `\verb|Z|' du menu principal) puis en demandant le recalcul des appariements automatiques (commandes `\verb|A|' du menu principal).\subsection{Fourrager dans le fichier interm\'ediaire}Ce n'est gu\`ere souhaitable, mais peut s'av\'erer indispensable pour les corrections impossibles \`a faire directement dans PAPP avec la commande `\verb|C|', par exemple pour faire une permutation circulaire des appariements si quatre joueurs se sont tromp\'es en m\^eme temps plusieurs rondes auparavant, ou pour effacer tout-\`a-fait un joueur inscrit par erreur.  Le fichier interm\'ediaire contient quelques indications pour guider les mortels qui oseraient s'y aventurer.  Cherchez donc le bloc indiquant le r\'esultat de la ronde incrimin\'ee; les r\'esultats sont stock\'es sous la forme $$\hbox{\verb|(|{\it joueur\_noir score\_noir joueur\_blanc score\_blanc\/}\verb|);|} $$Les ``r\'esultats'' contenant en eux-m\^emes les appariements, il n'est pas n\'ecessaire qu'ils soient coh\'erents avec le bloc des appariements situ\'e au-dessus (bloc qui peut d'ailleurs ne pas exister, surtout si vous avez choisi ``sauvegarde diff\'er\'ee''); il importe en revanche que le bloc des r\'esultats soit coh\'erent en lui-m\^eme; donc corrigez soigneusement la ligne erron\'ee, sinon PAPP signalera une erreur fatale et s'arr\^etera.  (Mieux encore: laissez la ligne originale en commentaire.  Si vous n'\^etes pas s\^ur de vous, faites une copie du fichier interm\'ediaire avant de le modifier).\subsection{Utilisation du multit\^ache}PAPP a \'et\'e d\'evelopp\'e initialement pour MiNT, le syst\`eme d'exploitation multit\^ache de l'Atari ST, avec l'objectif d'\^etre facilement portable sur d'autres plateformes.Une premi\`ere cons\'equence de cela est que PAPP n'impose aucune restriction sur les noms de fichiers; vous n'\^etes limit\'e que par le syst\`eme de fichiers de votre machine (lequel peut distinguer majuscules et minuscules, c'est pourquoi PAPP ne convertira jamais un nom en majuscules, par exemple).Si PAPP est compil\'e pour reconna{\^\i}tre les signaux, et si le shell conna{\^\i}t le ``job control'', alors il peut \^etre suspendu en tapant [Ctrl-Z] dans le menu principal.  Il r\'epond \'egalement \`a certains signaux: SIGINT est toujours ignor\'e; les signaux SIGHUP, SIGQUIT et SIGTERM terminent le programme ``proprement'' en sauvegardant son \'etat.  Les autres signaux tuent le programme sans que celui-ci puisse proc\'eder aux sauvegardes n\'ecessaires.PAPP peut \'egalement s'ex\'ecuter dans une fen\^etre, sous MW ou TosWin (sur l'Atari) ou Xterm (sous X11); les dimensions de celle-ci sont obtenues par un ioctl(), et comme le signal SIGWINCH est g\'er\'e, on peut m\^eme redimensionner la fen\^etre pendant que le programme tourne!PAPP peut \^etre lanc\'e avec un (unique) argument sur la ligne de commande; cet argument est alors interpr\'et\'e comme le nom du fichier de configuration \`a lire.  Par d\'efaut, ce fichier de configuration contient `\verb|#!  papp|' sur sa premi\`ere ligne, ce qui lui permet d'\^etre ``ex\'ecut\'e'' directement, sur certains syst\`emes d'exploitation, en particulier Unix et MiNT.\subsection{Jeux autres qu'Othello}Bien qu'initialement \'ecrit pour Othello $8\fois 8$, PAPP peut \^etre utilis\'e pour tout jeu o\`u il y a un nombre fixe de ``pions'' (ici, $64$) \`a se partager entre les deux joueurs.  Dans ce cas, il faut \'egalement pr\'eciser combien de pions fait Bip (c'est important pour le d\'epartage).  Par exemple, si on veut organiser un tournoi d'Othello $10\fois 10$ o\`u Bip fait $35$ pions sur cent, on \'ecrira simplement \verb|score-bip = 35 / 100|.Si on omet `\verb|/100|', cela signifie qu'on veut modifier le score de Bip, mais pas le total de pions.  Ici en l'occurence, Bip marquerait $35$ pions sur $64$, donc gagnerait toutes ses parties!  PAPP obtemp\'erera, mais vous avertira quand m\^eme que c'est un peu \'etrange\dots\ (Note: cette bizarrerie dispara{\^\i}tra peut-\^etre dans les versions ult\'erieures de PAPP.)	Le ``total de pions'' situe sous la barre de fraction peutm\^eme \^etre un nombre impair (songez au Go par exemple). Si le totalde pions est $\le2$, cela signifie qu'on a affaire \`a un jeu ``sanspions'', tel que les echecs, et qu'il y a identit\'e entre un pion et unpoint (ou un demi-point); dans ce cas, il n'y a qu'un seul d\'epartageraisonnable, le {\em Buchholz\/} (somme des scores des adversaires, endemi-points). 	D'autre part, il sera sans doute n\'ecessaire de sp\'ecifier lescouleurs du premier et du second joueur, vu qu'\`a Othello ce sont lesNoirs qui commencent, \`a l'inverse de quasiment tous les autres jeux~;sinon, les fiches individuelles n'indiqueront pas les bonnes couleurs.Si vous inventez un jeu avec des pions rouges et verts et que ce sontles Rouges qui commencent, pensez \`a ajouter la ligne\begin{verbatim}    Couleurs = { "Rouge", "Vert" };\end{verbatim}dans votre fichier de configuration.	Enfin, dans certains jeux ``\`a pions'' comme le Go, on pr\'ef\`erecomptabiliser la diff\'erence de pions entre les joueurs plut\^ot que lenombre de pions du premier joueur. Il est toujours possible d'entrer lesr\'esultats sous forme relative ou absolue dans PAPP, mais il fautpr\'eciser si vous voulez voir les r\'esultats affich\'es sous formerelative ou absolue~; pour le Go, on ajoutera la directive\begin{verbatim}    Affichage-pions relatif;\end{verbatim}dans le fichier de configuration. Ceci affectera l'affichage desr\'esultats et celui des fiches individuelles, mais le d\'epartage telqu'il appara{\^\i}t dans la liste des joueurs est toujours bas\'e sur lescore ``absolu'' des joueurs.\section{Copyright}	Ce programme (c'est-\`a-dire sources et documentation) estpropri\'et\'e de l'auteur, Thierry Bousch. Il peut \^etre librementcopi\'e et distribu\'e selon la GPL (GNU Public License)~; cette licenceest d\'etaill\'ee dans le fichier `\verb|COPYING|'.	L'auteur d\'ecline toute responsabilit\'e concernantl'utilisation de ce programme, en particulier les dommages directs ouindirects qui pourraient \^etre caus\'es par celui-ci.  Le programme estfourni tel quel, sans aucune garantie.Je suis n\'eanmoins tr\`es int\'eress\'e par toute remarque, critique, compte rendu de bug, concernant PAPP. Vous pouvez me contacter par courrier \'electronique(\verb|bousch@topo.math.u-psud.fr|) ou poster un message sur la liste discutant de l'avenir de PAPP (\verb|ffo-papp@egroups.fr|).\newpage\tableofcontents\end{document}
+%
+% PAPP Documentation , in LaTeX.
+%
+% $Id: papp_doc.tex,v 1.19 1995/04/09 18:17:39 bousch Exp $
+%
+%\documentstyle[11pt]{article}
+\documentclass[10pt]{article} 
+%\usepackage{a4wide}
+%\usepackage{times}
+
+%\french
+\def\contentsname{Table of contents}
+\parskip 1ex plus 0.5ex minus 0.5ex
+\tolerance 1000
+
+% Macro pour inserer du code TeX non utilise pour la version HTML
+\def\tthdump#1{#1}
+
+% Macro pour ecrire du code different en HTML (branche iftth)
+% et en TeX (branche \else). Usage :
+% \iftth  code HTML   \else   code Tex \fi
+\newif\iftth
+
+% \times semble manquer dans TtH, on le definit
+\def\fois
+{\iftth 
+   {\begin{html}<font face=symbol> Å½ </font>\end{html}} 
+\else 
+   \times 
+\fi}  
+
+   
+
+\begin{document}
+
+\title{\huge\bf Documentation for Papp 1.22}
+\author{ {Thierry Bousch {\tt <bousch@topo.math.u-psud.fr>}}
+\and {Liste Papp-FFO {\tt <ffo-papp@egroups.fr>}}
+}
+\date{September 2000}
+\maketitle
+
+
+\iftth   
+{\begin{html}<small>If mathematics display oddly in that document,
+        change the encoding (MacRoman or ISO-8859-1) in 
+        your browser. If this is not enough, you might 
+        find a solution there :
+        http://hutchinson.belmont.ma.us/tth/manual/</small>
+ \end{html}} 
+\else {}
+\fi    
+
+
+\section{Introduction}
+
+	PAPP is a pairing program, that is, something which is supposed to 
+simplify referees work during tournaments.  With it, they can 
+inscribe players, save the results of the rounds, calculate pairings 
+automatically and produce files used to calculate a international 
+rating list (\`a la Elo).
+
+	PAPP also offers a mini-database to allow players numbers 
+management, and the pairing procedure is completely parametrable.
+
+	PAPP is written in ANSI C, especially for the GCC. The manual has 
+been written in \LaTeX. The lexical and syntactic analysis phases use 
+Flex and Bison, from the ''Free Software Foundation''.
+
+\section{First contact}
+
+	The program is named \verb|papp| or \verb|papp.exe|, depending on the
+exploitation system. Launch it; after a couple of seconds, the main 
+menu appears.
+
+	All commands are accessible with a single key stroke.  It is not 
+necessary to type [Return] afterwards, nor is it necessary after the 
+other mennus, nor after the Yes/No questions.
+
+	Experiment a little bit, it is not dangerous.  PAPP will emit a 
+protestation beep if you press an invalid key (raise the sound level 
+of your computer if necessary). Most commands will be uneffective 
+since no player is inscribed in the tournament, so type `\verb|I|' to 
+inscribe players.
+
+\subsection{Inscriptions}
+
+Faced with the prompt \verb|Nom & Prenom:|, type `\verb|y|', then hit 
+the [Tab] key; PAPP then lists all players whose name begins with 
+`y', That is \verb|YASOJIMA Keiji| 
+and \verb|YASUI Tsugo|.  Note that the input buffer now contains 
+\verb|YAS|, because PAPP has completed the name until the first 
+ambiguity --- here, it does not know wether the fourth letter is `O' 
+or `U'.  Delete the buffer with [Backspace] ou [Esc], and type 
+\verb|laz|, then [Tab].  This time, there is only one possible 
+completion: \verb|LAZARD Emmanuel|, and you only have to confirm with 
+[Return].
+
+	Now, enter the name of a new, unknown player (use [Tab]
+to verify that he/she is not already in the database).  PAPP will
+ask for confirmation (you may have done a typographic error), then 
+the player's nationnality (just hit [Return] if it is the default 
+country) so that he can choose a number for the new player  --- you 
+can change that number if you wish.  The player will then be added to 
+the database.
+
+Spend some time playing with the database and inscribing players.  
+Once you get bored, just type [Return] (or Ctrl-C) at the prompt.  
+Then, at the main menu, you can check the list of players in the 
+tournament with `\verb|L|'.
+
+\subsection{Pairings}
+
+If you hit `\verb|V|', you'll see the list of all these players, one 
+per line.  That's because they are not yet paired.  It is possible to 
+pair them manually with `\verb|M|', or to ask PAPP to pair 
+automatically all the players that are not yet paired with `\verb|A|'.  
+So type `\verb|A|': the list of pairings appears shortly alfterwards; 
+This time, there are two players on each line (except on the last line 
+if there is an odd number of players).  This means the pairings are 
+complete.
+
+If some players show up late after the beginning of round one, the 
+tournament director has the choice to accept them or not; but as far 
+as PAPP is concerned, there is no difficulty: you come back to the 
+main menu, you inscribe the players, and you type `\verb|A|' to 
+complete the pairings.  It is possible to inscribe players for a 
+particular round as long as all the results for that round have not 
+been entered and validated, which should be flexible enough for most 
+cases.
+
+\subsection{Entering results}
+
+When the games of the round end and you begin to collect score coupons 
+on your desk, select the option `\verb|R|' to enter the results.  the 
+prompt \verb|Joueur & Score:| is displayed in an empty screen; to 
+enter a game result, type in the name (or the beginning of the name , 
+or the number) of one of the players, followed by his/her score, 
+separated by a space.  PAPP verifies the name or the number of the 
+designated player, outputs a warning message if the result had already 
+been entered, then displays the filled coupon.  En cas d'erreur, vous 
+pouvez {\em effacer} un coupon en tapant le signe `\verb|-|' suivi du 
+nom de l'un des joueurs de la partie (ou, si vous pr\'ef\'erez, en 
+tapant le num\'ero de l'un des joueurs suivi de la lettre `\verb|e|' 
+--- l'espace entre les deux est facultatif).  Il est possible d'entrer 
+les scores sous forme relative; ainsi, `\verb|145+4|', `\verb|145=|' 
+et `\verb|145-6|' signifient que le joueur 145 a fait quatre pions de 
+plus que son adversaire, a \'egalis\'e, ou a perdu de six pions, 
+respectivement --- ici encore, il n'est pas n\'ecessaire de s\'eparer 
+le num\'ero du joueur de son score, parce qu'il n'y a pas 
+d'ambigu{\"\i}t\'e possible.
+
+Si vous n'\^etes pas s\^ur des informations port\'ees sur un coupon 
+(notamment l'orthographe ou le num\'ero Elo d'un joueur), ou si vous 
+n'avez pas de coupon du tout, par exemple parce qu'on vous a donn\'e 
+le r\'esultat oralement, tapez sur [Tab]: PAPP affichera alors tous 
+les coupons, d'abord ceux qui ont \'et\'e entr\'es, puis ceux qui 
+restent \`a entrer.  Ainsi, m\^eme si la liste des coupons est trop 
+longue pour tenir sur l'\'ecran, au moins le bas de la liste sera 
+lisible.  Une autre solution moins commode consiste \`a revenir au 
+menu principal, puis \`a choisir l'option `\verb|V|' pour voir les 
+appariements et les r\'esultats partiels.
+
+	PAPP vous signalera quand les r\'esultats seront complets.
+Relisez-vous (\'eventuellement en utilisant [Tab] pour vous rappeler des
+coupons entr\'es quelque temps avant), et si tout semble correct, tapez
+simplement un `\verb|!|' en r\'eponse au prompt, puis [Return]; apr\`es
+avoir enregistr\'e les r\'esultats, PAPP vous affichera le nouveau
+classement. 
+
+	A des fins de test, j'ai ajout\'e dans le m\^eme sous-menu une
+option `\verb|?|' pour tirer al\'eatoirement les r\'esultats des rondes
+--- plus pr\'ecisement, de celles dont les r\'esultats n'ont pas encore
+\'et\'e entr\'es.  C'est surtout int\'eressant quand PAPP conna{\^\i}t
+le classement des joueurs, car il peut estimer raisonnablement les
+probabilit\'es relatives de gain.
+
+\subsection{Chargement et sauvegarde}
+
+	Il n'y a pas d'option ``Charger'' ou ``Sauver''.  Les
+sauvegardes sont faites quand c'est n\'ecessaire (voir le chapitre
+``Mode de sauvegarde'' pour plus de d\'etails) et lorsqu'on quitte le
+programme.  Quand on relance PAPP, celui-ci relit le fichier
+interm\'ediaire pr\'ec\'edemment cr\'e\'e sur le disque (celui-ci
+aura pour nom \verb|__papp__|, typiquement) et se remet exactement
+dans l'\'etat o\`u il \'etait la derni\`ere fois qu'on l'a quitt\'e.
+
+	Ceci a une cons\'equence importante: avant un nouveau tournoi,
+il faut penser \`a effacer ce fichier du disque, sinon PAPP se remettrait
+dans l'\'etat ou il \'etait apr\`es la derni\`ere ronde du tournoi
+pr\'ec\'edent, ce qui n'est g\'en\'eralement pas l'effet recherch\'e.
+
+\subsection{Appariements manuels}
+
+Il est possible de forcer manuellement les appariements avec 
+`\verb|M|'.  Pour des raisons de place disponible sur l'\'ecran, il ne 
+m'a pas sembl\'e possible de donner les noms complets des joueurs ``en 
+clair''.  Les joueurs sont donc repr\'esent\'es par les huit premiers 
+caract\`eres de leur nom, suivi de leur num\'ero (entre 
+parenth\`eses); heureusement, il est possible d'afficher la liste ``en 
+clair'' des joueurs et des appariements sans revenir au menu 
+principal, puisque les options `\verb|L|', `\verb|V|' et `\verb|F|' 
+sont \'egalement disponibles dans ce sous-menu.
+
+	PAPP affiche d'abord les couples de joueurs appari\'es (comme
+toujours, le premier joueur a les noirs), puis les joueurs non
+appari\'es.  Ces deux listes sont mises \`a jour apr\`es chaque
+op\'eration.  Il y a trois op\'erations possibles:
+
+\begin{itemize}
+
+	\item[`{\tt Z}':] d\'etruit tous les appariements. Cette commande ne
+prend aucun argument, mais PAPP vous demandera confirmation.
+
+\item[`{\tt D}':] d\'ecoupler un joueur. Cette commande prend un 
+argument, qui est le nom ou le num\'ero du joueur.  Si ce joueur 
+\'etait appari\'e, son appariement est d\'etruit.  Sinon, la commande 
+est sans effet.  Comme toujours lorsque PAPP vous demande un nom de 
+joueur, vous pouvez entrer seulement les premi\`eres lettres de son 
+nom, ou obtenir une compl\'etion du tampon d'entr\'ee en appuyant sur 
+la touche [Tab].
+
+\item[`{\tt A}':] apparier deux joueurs.  PAPP vous demande 
+successivement le nom (ou le num\'ero) du joueur noir, puis du joueur 
+blanc.  Si ces joueurs \'etaient d\'ej\`a appari\'es, leurs 
+pr\'ec\'edents appariements sont d\'etruits.
+
+\end{itemize}
+
+\subsection{Lecture des r\'esultats}
+
+	La commande `\verb|L|' donne le score et le d\'epartage des
+joueurs \`a un moment donn\'e du tournoi; les donn\'ees affich\'ees ne
+seront modifi\'ees qu'apr\`es que les r\'esultats de la ronde auront
+\'et\'e enti\`erement entr\'es et valid\'es.  Le format d'affichage est
+le suivant: le rang dans le tournoi, le score puis le d\'epartage entre
+crochets, un \'eventuel `\verb|-|' pour indiquer que le joueur est
+absent (i.e., a abandonn\'e le tournoi), puis le nom, le num\'ero et la
+nationalit\'e du joueur.
+
+Il est possible d'obtenir les r\'esultats individuels d'un joueur avec 
+la commande `\verb|F|' du menu principal. PAPP affiche alors les 
+appariements et les r\'esultats des rondes pr\'ec\'edentes, sous la 
+forme suivante: le num\'ero de ronde, la couleur du joueur, puis le 
+score de sa partie (eventuellement pr\'ec\'ed\'e d'un `\verb|+|' pour 
+indiquer une victoire ou un `\verb|=|' en cas de nulle), et enfin le 
+nom et le num\'ero Elo de son adversaire.  Si le fichier des joueurs 
+contient des renseignements suppl\'ementaires sur le joueur, ils sont 
+affich\'es tels quels en bas de la fiche.  Pour PAPP, ce ne sont que 
+des commentaires: aucune interpr\'etation n'est faite.  Ces 
+commentaires sont \'egalement affich\'es lors de l'inscription du 
+joueur.
+
+	Si vous avez entr\'e seulement une partie des r\'esultats d'une
+ronde, vous pouvez v\'erifier ce que vous avez d\'ej\`a entr\'e avec la
+commande `\verb|V|' du menu principal (encore une fois, le premier nomm\'e
+a les noirs).
+
+\subsection{Autres commandes}
+
+
+La commande `\verb|E|' du menu principal produit un fichier Elo qui 
+peut \^etre relu par JECH. A n'utiliser qu'\`a la fin du tournoi.
+
+La commande `\verb|C|' permet de corriger un r\'esultat erron\'e dans 
+une ronde pass\'ee.  Pour plus de d\'etails, voyez le chapitre 
+``Correction d'un r\'esultat'' plus loin dans ce manuel.
+
+La commande `\verb|S|' permet de sauvegarder le classement dans un 
+fichier.  Si le nom de fichier commence par un `\verb.|.'  (``pipe''), 
+celui-ci est interpr\'et\'e comme une redirection vers une commande 
+(cette facilit\'e n'est pas disponible sur tous les syst\`emes 
+d'exploitation).  De m\^eme, les commandes [Ctrl-V] et [Ctrl-F] 
+permettent de rediriger vers un fichier (ou un pipe) la liste des 
+appariements et la fiche d'un joueur, respectivement.  Si vous 
+d\'esirez une sauvegarde automatique, ronde par ronde, des r\'esultats 
+des parties et des classements interm\'ediaires, voyez le chapitre 
+``R\'ecapitulatif ronde par ronde'' plus loin dans ce manuel.
+
+	La commande `\verb|X|' quitte le programme, en faisant toutes les
+sauvegardes n\'ecessaires.
+
+	La commande [Ctrl-Z] suspend le programme, si le syst\`eme
+d'exploitation conna{\^\i}t le ``job control''.
+
+	La commande `\verb|&|' affiche un petit message de copyright, le
+num\'ero de version, la date de compilation, et diverses limitations
+statiques du programme.
+
+	Les commandes `\verb|-|' et `\verb|+|' sont utilis\'ees quand un
+joueur quitte le tournoi, ou revient dans le tournoi apr\`es l'avoir
+quitt\'e.  Il est possible de faire sortir ou revenir tous les joueurs
+en tapant `\verb|*|' en r\'eponse au prompt.  Enfin, la commande
+`\verb|N|' permet de modifier la nationalit\'e d'un joueur.
+
+\section{Appariements automatiques}
+
+C'est ce qui se cache derri\`ere la commande `\verb|A|' du menu 
+principal.  Tout d'abord, insistons sur le fait que `\verb|A|' ne fait 
+que {\em compl\'eter\/} les appariements d\'ej\`a existants; en aucun 
+cas cette commande ne peut modifier les appariements pr\'ec\'edemment 
+choisis, que ce soit par l'utilisateur ou par PAPP lui-m\^eme.  En 
+particulier, si les appariements sont d\'ej\`a complets, alors 
+`\verb|A|' n'a pas d'autre effet que d'afficher, et \'eventuellement 
+imprimer, la liste des appariements.
+
+Les appariements sont toujours calcul\'es par optimisation (m\^eme \`a 
+la premi\`ere ronde).  Tout d'abord, si le nombre de joueurs est 
+impair, on ajoute un joueur fictif (Bip); on peut donc supposer qu'il 
+y a $2n$ joueurs.  On d\'etermine ensuite, pour chaque couple $(i,j)$ 
+de joueurs, une {\em p\'enalit\'e}, c'est-\`a-dire un nombre r\'eel 
+positif $p_{ij}$ exprimant dans quelle mesure il n'est pas souhaitable 
+que le joueur $i$ joue (avec les noirs) contre le joueur $j$.  Puis, 
+on cherche l'appariement $(i_1,j_1)$, $(i_2,j_2)$, \dots, $(i_n,j_n)$, 
+minimisant la p\'enalit\'e totale
+ $$ {\it Penalite\_totale} = \sum_{k=1}^n p_{i_k j_k} $$
+
+	Ceci est un probl\`eme classique de th\'eorie des graphes
+(recherche d'un couplage de poids maximum dans un graphe) qui peut
+\^etre r\'esolu en temps polynomial, typiquement en $O(n^3)$.
+L'impl\'ementation actuelle de PAPP semble plut\^ot en $O(n^4)$.
+
+\subsection{Description des p\'enalit\'es}
+
+Les p\'enalit\'es sont calcul\'ees comme suit:
+ $$\matrix{
+    p_{ij} &= {\it pen\_couleur}(i,{\rm NOIR})
+	    + {\it pen\_couleur}(j,{\rm BLANC})		\hfill\cr
+	   &\quad{}+ {\it pen\_flottement}(i,j)		\hfill\cr
+	   &\quad{}+ {\it pen\_repetition}(i,j)		\hfill\cr
+	   &\quad{}+ {\it pen\_chauvinisme}(i,j)	\hfill\cr
+	   &\quad{}+ {\it pen\_elitisme}(i,j)	    \hfill\cr
+ }$$
+
+
+\subsubsection{P\'enalit\'es de couleur}
+
+	Le terme ${\it pen\_couleur}(i,{\it couleur})$ indique qu'il
+n'est pas souhaitable que le joueur $i$ joue la couleur $\it couleur$
+lors de cette ronde. Notons $\delta_i$ l'{\em \'ecart chromatique\/} de ce
+joueur, c'est-\`a-dire le nombre de fois o\`u il a eu les Noirs moins le
+nombre de fois ou il a eu les Blancs. Selon qu'il jouera Noir ou Blanc
+\`a cette ronde, son \'ecart chromatique deviendra $\delta_i+1$ ou
+$\delta_i-1$, respectivement.
+On prend donc
+ $$ {\it pen\_couleur}(i,{\it couleur}) =
+    {\bf p\_coul}\Bigl[\left|\delta_i\pm1\right|\Bigr]
+  + {\it pen\_couleur\_repetee} $$
+Le terme $\it pen\_couleur\_repetee$ vaut $\bf p\_repcl$ si le joueur
+avait d\'ej\`a jou\'e cette couleur \`a la ronde pr\'ec\'edente, et $0$
+sinon.  On a toujours ${\bf p\_coul}[0] = 0$.
+
+\subsubsection{P\'enalit\'es de flottement}	
+	Le terme ${\it pen\_flottement}(i,j)$ dit qu'il n'est pas
+souhaitable de faire jouer entre eux deux joueurs dont les scores sont
+trop diff\'erents.  On prend ici
+ $${\it pen\_flottement}(i,j) =
+    {\bf p\_flot}[f] + {\it corr\_flot}(i) + {\it corr\_flot}(j)
+ $$
+o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deux
+joueurs, exprim\'e en demi-points.  On a toujours ${\bf p\_flot}[0]=0$.
+Le terme correctif ${\it corr\_flot}(i)$ vaut $+{\bf p\_flcum}$ si le
+joueur flotte alors qu'il avait d\'ej\`a flott\'e dans le m\^eme sens
+\`a la ronde pr\'ec\'edente.  Il vaut $-{\bf min\_fac}$ si le joueur
+flotte dans l'autre sens.  Il vaut z\'ero si le joueur n'a pas flott\'e
+\`a cette ronde ou \`a la ronde pr\'ec\'edente, ou s'il s'agit de la
+premi\`ere ronde.  Un joueur qui joue contre Bip flotte toujours bas
+(pour savoir de combien, voir plus bas). Les corrections, si elles sont
+n\'egatives, ne peuvent exc\'eder en valeur absolue le terme qu'elles
+sont suppos\'ees corriger, si bien que ${\it pen\_flottement}(i,j)$ sera
+toujours positif (voir la section suivante).
+
+
+\subsubsection{P\'enalit\'es de r\'ep\'etition} 	
+	Le terme ${\it pen\_repetition}(i,j)$ emp\^eche de faire jouer
+entre eux deux joueurs qui se sont d\'ej\`a rencontr\'es lors d'une
+ronde pr\'ec\'edente.  Si $i$ et $j$ ont d\'ej\`a jou\'e ensemble avec
+les m\^emes couleurs, on ajoute la p\'enalit\'e $\bf p\_mcoul$; s'ils
+ont d\'ej\`a jou\'e ensemble avec les couleurs oppos\'ees, on ajoute
+$\bf p\_clopp$.  S'ils ont d\'ej\`a jou\'e plusieurs parties ensemble,
+les p\'enalit\'es ci-dessus s'ajoutent.  Enfin, on ajoute la
+p\'enalit\'e $\bf p\_desuite$ si les deux joueurs se sont rencontr\'es
+\`a la ronde imm\'ediatement pr\'ec\'edente. 
+
+
+\subsubsection{P\'enalit\'es de chauvinisme}  	
+	Le terme ${\it pen\_chauvinisme}(i,j)$ p\'enalise les parties
+entre joueurs d'un m\^eme pays: il vaut ${\bf p\_chauv}[{\it
+numero\_ronde}]$ si $i$ et $j$ sont de m\^eme nationalit\'e, et $0$
+sinon.
+
+
+\subsubsection{P\'enalit\'es d'\'elitisme} 
+	Le terme ${\it pen\_elitisme}(i,j)$ dit que, quand il est n\'ecessaire 
+d'avoir des matchs entre deux joueurs dont les scores sont 
+diff\'erents, il est pr\'ef\'erable de r\'epartir ces matchs 
+d\'es\'equilibr\'es dans le bas du classement plut\^ot que dans le 
+haut du classement.  On prend ici 
+$${\it pen\_elitisme}(i,j) = 
+({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_j) \fois f ) / 2
+ $$
+o\`u $f=\left| S_i-S_j \right|$ est le flottement entre les deux
+joueurs, exprim\'e en demi-points.
+
+
+
+\subsubsection{Le cas de Bip} 
+
+	Si l'un des joueurs est Bip, les p\'enalit\'es se simplifient un
+peu, parce qu'il n'y a pas \`a se soucier de la couleur. On prend
+ $$\matrix{
+   p_{i,{\rm Bip}} = p_{{\rm Bip},i} &=
+   	{\it pen\_couleur}(i, {\rm GRIS})		\hfill\cr
+	&\quad{}+{\it pen\_flottement}(i,{\rm Bip})	\hfill\cr
+	&\quad{}+{\it pen\_repetition}(i,{\rm Bip})	\hfill\cr
+	&\quad{}+{\it pen\_elitisme}(i,{\rm Bip})	\hfill\cr
+ }
+ $$
+ 
+ \begin{itemize}
+ 
+ \item
+Comme l'\'ecart chromatique n'est pas modifi\'e quand on joue contre
+Bip, la p\'enalit\'e de couleur vaut
+$$
+  {\it pen\_couleur}(i,{\rm GRIS}) =
+    {\bf p\_coul}\Bigl[\left| \delta \right|\Bigr]
+$$
+ 
+ \item
+	Les p\'enalit\'es $\it pen\_flottement$ et $\it pen\_elitisme$ 
+	sont d\'efinies comme plus haut; cependant, bien que le score de 
+	Bip soit de z\'ero point, on fait ``comme si'' son score \'etait 
+	imm\'ediatement inf\'erieur, d'un demi-point, \`a celui du dernier 
+	joueur pr\'esent (ceci pour \'eviter d'avoir des p\'enalit\'es de 
+	flottement vraiment excessives).  Donc, en notant $f = S_i - 
+	S_{\rm min} + 1$:
+	
+	
+$$ 
+  {\it pen\_flottement}(i,{\rm Bip}) =
+    {\bf p\_flot}[f] 
+$$
+$$
+  {\it pen\_elitisme}(i,{\rm Bip}) =
+    ({\bf p\_elit}[{\it numero\_ronde}] \fois (S_i+S_{\rm min} - 1) 
+     \fois f) / 2 
+$$ 
+ \item
+	Dans le terme $\it pen\_repetition$, la distinction entre $\bf
+p\_mcoul$ et $\bf p\_clopp$ dispara{\^\i}t, il n'y a plus qu'une seule
+p\'enalit\'e \`a consid\'erer: on ajoute $\bf p\_bipbip$ autant de fois
+que le joueur a jou\'e contre Bip aux rondes pr\'ec\'edentes, et comme
+plus haut on ajoute $\bf p\_desuite$ si le joueur a jou\'e contre Bip \`a
+la ronde imm\'ediatement pr\'ec\'edente. 
+
+\end{itemize}
+
+\subsection{Conditions sur les p\'enalit\'es}
+
+	PAPP n'impose qu'un minimum de conditions de coh\'erence sur les
+p\'enalit\'es; si ces conditions ne sont pas remplies, le programme
+se termine en signalant une erreur fatale. Ces conditions sont les
+suivantes:
+
+\begin{itemize}
+
+\item	Les p\'enalit\'es de couleur doivent cro{\^\i}tre avec
+l'\'ecart chromatique:
+$$ 0 = {\bf p\_coul}[0] \le {\bf p\_coul}[1] \le {\bf p\_coul}[2] \le\cdots$$
+
+\item	Les p\'enalit\'es de flottement doivent cro{\^\i}tre avec
+le flottement; et
+
+\item	la quantit\'e ${\bf min\_fac}$ doit \^etre inf\'erieure ou
+\'egale \`a la moiti\'e de la plus petite p\'enalit\'e de flottement:
+$$ 0 = {\bf p\_flot}[0] \le 2\fois{\bf min\_fac} \le {\bf p\_flot}[1] \le
+	{\bf p\_flot}[2] \le \cdots $$
+
+\end{itemize}
+
+	Ces conditions ne suffisent \'evidemment pas \`a garantir des
+appariements ``raisonnables''; il faudrait au moins s'assurer que les
+penalites de couleur et de flottement croissent ``suffisamment vite'' en
+fonction de l'\'ecart chromatique ou du flottement. La troisi\`eme
+condition garantit que les p\'enalites de flottement apr\`es correction
+sont toujours positives (voir la section pr\'ec\'edente).
+
+\subsection{Derni\`ere passe}
+
+Une fois l'optimisation r\'ealis\'ee, PAPP examine s'il existe
+d'autres appariements optimaux, se d\'eduisant du premier uniquement
+par des interversions de couleurs.  Quand c'est le cas ---
+c'est-\`a-dire pour toute paire $\{i,j\}$ de joueurs appari\'es telle
+que $p_{ij}=p_{ji}$ --- PAPP choisira les couleurs comme suit: on
+cherche la ronde la plus r\'ecente o\`u $i$ et $j$ avaient des couleurs
+diff\'erentes, et on inverse ces couleurs.  Si ce n'est pas possible,
+c'est-\`a-dire si les deux joueurs ont toujours jou\'e avec les
+m\^emes couleurs, alors on tire les couleurs au sort.
+
+Insistons sur le fait que cette derni\`ere passe ne d\'egrade 
+nullement la qualit\'e de l'appa\-rie\-ment; PAPP choisit simplement entre plusieurs 
+appariements optimaux.
+
+\section{Le fichier de configuration}
+
+% Macros pour la grammaire
+% Laisser les espaces : ils sont transparents en TeX, 
+% mais utiles en HTML.
+%
+\def\gram#1{$\langle\hbox{\it#1}\rangle$}  
+\def\opt#1{$[\hbox{\it#1}]$}     % TtH ne connait pas \lbrack et \rbrack !
+\def\optr#1{$\lbrace\hbox{\it#1}\rbrace$}
+\def\fleche{$  \longrightarrow\,\,\,  $}
+\def\ou{$\vert\,\tthdump{\,}$}
+\def\vrb#1{{\tt #1}}	% le verbatim du pauvre!
+
+	Ce fichier est charg\'e par PAPP d\`es l'ex\'ecution.  Le nom
+de ce fichier est d\'etermin\'e \`a partir de la ligne de commande, si
+celle-ci contient exactement un argument.  Sinon, PAPP utilise la
+variable d'environnement \verb|PAPP_CFG|, si celle-ci est d\'efinie;
+sinon, PAPP prendra \verb|papp.cfg| comme nom de fichier (dans le
+r\'epertoire courant).
+
+	Si PAPP ne peut ouvrir le fichier de configuration, il
+cr\'eera un fichier \verb|papp.cfg| dans le r\'epertoire courant,
+contenant ses r\'eglages par d\'efaut.
+ 
+	Ce fichier de configuration contient les noms des autres
+fichiers requis par PAPP, la liste des p\'enalit\'es, et quelques
+autres param\'etrages.
+ 
+\subsection{Conventions lexicales}
+
+	Le texte est d\'ecoup\'e en cha{\^\i}nes, entiers, mots-cl\'es
+et caract\`eres isol\'es.  Les espaces, tabulations, retours chariot
+et passages \`a la ligne sont ignor\'es; c'est le point-virgule qui
+tient lieu de fin de commande (voir plus bas).
+
+	Une \gram{chaine} est une cha{\^\i}ne de caract\`eres
+d\'elimit\'ee par des doubles guillemets (\verb|"|), tenant sur une
+seule ligne.
+
+	Un mot-cl\'e est une s\'equence r\'eserv\'ee de lettres et de
+tirets (`\verb|-|'), le tiret ne pouvant pas appara{\^\i}tre comme
+premier caract\`ere.  Aucune distinction n'est faite entre majuscules
+et minuscules.
+
+	Un \gram{entier} d\'esigne un nombre entre $0$ et $2^{31}-1 =
+2\,147\,483\,647$; ce dernier nombre peut \'egalement \^etre obtenu
+avec le mot-cl\'e \verb|INFINI| --- comme tous les mots-cl\'es, on
+pourrait aussi l'\'ecrire en minuscules, mais on n'aurait plus
+l'impression qu'il s'agit d'un grand nombre.  (Note: cette limite
+d\'epend en r\'ealit\'e de l'impl\'ementation; un \gram{entier} \'etant
+repr\'esent\'e en C par un \verb|signed long|, la limite serait
+$2^{63}-1$ sur les machines 64-bits telles que le DEC Alpha.)
+
+	Si un `\verb|%|' ou `\verb|#|' appara{\^\i}t sur une ligne, tout
+le reste de la ligne est ignor\'e (ainsi que le caract\`ere lui-m\^eme),
+sauf si le `\verb|%|' est imm\'ediatement suivi par un `\verb|_|'; la
+s\'equence `\verb|%_|' est ignor\'ee (elle \'equivaut \`a un espace),
+donc le reste de la ligne n'est {\em pas\/} ignor\'e.
+
+	Si le mot \verb|__eof__| appara{\^\i}t dans le fichier, tout
+ce qui suit est ignor\'e (le fichier est imm\'ediatement referm\'e).
+
+\subsection{Grammaire}
+
+La syntaxe du fichier de configuration est la suivante:
+
+\medbreak
+
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{fichier-config} \fleche \optr{\gram{commande}  \vrb;}			\cr
+    \gram{commande} \fleche \gram{vide}						\cr
+	\qquad \ou \vrb{fichier} (\vrb{joueurs} \ou \vrb{nouveaux} \ou \vrb{inter}) 
+	\vrb{=} \gram{chaine}	\cr
+	\qquad \ou \vrb{fichier} (\vrb{appariements} \ou \vrb{resultats} \ou \vrb{classement}) 
+	\vrb{=} \gram{chaine}	\cr
+	\qquad \ou \vrb{pays =} \gram{chaine}				\cr
+	\qquad \ou \vrb{brightwell =} \gram{entier}				\cr
+	\qquad \ou \vrb{score-bip =} \gram{entier} \opt{\vrb/ \gram{entier}}	\cr
+	\qquad \ou \vrb{sauvegarde} (\vrb{immediate} \ou \vrb{differee})	\cr
+	\qquad \ou \vrb{impression} (\vrb{manuelle} \ou \vrb{automatique} \gram{entier})	\cr
+	\qquad \ou \vrb{affichage-pions} (\vrb{absolu} \ou \vrb{relatif})	\cr
+	\qquad \ou \vrb{couleurs = \char`\{} \gram{chaine} \vrb, 
+	 \gram{chaine} \vrb{\char`\}}	\cr
+	\qquad \ou \vrb{zone-insertion} \opt{chaine}
+		\vrb= \gram{entier} \vrb- \gram{entier}				\cr
+	\qquad \ou \vrb{toutes-rondes} \vrb= \gram{entier}
+		\vrb- \gram{entier} \vrb{joueurs}				\cr
+	\qquad \ou \gram{indication-penalites} \ou \gram{commande-interne}   	\cr
+%    \gram{type-fichier} \fleche \vrb{joueurs} \ou \vrb{nouveaux} \ou \vrb{inter}	\cr
+%    \gram{type-sauvegarde} \fleche \vrb{immediate} \ou \vrb{differee}		\cr
+}
+
+\medbreak
+
+\subsection{Liste des p\'enalit\'es}
+
+La liste des p\'enalit\'es se d\'ecompose en cinq sections: les 
+p\'enalit\'es de couleur, celles de flottement, celles de 
+r\'ep\'etition, celles de chauvinisme et celles d'\'elitisme.  Chaque 
+section commence par un label indiquant de quelle section il s'agit, 
+puis la liste des p\'enalit\'es de cette section.
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{indication-penalites} \fleche \vrb{penalites \char`\{} \optr{section}
+     \vrb{\char`\}}	\cr
+    \gram{section} \fleche \gram{section-couleur} \ou \gram{section-flottement} \cr
+	\qquad \qquad \qquad  \ou \gram{section-repetition} \ou \gram{section-chauvinisme} \cr
+	\qquad \qquad \qquad  \ou \gram{section-elitisme} \cr
+}
+\medbreak
+
+\subsubsection{P\'enalit\'es de couleur}
+
+La section ``couleur'' permet de choisir les penalit\'es ${\bf p\_coul}
+[\delta]$ et $\bf p\_repcl$. La syntaxe est
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{section-couleur} \fleche \vrb{Couleur :}
+		\optr{\gram{penalite-couleur} \vrb;}	\cr
+    \gram{penalite-couleur} \fleche \gram{entier} \opt{\vrb+}
+		\vrb{fois =} \gram{pen}			\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}		\cr
+    \gram{pen} \fleche un \gram{entier} entre $0$ et $10\,000\,000$	\cr
+}
+\medbreak
+
+\noindent Consid\'erons l'exemple suivant:
+\begin{verbatim}
+    Couleur:
+        2  fois  =  500;  % delta == 2
+        3+ fois  = 5000;  % delta >= 3
+        de-suite =  100;  % p_repcl
+\end{verbatim}
+Cela signifie qu'on aura une penalit\'e de $500$ points si l'\'ecart de
+couleur ($\delta$) vaut deux, et $5000$ s'il vaut trois {\em ou plus\/}; et
+il y a $100$ points de p\'enalit\'e si l'on joue deux fois de suite avec la
+m\^eme couleur.
+
+\subsubsection{P\'enalit\'es de flottement}
+
+La section ``flottement'' concerne les variables ${\bf p\_flot}(f)$,
+$\bf p\_flcum$ et $\bf min\_fac$. La syntaxe est
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{section-flottement} \fleche \vrb{Flottement :}
+		\optr{\gram{penalite-flottement} \vrb;}	\cr
+    \gram{penalite-flottement} \fleche \gram{entier} \opt{\vrb+}
+		\vrb{demi-point =} \gram{pen}		\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}		\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{minoration =} \gram{pen}		\cr
+}
+\medbreak
+
+\noindent On notera que \verb|demi-point| peut prendre un `s' au pluriel.
+Voici un exemple:
+\begin{verbatim}
+    Flottement:
+        1  demi-point  =  100;  % p_flot[1]
+        2  demi-points =  500;  % p_flot[2]
+        3+ demi-points = 5000;  % p_flot[3 et plus]
+        de-suite       =   50;  % p_flcum
+        minoration     =   10;  % min_fac
+\end{verbatim}
+
+\subsubsection{P\'enalit\'es de r\'ep\'etition}
+
+Ensuite vient la section ``r\'ep\'etition'', qui concerne les variables
+$\bf p\_mcoul$, $\bf p\_clopp$, $\bf p\_bipbip$ et $\bf p\_desuite$. Ces
+variables sont initialis\'ees par les d\'eclara\-tions suivantes,
+respectivement:
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{section-repetition} \fleche \vrb{Repetition :}
+    		\optr{\gram{penalite-repetition} \vrb;}		\cr
+    \gram{penalite-repetition} \fleche \vrb{memes-couleurs =} \gram{pen}	\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{couleurs-opposees =} \gram{pen}		\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{bip-bip =} \gram{pen}			\cr
+	\qquad \qquad \qquad \qquad \qquad \ou \vrb{de-suite =} \gram{pen}			\cr
+}
+\medbreak
+
+\subsubsection{P\'enalit\'es de chauvinisme}
+
+Le tableau ${\bf p\_chauv}[r]$ est initialis\'e par la section
+``chauvinisme'', de la mani\`ere suivante:
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{section-chauvinisme} \fleche \vrb{Chauvinisme :}
+    		\optr{\gram{penalite-chauvinisme} \vrb;}		\cr
+    \gram{penalite-chauvinisme} \fleche \vrb{ronde} \gram{entier} \opt{\vrb+}
+    	\vrb= \gram{pen}	\cr
+}
+\medbreak
+
+Les rondes sont num\'erot\'ees \`a partir de un. Si par exemple on veut
+que la p\'enalit\'e de chauvinisme soit \'egale \`a $100$ pour les dix
+permi\`eres rondes et \`a $1000$ ensuite, on \'ecrira:
+\begin{verbatim}
+    Chauvinisme:
+        ronde  1+ =  100;  % ronde 1  et suivantes
+        ronde 11+ = 1000;  % ronde 11 et suivantes
+\end{verbatim}
+
+\subsubsection{P\'enalit\'es d'\'elitisme}
+
+Le tableau ${\bf p\_elit}[r]$ est initialis\'e par la section
+``\'elitisme'', de la mani\`ere suivante:
+
+\medbreak
+\halign{\noindent\hskip 1cm\relax#\hfil\cr
+    \gram{section-elitisme} \fleche \vrb{Elitisme :}
+    		\optr{\gram{penalite-elitisme} \vrb;}		\cr
+    \gram{penalite-elitisme} \fleche \vrb{ronde} \gram{entier} \opt{\vrb+}
+    	\vrb= \gram{pen}	\cr
+}
+\medbreak
+
+
+Les rondes sont num\'erot\'ees \`a partir de un.  Si par exemple on 
+veut que la p\'enalit\'e d'\'elitisme soit \'egale \`a $5$ pour les 
+cinq permi\`eres rondes, \`a $25$ pour les rondes six \`a dix, et \`a 
+$100$ ensuite, on \'ecrira:
+\begin{verbatim}
+    Elitisme:
+        ronde  1+ =   5;  % ronde 1  et suivantes
+        ronde  6+ =  25;  % ronde 6  et suivantes
+        ronde 11+ = 100;  % ronde 11 et suivantes
+\end{verbatim}
+
+\subsection{Remarques diverses}
+
+	D\`es que PAPP rencontre le mot-cl\'e \verb|penalites|, il remet
+\`a z\'ero {\em toutes\/} les p\'enalit\'es. Ceci permet de partir sur
+des bases saines, en \'evitant que les p\'enalit\'es d\'efinies par
+l'utilisateur ne viennent se m\'elanger avec celles par d\'efaut. En
+particulier, si l'utilisateur omet de d\'eclarer une p\'enalit\'e,
+celle-ci restera \'egale \`a z\'ero. Ce syst\`eme garantit \'egalement une
+certaine compatibilit\'e ascendante entre les diff\'erentes versions de
+PAPP.
+
+	Pour des raisons historiques, les p\'enalit\'es ne peuvent
+exc\'eder 10 millions; les p\'enalit\'es plus grandes seront ramen\'ees
+\`a cette valeur (avec un message d'avertissement).
+
+\subsection{Tournois toutes-rondes}
+
+	Bien qu'initialement pr\'evu pour organiser des tournois selon
+le syst\`eme suis\-se (ou l'une de ses multiples variantes), PAPP peut
+\'egalement organiser des tournois toutes rondes ou plusieurs fois
+toutes rondes.  Une directive de la forme
+ $$\hbox{\verb|toutes-rondes = 1-12 joueurs;|}$$
+indique \`a PAPP qu'il doit organiser un toutes-rondes s'il y a entre 1
+et 12 joueurs.  Si ce n'est pas possible, c'est-\`a-dire s'il y a trop
+de joueurs, ou bien si des joueurs ont quitt\'e le tournoi ou sont
+entr\'es apr\`es la fin de la premi\`ere ronde, ou encore si vous avez
+forc\'e certains appariements \`a la main, alors PAPP se repliera sur
+l'algorithme d'optimisation d\'ecrit plus haut. 
+
+	L'arbitre doit s'assurer que le nombre de rondes est un multiple
+du nombre de joueurs moins un, Bip compris.
+
+\subsection{Le d\'epartage de Brightwell}
+
+	Par d\'efaut, le d\'epartage se fait au nombre de pions.  Ce
+sera \'egalement le cas si votre fichier de configuration contient la
+directive \verb|brightwell = 0|.  
+
+Si au contraire vous sp\'ecifiez une valeur strictement positive,
+celle-ci sera prise comme valeur du coefficient $\beta$ de Brightwell. 
+Rappelons que le d\'epartage de Brightwell est donn\'e par
+ $${\it departage} = {\it nombre\_pions} + \beta\fois{\it buchholz}$$
+Dans cette formule, le $\it buchholz$ est la somme des scores, en 
+demi-points, des adversaires rencontr\'es. Une partie contre Bip, ou 
+une partie contre un adversaire qui a abandonn\'e le tournoi, est 
+remplac\'ee par une partie nulle contre soi-m\^eme, avant d'appliquer 
+la formule ci-dessus.
+
+Imaginons par exemple un joueur $A$, qui joue et gagne 33/31 contre 
+$B$ \`a la premi\`ere ronde, et se retrouve contre Bip \`a la 
+deuxi\`eme ronde.  On suppose que $B$ a gagn\'e sa deuxi\`eme partie.  
+Si on prend comme coefficient de Brightwell $\beta=3$, quel est le 
+d\'epartage de $A$ \`a l'issue de la deuxi\`eme ronde?
+
+On constate que $A$ a 2 points (soit 4 demi-points) et $B$, 1 point 
+(soit 2 demi-points).  La partie de $A$ contre Bip doit \^etre 
+remplac\'ee par une partie nulle 32/32 contre $A$.  Le d\'epartage 
+vaut donc
+
+ $${\it departage} = (33+32) + 3 \fois (2+4) = \hbox{83 pions}.$$
+
+Insistons sur le fait que le d\'epartage de Brightwell est calcul\'e 
+dans PAPP \`a partir de la somme {\it en demi-points} des score des 
+adversaires rencontr\'es, tandis que les r\`eglements \'ecrits des 
+tournois fixent g\'en\'eralement la valeur du coefficient de 
+Brightwell pour des scores en points entiers.  Dans ce cas, la valeur 
+du coefficient de Brightwell sp\'ecifi\'ee dans le fichier de 
+configuration doit \^etre {\it la moiti\'e} de celle apparaissant dans 
+le r\`eglement.
+
+Notes : les commandes `\verb|-|' et `\verb|+|' ont un effet de bord 
+sur le d\'epartage de Brightwell, parce que les joueurs absents (\`a 
+un moment donn\'e) sont suppos\'es avoir abandonn\'e le tournoi.  
+D'autre part, pour les jeux ``sans pions'' (voir ``Autres jeux''), le 
+coefficient de Brightwell est toujours ignor\'e, et c'est le Buchholz 
+qui sert de d\'epartage.
+
+
+
+\section{Le fichier des joueurs}
+
+\subsection{Syntaxe des joueurs}
+
+	PAPP peut lire tout fichier de joueurs accept\'e par JECH. Un tel
+fichier contient un joueur par ligne, ainsi que des lignes de la forme
+ $$\hbox{\verb|pays =| \gram{pays-abrege}}$$
+pour signaler que tous les joueurs qui vont suivre sont du pays
+indiqu\'e---au moins jusqu'\`a la prochaine ligne de ce type (les
+guillemets autour de \gram{pays-abrege} sont facultatifs, mais le nom de
+pays ne doit pas contenir d'espace).  Les lignes d\'ecrivant un joueur
+doivent sp\'ecifier le num\'ero Elo, puis le nom et le(s) pr\'enom(s)
+(\'eventuellement s\'epar\'es par une virgule s'il y a
+ambigu{\"\i}t\'e); on peut ensuite pr\'eciser le pays abr\'eg\'e, entre
+accolades, puis le classement, entre chevrons, et un commentaire apr\`es
+un accent grave; chacun de ces trois derniers champs est optionnel. 
+Exemple:
+\begin{verbatim}
+   92 FELDBORG, Karsten {DK} <2209> `Vive les Danois!
+\end{verbatim}
+est accept\'e par PAPP.  Mais pas par JECH, malheureusement, qui ne
+comprend pas les signes \verb|<| et \verb|>|, ni l'accent grave; or on
+aimerait bien que le m\^eme fichier de joueurs soit partag\'e par JECH
+et PAPP.  L'astuce consiste a r\'e\'ecrire la ligne pr\'ec\'edente comme
+suit:
+\begin{verbatim}
+   92 FELDBORG, Karsten {DK} %_<2209> `Vive les Danois!
+\end{verbatim}
+
+	L'id\'ee est que JECH ignore tout ce qui suit le `\verb|%|'; alors
+que pour PAPP, la s\'equence `\verb|%_|' est ``transparente'', et tout se
+passe comme s'il y avait un espace \`a la place. 
+
+	Notez par ailleurs que JECH et PAPP cessent de lire le fichier
+d\`es qu'ils rencontrent \verb|__eof__|; cette astuce peut \^etre
+combin\'ee avec la pr\'ec\'edente pour sauter des parties enti\`eres du
+fichier. 
+
+	Le fichier fourni dans la distribution du programme se conforme
+\`a cette convention, et donc peut \^etre utilis\'e \`a la fois par JECH
+et PAPP.  Par d\'efaut, PAPP cherchera le fichier \verb|joueurs| dans le
+r\'epertoire courant, mais il est possible de lui faire lire un autre
+fichier en pla\c cant dans votre fichier de configuration
+ $$\hbox{\verb|fichier joueurs =| \gram{nom-fichier} \verb|;|}$$
+
+	Les commentaires peuvent, par exemple, \^etre utilis\'es pour
+savoir si un joueur est adh\'erent et \`a jour de cotisation.  Ils sont
+affich\'es lors de l'inscription des joueurs, et peuvent \^etre relus
+\`a tout moment avec la commande \verb|F| du menu principal. 
+
+\section{Autres options}
+
+\subsection{Les zones d'insertion}
+
+	Ce sont de grandes plages de num\'eros Elo non encore (tous)
+attribu\'es, destin\'ees \`a l'inscription des nouveaux joueurs.  Il est
+possible de d\'efinir une ou plusieurs zones d'insertion pour chaque
+pays, et une ou plusieurs zones ``internationales'', o\`u quiconque
+pourra s'inscrire.
+Supposons par exemple que le fichier de configuration contienne
+\begin{verbatim}
+    zone-insertion "F"  =  700- 900;  % francais
+    zone-insertion "GB" = 1500-1700;  % anglais
+    zone-insertion      = 5000-6000;  % tous les autres
+\end{verbatim}
+
+	Les nouveaux joueurs fran{\c c}ais obtiendront un num\'ero entre
+700 et 900, les joueurs anglais un num\'ero entre 1500 et 1700, et les
+joueurs de tous les autres pays un num\'ero entre 5000 et 6000.
+
+	Pour choisir un num\'ero, PAPP commence par scruter toutes les
+zones d'insertion correspondant \`a la nationalit\'e du joueur. S'il n'y
+en a pas ou si elles sont toutes pleines, PAPP cherchera un emplacement
+libre dans les zones internationales. Si ce n'est pas possible non plus,
+PAPP choisira le plus petit num\'ero $\ge1$ non attribu\'e. Dans tous
+les cas, l'arbitre est libre de choisir un autre num\'ero que celui
+propos\'e par PAPP.
+
+	Les nouveaux joueurs sont alors enregistr\'es dans un fichier
+dont le nom par d\'efaut est \verb|nouveaux|, mais ceci peut \^etre
+chang\'e si votre fichier de configuration contient une ligne de la
+forme
+ $$\hbox{\verb|fichier nouveaux =| \gram{nouveau nom} \verb|;|}$$
+Ce fichier est au m\^eme format que le fichier principal des joueurs. On a
+pr\'ef\'er\'e cr\'eer un autre fichier plut\^ot que de ``polluer'' le fichier
+principal avec des informations moins s\^ures.
+
+\subsection{Les appariements de la premi\`ere ronde}
+
+	Les appariements de la premi\`ere ronde sont, pour l'essentiel,
+al\'eatoires.  Comme pour toutes les autres rondes, l'appariement est
+produit par optimisation, donc si la p\'enalit\'e de chauvinisme est non
+nulle, PAPP aura tendance \`a apparier des joueurs de nationalit\'es
+diff\'erentes.  En ce sens, l'appariement n'est pas al\'eatoire: s'il y
+a plus de fran{\c c}ais que d'\'etrangers \`a un tournoi, il est garanti
+que chaque \'etranger jouera contre un fran{\c c}ais; et que c'est un
+fran{\c c}ais qui jouera contre Bip s'il y a un nombre impair de
+joueurs. 
+
+	En d'autres termes: la probabilit\'e que deux joueurs jouent
+ensemble \`a la premi\`ere ronde ne d\'epend que de leur nationalit\'e. 
+Si la p\'enalit\'e de chauvinisme de la premi\`ere ronde est nulle,
+l'appariement sera rigoureusement al\'eatoire. 
+
+\subsection{R\'ecapitulatif ronde par ronde}
+
+Il est possible de demander \`a PAPP de sauvegarder automatiquement 
+(et m\^eme d'envoyer automatiquement \`a une \'eventuelle imprimante), 
+\`a la fin de chaque ronde, un r\'ecapitulatif des r\'esultats des 
+parties qui viennent de se terminer, et le nouveau classement des 
+joueurs dans le tournoi.
+
+ Si le fichier de configuration contient une ligne de la
+forme 
+$$\hbox{\verb|fichier resultats =| \gram{nom de fichier} \verb|;|}$$
+dans laquelle \gram{nom de fichier} est un nom g\'en\'erique (non 
+vide) de fichier, alors PAPP, au moment o\`u vous confirmez les 
+coupons, va sauvegarder les r\'esultats ``en clair'' de toutes les 
+parties dans un fichier num\'erot\'e par le num\'ero de la ronde.  
+Pour cr\'eer le nom du fichier pour la ronde qui vient de se terminer, 
+PAPP essaye de trouver les caract\`eres `\verb|###|' dans le nom 
+g\'en\'erique sp\'ecifi\'e, et les remplace par le num\'ero de la 
+ronde (par exemple, si le nom g\'en\'erique dans le fichier de 
+configuration est \verb|result###.txt|, PAPP cr\'eera la suite des 
+fichiers \verb|result__1.txt|, \verb|result__2.txt|, 
+\verb|result__3.txt|, \emph{etc.}).  Si le nom g\'en\'erique ne 
+contient pas `\verb|###|', PAPP suffixera simplement ce nom 
+g\'en\'erique avec le num\'ero de la ronde.
+
+D'autre part, si le fichier de configuration contient des lignes de la
+forme 
+$$\hbox{\verb|fichier classement =| \gram{nom de fichier} \verb|;|}$$
+$$\hbox{\verb|fichier appariements =| \gram{nom de fichier} \verb|;|}$$
+dans laquelle les \gram{nom de fichier} sont des noms g\'en\'eriques (non 
+vides) de fichier, alors PAPP, de la m\^eme mani\`ere, sauvegardera 
+automatiquement les classements interm\'ediaires \`a la fin de chaque 
+ronde, et les appariements de la ronde suivante.  Il applique les 
+m\^emes conventions que ci-dessus pour construire les noms successifs 
+des fichiers.
+
+Vous pouvez tout-\`a-fait, dans le fichier de configuration, 
+sp\'ecifier des \gram{nom de fichier} identiques pour les fichiers 
+d'appariements, de r\'esultats ou de classement (ou pour deux d'entre 
+eux) : PAPP ne cr\'eera au besoin qu'un ou deux fichier(s) par ronde, 
+dans lequel il collera \`a la suite les appariements, les r\'esultats 
+des parties et le classement du tournoi.  Si vous ne voulez pas 
+utiliser l'une de ces trois options, vous pouvez soit commenter la 
+(les) ligne(s) correspondant dans le fichier de configuration, soit 
+sp\'ecifier un nom de fichier vide.  Par exemple 
+\hbox{\verb|fichier resultats = ""|} annule la sauvegarde du fichier 
+des r\'esultats.
+
+
+Note : lors de ces sauvegardes, PAPP \'ecrase sans vergogne les 
+fichiers \'eventuels qui ont le m\^eme nom que ceux qu'il est en train 
+d'\'ecrire et qui \'etaient l\`a au d\'emarrage du programme.  Il faut 
+donc penser \`a la fin du tournoi \`a d\'eplacer en lieu s\^ur ces 
+fichiers, faute de quoi ils risqueraient d'\^etre perdus lors du 
+tournoi suivant.
+
+\subsection{Impression}
+
+Si vous avez une imprimante allum\'ee et connect\'ee \`a votre ordinateur, la 
+commande 
+$$\hbox{\verb|impression automatique| \gram{nbre-de-copies} \verb|;| }$$ 
+plac\'ee dans le fichier de configuration, ordonnera \`a PAPP, d\`es 
+qu'il les aura cr\'e\'es, d'imprimer (avec le nombre d'exemplaires 
+sp\'ecifi\'e) les fichiers d'appariements, de r\'esultats et de 
+classement ronde par ronde.  Le r\'eglage par d\'efaut est le 
+contraire, \verb|impression manuelle|, qui vous permet de passer dans 
+un \'editeur de textes pour modifier les fichiers avant de les 
+imprimer.
+
+\subsection{Modes de sauvegarde}
+
+Le mode de sauvegarde par d\'efaut pour le fichier interm\'ediaire 
+\verb|__papp__| est ``sauvegarde diff\'er\'ee''~; ceci signifie que 
+les sauvegardes sont faites seulement quand les r\'esultats d'une 
+ronde ont \'et\'e enti\`erement entr\'es et valid\'es, ou bien quand 
+on quitte le programme.  En particulier, les appariements ne sont pas 
+sauvegard\'es, puisqu'on attend d'avoir les r\'esultats de la ronde 
+pour le faire!  Ce mode est parfait pour les tests, mais dangereux en 
+tournoi, parce qu'un temps consid\'erable peut s'\'ecouler entre le 
+moment o\`u les appariements sont calcul\'es et celui o\`u les 
+r\'esultats seront entr\'es, et on ne peut garantir que personne ne se 
+sera pris les pieds dans le fil entretemps.
+
+La commande \verb|sauvegarde immediate| ordonne \`a PAPP de faire ses 
+sauve\-gardes internes aussi r\'eguli\`erement que possible, 
+c'est-\`a-dire avant tout affichage et, \'evidemment, avant de 
+quitter.  Plus pr\'ecisement, les commandes `\verb|L|' et `\verb|V|' 
+provoquent une sauvegarde des inscrits et des appariements 
+respectivement, avant tout affichage.  D'autres commandes, comme 
+`\verb|A|', appellent implicitement `\verb|V|' et donc provoquent 
+\'egalement une sauvegarde.  Essentiellement, si vous voyez \`a 
+l'\'ecran une liste de joueurs ou d'appariements, vous pouvez 
+\'eteindre la machine en toute s\'ecurit\'e parce que vous savez que 
+cette liste a \'et\'e sauvegard\'ee avant d'\^etre affich\'ee.  (En 
+toute rigueur, ce n'est pas enti\`erement exact: le syst\`eme 
+d'exploitation peut utiliser un cache disque, et donc diff\'erer 
+l'\'ecriture des donn\'ees.  Il est donc {\em toujours\/} 
+pr\'ef\'erable de quitter PAPP, puis d'\'eteindre ``proprement'' la 
+machine).
+
+Une fois le tournoi termin\'e, PAPP peut cr\'eer un fichier ELO
+qui sera utilis\'e pour le calcul du classement de Jech.  Choisissez
+l'option `\verb|E|' du menu principal, indiquez le nom du fichier que vous
+voulez cr\'eer (sous TOS ou MS-DOS, vous \^etes limit\'e a $8+3$
+caract\`eres), et le nom complet du tournoi, qui peut \^etre nettement plus
+long; vous avez droit \`a 127 caract\`eres, profitez-en et n'utilisez pas
+d'abr\'eviations.
+
+On notera que PAPP ne d\'etecte jamais quand le disque est
+plein; et m\^eme s'il le pouvait, que pourrait-il faire?  Donc, v\'erifiez
+toujours qu'il reste de la place sur vos disquettes.
+
+\subsection{D\'epart et retour des joueurs}
+
+L'arbitre a la possibilit\'e de faire sortir, temporairement ou 
+d\'efini\-tivement, des joueurs du tournoi avec la commande `\verb|-|' 
+du menu principal.  Le joueur est alors consid\'er\'e comme absent: il 
+ne peut \^etre appari\'e pour cette ronde (s'il l'\'etait, son 
+appariement est d\'etruit), il ne jouera pas et ne marquera pas de 
+point contre Bip.  Il est possible de le faire revenir avec la 
+commande~`\verb|+|'.  Dans la liste des joueurs (commande~`\verb|L|'), 
+les joueurs ``absents'' sont indiqu\'es par le signe~`\verb|-|'.
+
+	Bien que ces commandes soient principalement utilis\'ees quand
+un joueur abandonne au milieu d'un tournoi, on peut leur imaginer
+d'autres applications.  Par exemple, au moment de la finale, tous les
+joueurs quittent le tournoi sauf deux.  Aussi PAPP offre-t-il une
+commodit\'e pour faire sortir ou revenir tous les joueurs: apr\`es
+`\verb|+|' ou `\verb|-|', tapez `\verb|*|' en r\'eponse au prompt. 
+
+\subsection{Correction d'un r\'esultat}
+
+Il arrive parfois que deux adversaires ne respectent pas les bonnes 
+couleurs dans leur partie, ou qu'ils se trompent de scores en 
+remplissant le coupon apport\'e \`a l'arbitre.  PAPP permet \`a 
+celui-ci de corriger ces deux types d'erreurs.  Utilisez la commande 
+`\verb|C|' du menu principal : PAPP vous demande de rentrer 
+successivement le num\'ero de la ronde du coupon \`a corriger (ce peut 
+\^etre le num\'ero de la ronde courante si vous avez commenc\'e \`a 
+rentrer des r\'esultats pour cette ronde), le joueur noir 
+\emph{correct} (c'est-\`a-dire dans la vraie partie), le \emph{vrai} 
+score noir, le joueur blanc \emph{correct} puis le \emph{vrai} score 
+blanc.  PAPP v\'erifie la coh\'erence de la correction apport\'ee 
+(pr\'esence d'un appariement entre ces joueurs \`a cette ronde, 
+l\'egalit\'e des scores, \emph{etc.}), affiche le coupon modifi\'e, 
+\'ecrit le nouveau fichier interm\'ediaire sur le disque et recalcule 
+les nouveaux scores et les nouveaux d\'epartages des joueurs dans le 
+tournoi.
+
+Note : PAPP ne refait pas les appariements de la ronde en cours suite 
+\`a une correction dans une ronde pass\'ee ; c'est une d\'ecision qui 
+d\'epend du r\`eglement du tournoi et d'autre param\`etres (les 
+appariements ont-ils \'et\'e annonc\'es ?  les parties ont-elles 
+commenc\'e ?)  et qui doit revenir \`a l'arbitre.  Si l'arbitre 
+d\'ecide de recalculer de nouveaux appariements, il peut le faire en 
+effacant tous les appariements (commandes `\verb|M|', puis `\verb|Z|' 
+du menu principal) puis en demandant le recalcul des appariements 
+automatiques (commandes `\verb|A|' du menu principal).
+
+\subsection{Fourrager dans le fichier interm\'ediaire}
+
+Ce n'est gu\`ere souhaitable, mais peut s'av\'erer indispensable pour 
+les corrections impossibles \`a faire directement dans PAPP avec la 
+commande `\verb|C|', par exemple pour faire une permutation circulaire 
+des appariements si quatre joueurs se sont tromp\'es en m\^eme temps 
+plusieurs rondes auparavant, ou pour effacer tout-\`a-fait un joueur 
+inscrit par erreur.  Le fichier interm\'ediaire contient quelques 
+indications pour guider les mortels qui oseraient s'y aventurer.  
+Cherchez donc le bloc indiquant le r\'esultat de la ronde 
+incrimin\'ee; les r\'esultats sont stock\'es sous la forme 
+$$\hbox{\verb|(|{\it joueur\_noir score\_noir joueur\_blanc 
+score\_blanc\/}\verb|);|}
+ $$
+Les ``r\'esultats'' contenant en eux-m\^emes les appariements, il 
+n'est pas n\'ecessaire qu'ils soient coh\'erents avec le bloc des 
+appariements situ\'e au-dessus (bloc qui peut d'ailleurs ne pas 
+exister, surtout si vous avez choisi ``sauvegarde diff\'er\'ee''); il 
+importe en revanche que le bloc des r\'esultats soit coh\'erent en 
+lui-m\^eme; donc corrigez soigneusement la ligne erron\'ee, sinon PAPP 
+signalera une erreur fatale et s'arr\^etera.  (Mieux encore: laissez 
+la ligne originale en commentaire.  Si vous n'\^etes pas s\^ur de 
+vous, faites une copie du fichier interm\'ediaire avant de le 
+modifier).
+
+\subsection{Utilisation du multit\^ache}
+
+PAPP a \'et\'e d\'evelopp\'e initialement pour MiNT, le syst\`eme 
+d'exploitation multit\^ache de l'Atari ST, avec l'objectif d'\^etre 
+facilement portable sur d'autres plateformes.
+
+Une premi\`ere cons\'equence de cela est que PAPP n'impose aucune 
+restriction sur les noms de fichiers; vous n'\^etes limit\'e que par 
+le syst\`eme de fichiers de votre machine (lequel peut distinguer 
+majuscules et minuscules, c'est pourquoi PAPP ne convertira jamais un 
+nom en majuscules, par exemple).
+
+Si PAPP est compil\'e pour reconna{\^\i}tre les signaux, et si le 
+shell conna{\^\i}t le ``job control'', alors il peut \^etre suspendu 
+en tapant [Ctrl-Z] dans le menu principal.  Il r\'epond \'egalement 
+\`a certains signaux: SIGINT est toujours ignor\'e; les signaux 
+SIGHUP, SIGQUIT et SIGTERM terminent le programme ``proprement'' en 
+sauvegardant son \'etat.  Les autres signaux tuent le programme sans 
+que celui-ci puisse proc\'eder aux sauvegardes n\'ecessaires.
+
+PAPP peut \'egalement s'ex\'ecuter dans une fen\^etre, sous MW ou 
+TosWin (sur l'Atari) ou Xterm (sous X11); les dimensions de celle-ci 
+sont obtenues par un ioctl(), et comme le signal SIGWINCH est 
+g\'er\'e, on peut m\^eme redimensionner la fen\^etre pendant que le 
+programme tourne!
+
+PAPP peut \^etre lanc\'e avec un (unique) argument sur la ligne de 
+commande; cet argument est alors interpr\'et\'e comme le nom du 
+fichier de configuration \`a lire.  Par d\'efaut, ce fichier de 
+configuration contient `\verb|#!  papp|' sur sa premi\`ere ligne, ce 
+qui lui permet d'\^etre ``ex\'ecut\'e'' directement, sur certains 
+syst\`emes d'exploitation, en particulier Unix et MiNT.
+
+\subsection{Jeux autres qu'Othello}
+
+Bien qu'initialement \'ecrit pour Othello $8\fois 8$, PAPP peut \^etre 
+utilis\'e pour tout jeu o\`u il y a un nombre fixe de ``pions'' (ici, 
+$64$) \`a se partager entre les deux joueurs.  Dans ce cas, il faut 
+\'egalement pr\'eciser combien de pions fait Bip (c'est important pour 
+le d\'epartage).  Par exemple, si on veut organiser un tournoi 
+d'Othello $10\fois 10$ o\`u Bip fait $35$ pions sur cent, on \'ecrira 
+simplement \verb|score-bip = 35 / 100|.
+
+Si on omet `\verb|/100|', cela signifie qu'on veut modifier le score 
+de Bip, mais pas le total de pions.  Ici en l'occurence, Bip 
+marquerait $35$ pions sur $64$, donc gagnerait toutes ses parties!  
+PAPP obtemp\'erera, mais vous avertira quand m\^eme que c'est un peu 
+\'etrange\dots\ (Note: cette bizarrerie dispara{\^\i}tra peut-\^etre 
+dans les versions ult\'erieures de PAPP.)
+
+	Le ``total de pions'' situe sous la barre de fraction peut
+m\^eme \^etre un nombre impair (songez au Go par exemple). Si le total
+de pions est $\le2$, cela signifie qu'on a affaire \`a un jeu ``sans
+pions'', tel que les echecs, et qu'il y a identit\'e entre un pion et un
+point (ou un demi-point); dans ce cas, il n'y a qu'un seul d\'epartage
+raisonnable, le {\em Buchholz\/} (somme des scores des adversaires, en
+demi-points). 
+
+	D'autre part, il sera sans doute n\'ecessaire de sp\'ecifier les
+couleurs du premier et du second joueur, vu qu'\`a Othello ce sont les
+Noirs qui commencent, \`a l'inverse de quasiment tous les autres jeux~;
+sinon, les fiches individuelles n'indiqueront pas les bonnes couleurs.
+Si vous inventez un jeu avec des pions rouges et verts et que ce sont
+les Rouges qui commencent, pensez \`a ajouter la ligne
+\begin{verbatim}
+    Couleurs = { "Rouge", "Vert" };
+\end{verbatim}
+dans votre fichier de configuration.
+
+	Enfin, dans certains jeux ``\`a pions'' comme le Go, on pr\'ef\`ere
+comptabiliser la diff\'erence de pions entre les joueurs plut\^ot que le
+nombre de pions du premier joueur. Il est toujours possible d'entrer les
+r\'esultats sous forme relative ou absolue dans PAPP, mais il faut
+pr\'eciser si vous voulez voir les r\'esultats affich\'es sous forme
+relative ou absolue~; pour le Go, on ajoutera la directive
+\begin{verbatim}
+    Affichage-pions relatif;
+\end{verbatim}
+dans le fichier de configuration. Ceci affectera l'affichage des
+r\'esultats et celui des fiches individuelles, mais le d\'epartage tel
+qu'il appara{\^\i}t dans la liste des joueurs est toujours bas\'e sur le
+score ``absolu'' des joueurs.
+
+\section{Copyright}
+
+	Ce programme (c'est-\`a-dire sources et documentation) est
+propri\'et\'e de l'auteur, Thierry Bousch. Il peut \^etre librement
+copi\'e et distribu\'e selon la GPL (GNU Public License)~; cette licence
+est d\'etaill\'ee dans le fichier `\verb|COPYING|'.
+
+	L'auteur d\'ecline toute responsabilit\'e concernant
+l'utilisation de ce programme, en particulier les dommages directs ou
+indirects qui pourraient \^etre caus\'es par celui-ci.  Le programme est
+fourni tel quel, sans aucune garantie.
+
+Je suis n\'eanmoins tr\`es int\'eress\'e par toute remarque, critique, 
+compte rendu de bug, concernant PAPP. Vous pouvez me contacter par 
+courrier \'electronique
+(\verb|bousch@topo.math.u-psud.fr|) ou poster un message sur la liste 
+discutant de l'avenir de PAPP (\verb|ffo-papp@egroups.fr|).
+
+\newpage
+\tableofcontents
+
+\end{document}
+

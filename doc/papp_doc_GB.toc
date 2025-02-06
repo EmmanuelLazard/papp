@@ -1,0 +1,46 @@
+\contentsline {section}{\numberline {1}Introduction}{1}{}%
+\contentsline {section}{\numberline {2}First contact}{1}{}%
+\contentsline {subsection}{\numberline {2.1}Inscriptions}{1}{}%
+\contentsline {subsection}{\numberline {2.2}Pairings}{2}{}%
+\contentsline {subsection}{\numberline {2.3}Entering results}{2}{}%
+\contentsline {subsection}{\numberline {2.4}Chargement et sauvegarde}{2}{}%
+\contentsline {subsection}{\numberline {2.5}Appariements manuels}{3}{}%
+\contentsline {subsection}{\numberline {2.6}Lecture des résultats}{3}{}%
+\contentsline {subsection}{\numberline {2.7}Autres commandes}{3}{}%
+\contentsline {section}{\numberline {3}Automatic pairings}{4}{}%
+\contentsline {subsection}{\numberline {3.1}Penalties decription}{5}{}%
+\contentsline {subsubsection}{\numberline {3.1.1}Color penalties}{5}{}%
+\contentsline {subsubsection}{\numberline {3.1.2}Floating penalties}{5}{}%
+\contentsline {subsubsection}{\numberline {3.1.3}Repetition penalties}{5}{}%
+\contentsline {subsubsection}{\numberline {3.1.4}Chauvinisme penalty}{6}{}%
+\contentsline {subsubsection}{\numberline {3.1.5}Elitisme penalty}{6}{}%
+\contentsline {subsubsection}{\numberline {3.1.6}BYE case}{6}{}%
+\contentsline {subsection}{\numberline {3.2}Conditions concerning penalties}{6}{}%
+\contentsline {subsection}{\numberline {3.3}Last pass}{7}{}%
+\contentsline {section}{\numberline {4}Le fichier de configuration}{7}{}%
+\contentsline {subsection}{\numberline {4.1}Conventions lexicales}{7}{}%
+\contentsline {subsection}{\numberline {4.2}Grammaire}{7}{}%
+\contentsline {subsection}{\numberline {4.3}Liste des pénalités}{8}{}%
+\contentsline {subsubsection}{\numberline {4.3.1}Pénalités de couleur}{8}{}%
+\contentsline {subsubsection}{\numberline {4.3.2}Pénalités de flottement}{9}{}%
+\contentsline {subsubsection}{\numberline {4.3.3}Pénalités de répétition}{9}{}%
+\contentsline {subsubsection}{\numberline {4.3.4}Pénalités de chauvinisme}{9}{}%
+\contentsline {subsubsection}{\numberline {4.3.5}Pénalités d'élitisme}{9}{}%
+\contentsline {subsection}{\numberline {4.4}Remarques diverses}{10}{}%
+\contentsline {subsection}{\numberline {4.5}Tournois toutes-rondes}{10}{}%
+\contentsline {subsection}{\numberline {4.6}Le départage de Brightwell}{10}{}%
+\contentsline {section}{\numberline {5}Le fichier des joueurs}{10}{}%
+\contentsline {subsection}{\numberline {5.1}Syntaxe des joueurs}{10}{}%
+\contentsline {section}{\numberline {6}Autres options}{11}{}%
+\contentsline {subsection}{\numberline {6.1}Les zones d'insertion}{11}{}%
+\contentsline {subsection}{\numberline {6.2}Les appariements de la première ronde}{12}{}%
+\contentsline {subsection}{\numberline {6.3}Récapitulatif ronde par ronde}{12}{}%
+\contentsline {subsection}{\numberline {6.4}Impression}{13}{}%
+\contentsline {subsection}{\numberline {6.5}Modes de sauvegarde}{13}{}%
+\contentsline {subsection}{\numberline {6.6}Départ et retour des joueurs}{14}{}%
+\contentsline {subsection}{\numberline {6.7}Correction d'un résultat}{14}{}%
+\contentsline {subsection}{\numberline {6.8}Format du fichier HTML}{15}{}%
+\contentsline {subsection}{\numberline {6.9}Fourrager dans le fichier intermédiaire}{15}{}%
+\contentsline {subsection}{\numberline {6.10}Utilisation du multit\^ache}{15}{}%
+\contentsline {subsection}{\numberline {6.11}Jeux autres qu'Othello}{16}{}%
+\contentsline {section}{\numberline {7}Copyright}{17}{}%

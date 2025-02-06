@@ -1,0 +1,45 @@
+\contentsline {section}{\numberline {1}Introduction}{1}{}%
+\contentsline {section}{\numberline {2}First contact}{1}{}%
+\contentsline {subsection}{\numberline {2.1}Inscriptions}{1}{}%
+\contentsline {subsection}{\numberline {2.2}Pairings}{2}{}%
+\contentsline {subsection}{\numberline {2.3}Entering results}{2}{}%
+\contentsline {subsection}{\numberline {2.4}Chargement et sauvegarde}{3}{}%
+\contentsline {subsection}{\numberline {2.5}Appariements manuels}{3}{}%
+\contentsline {subsection}{\numberline {2.6}Lecture des r\'esultats}{4}{}%
+\contentsline {subsection}{\numberline {2.7}Autres commandes}{4}{}%
+\contentsline {section}{\numberline {3}Appariements automatiques}{5}{}%
+\contentsline {subsection}{\numberline {3.1}Description des p\'enalit\'es}{6}{}%
+\contentsline {subsubsection}{\numberline {3.1.1}P\'enalit\'es de couleur}{6}{}%
+\contentsline {subsubsection}{\numberline {3.1.2}P\'enalit\'es de flottement}{6}{}%
+\contentsline {subsubsection}{\numberline {3.1.3}P\'enalit\'es de r\'ep\'etition}{7}{}%
+\contentsline {subsubsection}{\numberline {3.1.4}P\'enalit\'es de chauvinisme}{7}{}%
+\contentsline {subsubsection}{\numberline {3.1.5}P\'enalit\'es d'\'elitisme}{7}{}%
+\contentsline {subsubsection}{\numberline {3.1.6}Le cas de Bip}{7}{}%
+\contentsline {subsection}{\numberline {3.2}Conditions sur les p\'enalit\'es}{8}{}%
+\contentsline {subsection}{\numberline {3.3}Derni\`ere passe}{8}{}%
+\contentsline {section}{\numberline {4}Le fichier de configuration}{9}{}%
+\contentsline {subsection}{\numberline {4.1}Conventions lexicales}{9}{}%
+\contentsline {subsection}{\numberline {4.2}Grammaire}{9}{}%
+\contentsline {subsection}{\numberline {4.3}Liste des p\'enalit\'es}{10}{}%
+\contentsline {subsubsection}{\numberline {4.3.1}P\'enalit\'es de couleur}{10}{}%
+\contentsline {subsubsection}{\numberline {4.3.2}P\'enalit\'es de flottement}{11}{}%
+\contentsline {subsubsection}{\numberline {4.3.3}P\'enalit\'es de r\'ep\'etition}{11}{}%
+\contentsline {subsubsection}{\numberline {4.3.4}P\'enalit\'es de chauvinisme}{11}{}%
+\contentsline {subsubsection}{\numberline {4.3.5}P\'enalit\'es d'\'elitisme}{12}{}%
+\contentsline {subsection}{\numberline {4.4}Remarques diverses}{12}{}%
+\contentsline {subsection}{\numberline {4.5}Tournois toutes-rondes}{12}{}%
+\contentsline {subsection}{\numberline {4.6}Le d\'epartage de Brightwell}{13}{}%
+\contentsline {section}{\numberline {5}Le fichier des joueurs}{13}{}%
+\contentsline {subsection}{\numberline {5.1}Syntaxe des joueurs}{13}{}%
+\contentsline {section}{\numberline {6}Autres options}{14}{}%
+\contentsline {subsection}{\numberline {6.1}Les zones d'insertion}{14}{}%
+\contentsline {subsection}{\numberline {6.2}Les appariements de la premi\`ere ronde}{15}{}%
+\contentsline {subsection}{\numberline {6.3}R\'ecapitulatif ronde par ronde}{15}{}%
+\contentsline {subsection}{\numberline {6.4}Impression}{16}{}%
+\contentsline {subsection}{\numberline {6.5}Modes de sauvegarde}{17}{}%
+\contentsline {subsection}{\numberline {6.6}D\'epart et retour des joueurs}{17}{}%
+\contentsline {subsection}{\numberline {6.7}Correction d'un r\'esultat}{18}{}%
+\contentsline {subsection}{\numberline {6.8}Fourrager dans le fichier interm\'ediaire}{18}{}%
+\contentsline {subsection}{\numberline {6.9}Utilisation du multit\^ache}{19}{}%
+\contentsline {subsection}{\numberline {6.10}Jeux autres qu'Othello}{19}{}%
+\contentsline {section}{\numberline {7}Copyright}{20}{}%
